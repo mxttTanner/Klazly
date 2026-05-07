@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -13,6 +14,7 @@ const createSchema = z.object({
 
 export async function createClass(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
+  const t = await getTranslations("admin.classes");
 
   const teacherIdRaw = String(formData.get("teacher_id") ?? "");
   const parsed = createSchema.safeParse({
@@ -20,9 +22,7 @@ export async function createClass(_prev: unknown, formData: FormData) {
     teacher_id: teacherIdRaw && teacherIdRaw !== "none" ? teacherIdRaw : null,
     schedule_text: formData.get("schedule_text") || null,
   });
-  if (!parsed.success) {
-    return { error: "Vui lòng nhập tên lớp hợp lệ." };
-  }
+  if (!parsed.success) return { error: t("validation") };
 
   const supabase = createAdminClient();
 
@@ -37,7 +37,7 @@ export async function createClass(_prev: unknown, formData: FormData) {
       teacher.role !== "teacher" ||
       teacher.center_id !== admin.center_id
     ) {
-      return { error: "Giáo viên không hợp lệ." };
+      return { error: t("invalidTeacher") };
     }
   }
 
@@ -47,11 +47,11 @@ export async function createClass(_prev: unknown, formData: FormData) {
     teacher_id: parsed.data.teacher_id,
     schedule_text: parsed.data.schedule_text,
   });
-  if (error) return { error: `Không thể tạo lớp: ${error.message}` };
+  if (error) return { error: t("createError", { message: error.message }) };
 
   revalidatePath("/admin/classes");
   revalidatePath("/admin");
-  return { success: `Đã tạo lớp ${parsed.data.name}.` };
+  return { success: t("createdHint", { name: parsed.data.name }) };
 }
 
 export async function updateClassTeacher(formData: FormData) {
@@ -60,7 +60,6 @@ export async function updateClassTeacher(formData: FormData) {
   const teacherIdRaw = String(formData.get("teacher_id") ?? "");
   const teacher_id =
     teacherIdRaw && teacherIdRaw !== "none" ? teacherIdRaw : null;
-
   if (!id) return;
 
   const supabase = createAdminClient();
@@ -73,12 +72,13 @@ export async function updateClassTeacher(formData: FormData) {
   if (!cls || cls.center_id !== admin.center_id) return;
 
   if (teacher_id) {
-    const { data: t } = await supabase
+    const { data: tr } = await supabase
       .from("users")
       .select("id, role, center_id")
       .eq("id", teacher_id)
       .single();
-    if (!t || t.role !== "teacher" || t.center_id !== admin.center_id) return;
+    if (!tr || tr.role !== "teacher" || tr.center_id !== admin.center_id)
+      return;
   }
 
   await supabase.from("classes").update({ teacher_id }).eq("id", id);

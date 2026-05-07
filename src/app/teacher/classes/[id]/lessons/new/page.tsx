@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { LessonForm } from "./lesson-form";
@@ -12,6 +13,7 @@ export default async function NewLessonPage({
 }) {
   const user = await requireRole("teacher");
   const supabase = createClient();
+  const t = await getTranslations("teacher.lessonForm");
 
   const { data: cls } = await supabase
     .from("classes")
@@ -35,11 +37,12 @@ export default async function NewLessonPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Ghi nhận bài học mới
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground text-sm">
-          Lớp {cls.name} • {students?.length ?? 0} học sinh
+          {t("summary", {
+            className: cls.name,
+            count: students?.length ?? 0,
+          })}
         </p>
       </div>
 
@@ -52,8 +55,7 @@ export default async function NewLessonPage({
         />
       ) : (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          Lớp chưa có học sinh nào. Vui lòng yêu cầu quản trị viên xếp học sinh
-          vào lớp.
+          {t("noStudents")}
         </p>
       )}
     </div>

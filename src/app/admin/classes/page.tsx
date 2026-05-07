@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   Table,
@@ -16,11 +17,15 @@ export const dynamic = "force-dynamic";
 
 export default async function ClassesPage() {
   const supabase = createClient();
+  const t = await getTranslations("admin.classes");
+  const tc = await getTranslations("common");
 
   const [{ data: classes }, { data: teachers }] = await Promise.all([
     supabase
       .from("classes")
-      .select("id, name, schedule_text, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)")
+      .select(
+        "id, name, schedule_text, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)",
+      )
       .order("name", { ascending: true }),
     supabase
       .from("users")
@@ -32,10 +37,8 @@ export default async function ClassesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Lớp học</h1>
-        <p className="text-muted-foreground text-sm">
-          Tạo lớp và phân công giáo viên phụ trách.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       <ClassForm teachers={teachers ?? []} />
@@ -44,10 +47,10 @@ export default async function ClassesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tên lớp</TableHead>
-              <TableHead>Lịch học</TableHead>
-              <TableHead className="w-64">Giáo viên</TableHead>
-              <TableHead className="w-32 text-right">Hành động</TableHead>
+              <TableHead>{t("className")}</TableHead>
+              <TableHead>{t("schedule")}</TableHead>
+              <TableHead className="w-64">{t("teacher")}</TableHead>
+              <TableHead className="w-32 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -75,7 +78,7 @@ export default async function ClassesPage() {
                           size: "sm",
                         })}
                       >
-                        Xoá
+                        {tc("delete")}
                       </button>
                     </form>
                   </TableCell>
@@ -87,7 +90,7 @@ export default async function ClassesPage() {
                   colSpan={4}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
-                  Chưa có lớp nào.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             )}

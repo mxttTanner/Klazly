@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useFormState } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
@@ -16,6 +17,7 @@ export function StudentForm({
   classes: { id: string; name: string }[];
   parents: { id: string; full_name: string }[];
 }) {
+  const t = useTranslations("admin.students");
   const [state, action] = useFormState(createStudent, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -30,22 +32,22 @@ export function StudentForm({
       className="grid gap-4 rounded-lg border p-4 sm:grid-cols-5"
     >
       <div className="space-y-2 sm:col-span-2">
-        <Label htmlFor="full_name">Họ và tên học sinh</Label>
+        <Label htmlFor="full_name">{t("fullName")}</Label>
         <Input id="full_name" name="full_name" required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="age">Tuổi</Label>
+        <Label htmlFor="age">{t("age")}</Label>
         <Input id="age" name="age" type="number" min={0} max={30} />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="class_id">Lớp</Label>
+        <Label htmlFor="class_id">{t("class")}</Label>
         <select
           id="class_id"
           name="class_id"
           defaultValue="none"
           className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
         >
-          <option value="none">Chưa xếp lớp</option>
+          <option value="none">{t("unassignedClass")}</option>
           {classes.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -54,14 +56,14 @@ export function StudentForm({
         </select>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="parent_user_id">Phụ huynh</Label>
+        <Label htmlFor="parent_user_id">{t("parent")}</Label>
         <select
           id="parent_user_id"
           name="parent_user_id"
           defaultValue="none"
           className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
         >
-          <option value="none">Chưa liên kết</option>
+          <option value="none">{t("unassignedParent")}</option>
           {parents.map((p) => (
             <option key={p.id} value={p.id}>
               {p.full_name}
@@ -71,8 +73,8 @@ export function StudentForm({
       </div>
       <div className="flex items-end sm:col-span-5">
         <SubmitButton
-          idleLabel="Thêm học sinh"
-          pendingLabel="Đang thêm..."
+          idleLabel={t("submit")}
+          pendingLabel={t("submitting")}
         />
       </div>
       {state.error ? (

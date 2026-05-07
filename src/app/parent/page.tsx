@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function ParentHomePage() {
   const user = await requireRole("parent");
   const supabase = createClient();
+  const t = await getTranslations("parent.home");
 
   const { data: students } = await supabase
     .from("students")
@@ -20,12 +22,8 @@ export default async function ParentHomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Con của bạn
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Chọn con để xem tiến trình học tập gần đây.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       {students && students.length > 0 ? (
@@ -48,14 +46,14 @@ export default async function ParentHomePage() {
                       <>
                         <p>
                           <span className="text-foreground font-medium">
-                            Lớp:
+                            {t("class")}
                           </span>{" "}
                           {cls.name}
                         </p>
                         {teacher ? (
                           <p>
                             <span className="text-foreground font-medium">
-                              Giáo viên:
+                              {t("teacher")}
                             </span>{" "}
                             {teacher.full_name}
                           </p>
@@ -63,14 +61,14 @@ export default async function ParentHomePage() {
                         {cls.schedule_text ? (
                           <p>
                             <span className="text-foreground font-medium">
-                              Lịch học:
+                              {t("schedule")}
                             </span>{" "}
                             {cls.schedule_text}
                           </p>
                         ) : null}
                       </>
                     ) : (
-                      <p>Chưa được xếp lớp.</p>
+                      <p>{t("noClass")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -80,8 +78,7 @@ export default async function ParentHomePage() {
         </div>
       ) : (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          Tài khoản của bạn chưa được liên kết với học sinh nào. Vui lòng liên hệ
-          trung tâm.
+          {t("empty")}
         </p>
       )}
     </div>

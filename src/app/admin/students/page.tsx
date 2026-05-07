@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   Table,
@@ -16,6 +17,8 @@ export const dynamic = "force-dynamic";
 
 export default async function StudentsPage() {
   const supabase = createClient();
+  const t = await getTranslations("admin.students");
+  const tc = await getTranslations("common");
 
   const [{ data: students }, { data: classes }, { data: parents }] =
     await Promise.all([
@@ -43,10 +46,8 @@ export default async function StudentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Học sinh</h1>
-        <p className="text-muted-foreground text-sm">
-          Thêm học sinh, xếp lớp và liên kết tài khoản phụ huynh.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       <StudentForm classes={classes ?? []} parents={parents ?? []} />
@@ -55,11 +56,11 @@ export default async function StudentsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Họ và tên</TableHead>
-              <TableHead className="w-20">Tuổi</TableHead>
-              <TableHead className="w-56">Lớp</TableHead>
-              <TableHead className="w-56">Phụ huynh</TableHead>
-              <TableHead className="w-24 text-right">Hành động</TableHead>
+              <TableHead>{t("fullName")}</TableHead>
+              <TableHead className="w-20">{t("age")}</TableHead>
+              <TableHead className="w-56">{t("class")}</TableHead>
+              <TableHead className="w-56">{t("parent")}</TableHead>
+              <TableHead className="w-24 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -76,7 +77,7 @@ export default async function StudentsPage() {
                       field="class_id"
                       currentValue={s.class_id}
                       options={classOptions}
-                      emptyLabel="Chưa xếp lớp"
+                      emptyLabel={t("unassignedClass")}
                     />
                   </TableCell>
                   <TableCell>
@@ -85,7 +86,7 @@ export default async function StudentsPage() {
                       field="parent_user_id"
                       currentValue={s.parent_user_id}
                       options={parentOptions}
-                      emptyLabel="Chưa liên kết"
+                      emptyLabel={t("unassignedParent")}
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -98,7 +99,7 @@ export default async function StudentsPage() {
                           size: "sm",
                         })}
                       >
-                        Xoá
+                        {tc("delete")}
                       </button>
                     </form>
                   </TableCell>
@@ -110,7 +111,7 @@ export default async function StudentsPage() {
                   colSpan={5}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
-                  Chưa có học sinh nào.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             )}

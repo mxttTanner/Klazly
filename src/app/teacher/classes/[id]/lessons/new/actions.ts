@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,7 @@ function nullable(v: FormDataEntryValue | null): string | null {
 
 export async function createLesson(_prev: unknown, formData: FormData) {
   const teacher = await requireRole("teacher");
+  const t = await getTranslations("teacher.lessonForm");
 
   const class_id = String(formData.get("class_id") ?? "");
   const studentIds = formData.getAll("student_id").map(String);
@@ -64,23 +66,17 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     updates,
   });
 
-  if (!parsed.success) {
-    return {
-      error: "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại các trường.",
-    };
-  }
+  if (!parsed.success) return { error: t("validation") };
 
   const supabase = createClient();
 
-  // RLS will block this if the class doesn't belong to the teacher,
-  // but we double-check up front to give a clear error message.
   const { data: cls } = await supabase
     .from("classes")
     .select("id, teacher_id, center_id")
     .eq("id", parsed.data.class_id)
     .single();
   if (!cls || cls.teacher_id !== teacher.id) {
-    return { error: "Bạn không có quyền ghi bài học cho lớp này." };
+    return { error: t("noPermission") };
   }
 
   const { data: lesson, error: lErr } = await supabase
@@ -98,7 +94,9 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     .select()
     .single();
   if (lErr || !lesson) {
-    return { error: `Không thể lưu bài học: ${lErr?.message ?? "lỗi không rõ"}` };
+    return {
+      error: t("saveLessonError", { message: lErr?.message ?? "" }),
+    };
   }
 
   const updateRows = parsed.data.updates.map((u) => ({
@@ -114,7 +112,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     .insert(updateRows);
   if (uErr) {
     await supabase.from("lessons").delete().eq("id", lesson.id);
-    return { error: `Không thể lưu nhận xét học sinh: ${uErr.message}` };
+    return { error: t("saveUpdatesError", { message: uErr.message }) };
   }
 
   revalidatePath(`/teacher/classes/${parsed.data.class_id}`);

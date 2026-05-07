@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function TeacherHomePage() {
   const user = await requireRole("teacher");
   const supabase = createClient();
+  const t = await getTranslations("teacher.home");
 
   const { data: classes } = await supabase
     .from("classes")
@@ -18,12 +20,8 @@ export default async function TeacherHomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Lớp của tôi
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Chọn lớp để xem học sinh và ghi nhận bài học mới.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       {classes && classes.length > 0 ? (
@@ -35,7 +33,7 @@ export default async function TeacherHomePage() {
                   <CardTitle>{c.name}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-muted-foreground text-sm">
-                  {c.schedule_text ?? "Chưa có lịch học."}
+                  {c.schedule_text ?? t("noSchedule")}
                 </CardContent>
               </Card>
             </Link>
@@ -43,7 +41,7 @@ export default async function TeacherHomePage() {
         </div>
       ) : (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          Bạn chưa được phân công lớp nào. Liên hệ quản trị viên để được phân lớp.
+          {t("empty")}
         </p>
       )}
     </div>

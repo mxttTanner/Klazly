@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
@@ -21,6 +22,14 @@ export default async function ClassDetailPage({
 }) {
   const user = await requireRole("teacher");
   const supabase = createClient();
+  const t = await getTranslations("teacher.class");
+  const tHome = await getTranslations("teacher.home");
+  const tFullName = await getTranslations("admin.students");
+  const tAge = tFullName;
+  const tCommon = await getTranslations("common");
+  void tCommon;
+  const locale = await getLocale();
+  const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
   const { data: cls } = await supabase
     .from("classes")
@@ -52,31 +61,33 @@ export default async function ClassDetailPage({
             href="/teacher"
             className="text-muted-foreground hover:text-foreground text-sm"
           >
-            ← Lớp của tôi
+            {t("back")}
           </Link>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight">
             {cls.name}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {cls.schedule_text ?? "Chưa có lịch học."}
+            {cls.schedule_text ?? tHome("noSchedule")}
           </p>
         </div>
         <Link
           href={`/teacher/classes/${cls.id}/lessons/new`}
           className={buttonVariants()}
         >
-          Ghi nhận bài học mới
+          {t("newLesson")}
         </Link>
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Học sinh ({students?.length ?? 0})</h2>
+        <h2 className="text-lg font-medium">
+          {t("studentsHeader", { count: students?.length ?? 0 })}
+        </h2>
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Họ và tên</TableHead>
-                <TableHead className="w-20">Tuổi</TableHead>
+                <TableHead>{tFullName("fullName")}</TableHead>
+                <TableHead className="w-20">{tAge("age")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -95,7 +106,7 @@ export default async function ClassDetailPage({
                     colSpan={2}
                     className="text-muted-foreground py-6 text-center text-sm"
                   >
-                    Lớp chưa có học sinh.
+                    {t("noStudents")}
                   </TableCell>
                 </TableRow>
               )}
@@ -105,16 +116,13 @@ export default async function ClassDetailPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Bài học gần đây</h2>
+        <h2 className="text-lg font-medium">{t("recentLessonsHeader")}</h2>
         {lessons && lessons.length > 0 ? (
           <ul className="space-y-3">
             {lessons.map((l) => (
-              <li
-                key={l.id}
-                className="rounded-lg border p-4 text-sm"
-              >
+              <li key={l.id} className="rounded-lg border p-4 text-sm">
                 <p className="font-medium">
-                  {new Date(l.lesson_date).toLocaleDateString("vi-VN", {
+                  {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
                     weekday: "long",
                     day: "2-digit",
                     month: "2-digit",
@@ -123,27 +131,29 @@ export default async function ClassDetailPage({
                 </p>
                 {l.vocabulary ? (
                   <p className="text-muted-foreground mt-1">
-                    <span className="font-medium text-foreground">Từ vựng:</span>{" "}
+                    <span className="text-foreground font-medium">
+                      {t("vocabulary")}:
+                    </span>{" "}
                     {l.vocabulary}
                   </p>
                 ) : null}
                 {l.grammar_point ? (
                   <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">Ngữ pháp:</span>{" "}
+                    <span className="text-foreground font-medium">
+                      {t("grammar")}:
+                    </span>{" "}
                     {l.grammar_point}
                   </p>
                 ) : null}
                 {l.general_note ? (
-                  <p className="text-muted-foreground mt-1">
-                    {l.general_note}
-                  </p>
+                  <p className="text-muted-foreground mt-1">{l.general_note}</p>
                 ) : null}
               </li>
             ))}
           </ul>
         ) : (
           <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-            Chưa có bài học nào được ghi nhận.
+            {t("noLessons")}
           </p>
         )}
       </section>

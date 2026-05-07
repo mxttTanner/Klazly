@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useFormState } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
@@ -10,6 +11,7 @@ import { inviteTeacher } from "./actions";
 const initialState: { error?: string; success?: string } = {};
 
 export function TeacherForm() {
+  const t = useTranslations("admin.teachers");
   const [state, action] = useFormState(inviteTeacher, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -24,28 +26,28 @@ export function TeacherForm() {
       className="grid gap-4 rounded-lg border p-4 sm:grid-cols-4"
     >
       <div className="space-y-2">
-        <Label htmlFor="full_name">Họ và tên</Label>
+        <Label htmlFor="full_name">{t("fullName")}</Label>
         <Input id="full_name" name="full_name" required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         <Input id="email" name="email" type="email" required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Mật khẩu khởi tạo</Label>
+        <Label htmlFor="password">{t("initialPassword")}</Label>
         <Input
           id="password"
           name="password"
           type="text"
           minLength={8}
           required
-          placeholder="Tối thiểu 8 ký tự"
+          placeholder={t("passwordPlaceholder")}
         />
       </div>
       <div className="flex items-end">
         <SubmitButton
-          idleLabel="Thêm giáo viên"
-          pendingLabel="Đang thêm..."
+          idleLabel={t("submit")}
+          pendingLabel={t("submitting")}
           className="w-full"
         />
       </div>
@@ -56,7 +58,7 @@ export function TeacherForm() {
       ) : null}
       {state.success ? (
         <p className="sm:col-span-4 text-sm text-emerald-600">
-          {state.success} Vui lòng chuyển mật khẩu cho giáo viên qua kênh riêng.
+          {state.success}
         </p>
       ) : null}
     </form>

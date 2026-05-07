@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -13,17 +14,15 @@ const inviteSchema = z.object({
 
 export async function inviteParent(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
+  const t = await getTranslations("admin.parents");
+  const tt = await getTranslations("admin.teachers");
 
   const parsed = inviteSchema.safeParse({
     email: formData.get("email"),
     full_name: formData.get("full_name"),
     password: formData.get("password"),
   });
-  if (!parsed.success) {
-    return {
-      error: "Vui lòng nhập email hợp lệ, tên đầy đủ và mật khẩu ít nhất 8 ký tự.",
-    };
-  }
+  if (!parsed.success) return { error: tt("validation") };
 
   const supabase = createAdminClient();
 
@@ -33,7 +32,7 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
     email_confirm: true,
   });
   if (authErr) {
-    return { error: `Không thể tạo tài khoản: ${authErr.message}` };
+    return { error: tt("createUserError", { message: authErr.message }) };
   }
 
   const { error: profileErr } = await supabase.from("users").insert({
@@ -45,12 +44,12 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
   });
   if (profileErr) {
     await supabase.auth.admin.deleteUser(created.user!.id);
-    return { error: `Không thể lưu hồ sơ phụ huynh: ${profileErr.message}` };
+    return { error: t("saveProfileError", { message: profileErr.message }) };
   }
 
   revalidatePath("/admin/parents");
   revalidatePath("/admin/students");
-  return { success: `Đã thêm phụ huynh ${parsed.data.full_name}.` };
+  return { success: t("addedHint", { name: parsed.data.full_name }) };
 }
 
 export async function removeParent(formData: FormData) {
@@ -66,7 +65,11 @@ export async function removeParent(formData: FormData) {
     .eq("id", id)
     .single();
 
-  if (!target || target.center_id !== admin.center_id || target.role !== "parent") {
+  if (
+    !target ||
+    target.center_id !== admin.center_id ||
+    target.role !== "parent"
+  ) {
     return;
   }
 

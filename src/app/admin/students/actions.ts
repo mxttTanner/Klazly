@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -22,6 +23,7 @@ function nullable(v: FormDataEntryValue | null): string | null {
 
 export async function createStudent(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
+  const t = await getTranslations("admin.students");
 
   const parsed = createSchema.safeParse({
     full_name: formData.get("full_name"),
@@ -29,9 +31,7 @@ export async function createStudent(_prev: unknown, formData: FormData) {
     class_id: nullable(formData.get("class_id")),
     parent_user_id: nullable(formData.get("parent_user_id")),
   });
-  if (!parsed.success) {
-    return { error: "Vui lòng nhập tên học sinh hợp lệ." };
-  }
+  if (!parsed.success) return { error: t("validation") };
 
   const supabase = createAdminClient();
 
@@ -42,7 +42,7 @@ export async function createStudent(_prev: unknown, formData: FormData) {
       .eq("id", parsed.data.class_id)
       .single();
     if (!cls || cls.center_id !== admin.center_id) {
-      return { error: "Lớp không hợp lệ." };
+      return { error: t("invalidClass") };
     }
   }
   if (parsed.data.parent_user_id) {
@@ -52,7 +52,7 @@ export async function createStudent(_prev: unknown, formData: FormData) {
       .eq("id", parsed.data.parent_user_id)
       .single();
     if (!p || p.center_id !== admin.center_id || p.role !== "parent") {
-      return { error: "Phụ huynh không hợp lệ." };
+      return { error: t("invalidParent") };
     }
   }
 
@@ -63,11 +63,11 @@ export async function createStudent(_prev: unknown, formData: FormData) {
     class_id: parsed.data.class_id,
     parent_user_id: parsed.data.parent_user_id,
   });
-  if (error) return { error: `Không thể tạo học sinh: ${error.message}` };
+  if (error) return { error: t("createError", { message: error.message }) };
 
   revalidatePath("/admin/students");
   revalidatePath("/admin");
-  return { success: `Đã thêm học sinh ${parsed.data.full_name}.` };
+  return { success: t("createdHint", { name: parsed.data.full_name }) };
 }
 
 export async function updateStudent(formData: FormData) {

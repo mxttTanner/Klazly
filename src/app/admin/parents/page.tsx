@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   Table,
@@ -15,6 +16,10 @@ export const dynamic = "force-dynamic";
 
 export default async function ParentsPage() {
   const supabase = createClient();
+  const t = await getTranslations("admin.parents");
+  const tt = await getTranslations("admin.teachers");
+  const tc = await getTranslations("common");
+
   const { data: parents } = await supabase
     .from("users")
     .select("id, full_name, email, created_at")
@@ -24,10 +29,8 @@ export default async function ParentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Phụ huynh</h1>
-        <p className="text-muted-foreground text-sm">
-          Tạo tài khoản phụ huynh để liên kết với học sinh.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       <ParentForm />
@@ -36,9 +39,9 @@ export default async function ParentsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Họ và tên</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="w-32 text-right">Hành động</TableHead>
+              <TableHead>{tt("fullName")}</TableHead>
+              <TableHead>{tt("email")}</TableHead>
+              <TableHead className="w-32 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -59,7 +62,7 @@ export default async function ParentsPage() {
                           size: "sm",
                         })}
                       >
-                        Xoá
+                        {tc("delete")}
                       </button>
                     </form>
                   </TableCell>
@@ -71,7 +74,7 @@ export default async function ParentsPage() {
                   colSpan={3}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
-                  Chưa có phụ huynh nào.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             )}

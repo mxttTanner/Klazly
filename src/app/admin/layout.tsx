@@ -1,13 +1,8 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { LogoutButton } from "@/components/logout-button";
-
-const navLinks = [
-  { href: "/admin/teachers", label: "Giáo viên" },
-  { href: "/admin/parents", label: "Phụ huynh" },
-  { href: "/admin/classes", label: "Lớp học" },
-  { href: "/admin/students", label: "Học sinh" },
-];
+import { LanguageToggle } from "@/components/language-toggle";
 
 export default async function AdminLayout({
   children,
@@ -15,6 +10,14 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const user = await requireRole("admin");
+  const t = await getTranslations("admin");
+
+  const navLinks = [
+    { href: "/admin/teachers", label: t("navTeachers") },
+    { href: "/admin/parents", label: t("navParents") },
+    { href: "/admin/classes", label: t("navClasses") },
+    { href: "/admin/students", label: t("navStudents") },
+  ];
 
   return (
     <div className="min-h-dvh">
@@ -22,7 +25,7 @@ export default async function AdminLayout({
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-6">
             <Link href="/admin" className="text-lg font-semibold">
-              Quản trị
+              {t("navTitle")}
             </Link>
             <nav className="hidden gap-4 text-sm md:flex">
               {navLinks.map((l) => (
@@ -40,6 +43,7 @@ export default async function AdminLayout({
             <span className="text-muted-foreground hidden text-sm sm:inline">
               {user.full_name}
             </span>
+            <LanguageToggle />
             <LogoutButton />
           </div>
         </div>

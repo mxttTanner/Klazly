@@ -1,0 +1,189 @@
+{
+  "common": {
+    "logout": "Đăng xuất",
+    "save": "Lưu",
+    "cancel": "Huỷ",
+    "delete": "Xoá",
+    "actions": "Hành động",
+    "name": "Họ và tên",
+    "email": "Email",
+    "back": "Quay lại",
+    "loading": "Đang tải...",
+    "noResults": "Không có dữ liệu.",
+    "language": "Ngôn ngữ",
+    "languageVi": "Tiếng Việt",
+    "languageEn": "English",
+    "appName": "Cổng Phụ Huynh"
+  },
+  "landing": {
+    "title": "Cổng Phụ Huynh",
+    "tagline": "Nền tảng kết nối trung tâm tiếng Anh, giáo viên và phụ huynh — theo dõi tiến trình học tập của con sau mỗi buổi học.",
+    "login": "Đăng nhập",
+    "demo": "Xem bản demo"
+  },
+  "login": {
+    "title": "Đăng nhập",
+    "subtitle": "Cổng phụ huynh dành cho trung tâm tiếng Anh.",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "submit": "Đăng nhập",
+    "submitting": "Đang đăng nhập...",
+    "invalidCredentials": "Email hoặc mật khẩu không đúng."
+  },
+  "admin": {
+    "navTitle": "Quản trị",
+    "navTeachers": "Giáo viên",
+    "navParents": "Phụ huynh",
+    "navClasses": "Lớp học",
+    "navStudents": "Học sinh",
+    "dashboard": {
+      "title": "Bảng điều khiển",
+      "subtitle": "Tổng quan trung tâm.",
+      "teachers": "Giáo viên",
+      "parents": "Phụ huynh",
+      "classes": "Lớp học",
+      "students": "Học sinh"
+    },
+    "teachers": {
+      "title": "Giáo viên",
+      "subtitle": "Thêm tài khoản giáo viên cho trung tâm. Chia sẻ mật khẩu khởi tạo qua Zalo hoặc kênh nội bộ.",
+      "fullName": "Họ và tên",
+      "email": "Email",
+      "initialPassword": "Mật khẩu khởi tạo",
+      "passwordPlaceholder": "Tối thiểu 8 ký tự",
+      "submit": "Thêm giáo viên",
+      "submitting": "Đang thêm...",
+      "validation": "Vui lòng nhập email hợp lệ, tên đầy đủ và mật khẩu ít nhất 8 ký tự.",
+      "createUserError": "Không thể tạo tài khoản: {message}",
+      "saveProfileError": "Không thể lưu hồ sơ giáo viên: {message}",
+      "addedHint": "Đã thêm giáo viên {name}. Vui lòng chuyển mật khẩu cho giáo viên qua kênh riêng.",
+      "empty": "Chưa có giáo viên nào."
+    },
+    "parents": {
+      "title": "Phụ huynh",
+      "subtitle": "Tạo tài khoản phụ huynh để liên kết với học sinh.",
+      "submit": "Thêm phụ huynh",
+      "submitting": "Đang thêm...",
+      "saveProfileError": "Không thể lưu hồ sơ phụ huynh: {message}",
+      "addedHint": "Đã thêm phụ huynh {name}. Vui lòng chuyển mật khẩu cho phụ huynh qua kênh riêng.",
+      "empty": "Chưa có phụ huynh nào."
+    },
+    "classes": {
+      "title": "Lớp học",
+      "subtitle": "Tạo lớp và phân công giáo viên phụ trách.",
+      "className": "Tên lớp",
+      "teacher": "Giáo viên",
+      "schedule": "Lịch học",
+      "schedulePlaceholder": "VD: Thứ 2-4-6, 17:30-19:00",
+      "unassigned": "Chưa phân công",
+      "submit": "Tạo lớp",
+      "submitting": "Đang tạo...",
+      "validation": "Vui lòng nhập tên lớp hợp lệ.",
+      "invalidTeacher": "Giáo viên không hợp lệ.",
+      "createError": "Không thể tạo lớp: {message}",
+      "createdHint": "Đã tạo lớp {name}.",
+      "empty": "Chưa có lớp nào."
+    },
+    "students": {
+      "title": "Học sinh",
+      "subtitle": "Thêm học sinh, xếp lớp và liên kết tài khoản phụ huynh.",
+      "fullName": "Họ và tên học sinh",
+      "age": "Tuổi",
+      "class": "Lớp",
+      "parent": "Phụ huynh",
+      "unassignedClass": "Chưa xếp lớp",
+      "unassignedParent": "Chưa liên kết",
+      "submit": "Thêm học sinh",
+      "submitting": "Đang thêm...",
+      "validation": "Vui lòng nhập tên học sinh hợp lệ.",
+      "invalidClass": "Lớp không hợp lệ.",
+      "invalidParent": "Phụ huynh không hợp lệ.",
+      "createError": "Không thể tạo học sinh: {message}",
+      "createdHint": "Đã thêm học sinh {name}.",
+      "empty": "Chưa có học sinh nào."
+    }
+  },
+  "teacher": {
+    "navTitle": "Trang giáo viên",
+    "home": {
+      "title": "Lớp của tôi",
+      "subtitle": "Chọn lớp để xem học sinh và ghi nhận bài học mới.",
+      "noSchedule": "Chưa có lịch học.",
+      "empty": "Bạn chưa được phân công lớp nào. Liên hệ quản trị viên để được phân lớp."
+    },
+    "class": {
+      "back": "← Lớp của tôi",
+      "newLesson": "Ghi nhận bài học mới",
+      "studentsHeader": "Học sinh ({count})",
+      "noStudents": "Lớp chưa có học sinh.",
+      "recentLessonsHeader": "Bài học gần đây",
+      "vocabulary": "Từ vựng",
+      "grammar": "Ngữ pháp",
+      "noLessons": "Chưa có bài học nào được ghi nhận."
+    },
+    "lessonForm": {
+      "title": "Ghi nhận bài học mới",
+      "summary": "Lớp {className} • {count} học sinh",
+      "noStudents": "Lớp chưa có học sinh nào. Vui lòng yêu cầu quản trị viên xếp học sinh vào lớp.",
+      "generalHeader": "Thông tin chung",
+      "generalSubtitle": "Áp dụng cho cả lớp {className}.",
+      "lessonDate": "Ngày học",
+      "vocabulary": "Từ vựng",
+      "vocabularyPlaceholder": "VD: family, mother, father, sister, brother",
+      "grammar": "Ngữ pháp",
+      "grammarPlaceholder": "VD: Present perfect — Have you ever ___?",
+      "speaking": "Hoạt động luyện nói",
+      "speakingPlaceholder": "VD: Pair-work giới thiệu gia đình.",
+      "homework": "Bài tập về nhà",
+      "homeworkPlaceholder": "VD: Workbook trang 14, bài 1-3.",
+      "generalNote": "Ghi chú chung cho cả lớp",
+      "generalNotePlaceholder": "VD: Lớp tham gia tích cực, một số bạn cần luyện thêm phát âm.",
+      "perStudentHeader": "Nhận xét từng học sinh",
+      "perStudentSubtitle": "Đánh giá thái độ, ghi chú và đánh dấu bài tập về nhà cho mỗi học sinh.",
+      "behavior": "Thái độ",
+      "behaviorNone": "— Chưa đánh giá —",
+      "individualNote": "Ghi chú riêng",
+      "individualNotePlaceholder": "Nhận xét cho phụ huynh",
+      "homeworkDone": "Đã làm bài tập",
+      "submit": "Lưu bài học",
+      "submitting": "Đang lưu...",
+      "validation": "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại các trường.",
+      "noPermission": "Bạn không có quyền ghi bài học cho lớp này.",
+      "saveLessonError": "Không thể lưu bài học: {message}",
+      "saveUpdatesError": "Không thể lưu nhận xét học sinh: {message}"
+    }
+  },
+  "parent": {
+    "navTitle": "Cổng phụ huynh",
+    "home": {
+      "title": "Con của bạn",
+      "subtitle": "Chọn con để xem tiến trình học tập gần đây.",
+      "class": "Lớp:",
+      "teacher": "Giáo viên:",
+      "schedule": "Lịch học:",
+      "noClass": "Chưa được xếp lớp.",
+      "empty": "Tài khoản của bạn chưa được liên kết với học sinh nào. Vui lòng liên hệ trung tâm."
+    },
+    "student": {
+      "back": "← Tất cả các con",
+      "classLine": "Lớp {className}",
+      "classWithTeacher": "Lớp {className} • Giáo viên {teacher}",
+      "noClass": "Chưa được xếp lớp.",
+      "vocabulary": "Từ vựng",
+      "grammar": "Ngữ pháp",
+      "speaking": "Luyện nói / nghe",
+      "homework": "Bài tập về nhà",
+      "generalNote": "Ghi chú lớp",
+      "perStudentHeader": "Nhận xét cho con bạn",
+      "homeworkDone": "Đã làm bài tập",
+      "homeworkNotDone": "Chưa làm bài tập",
+      "noLessons": "Chưa có bài học nào được ghi nhận cho con bạn."
+    }
+  },
+  "behavior": {
+    "great": "Xuất sắc",
+    "good": "Tốt",
+    "okay": "Khá",
+    "needs_attention": "Cần lưu ý"
+  }
+}

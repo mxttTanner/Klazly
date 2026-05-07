@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { updateClassTeacher } from "./actions";
 
 export function ChangeTeacherForm({
@@ -12,6 +13,7 @@ export function ChangeTeacherForm({
   currentTeacherId: string | null;
   teachers: { id: string; full_name: string }[];
 }) {
+  const t = useTranslations("admin.classes");
   const [pending, startTransition] = useTransition();
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -28,10 +30,10 @@ export function ChangeTeacherForm({
       disabled={pending}
       className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
     >
-      <option value="none">Chưa phân công</option>
-      {teachers.map((t) => (
-        <option key={t.id} value={t.id}>
-          {t.full_name}
+      <option value="none">{t("unassigned")}</option>
+      {teachers.map((teacher) => (
+        <option key={teacher.id} value={teacher.id}>
+          {teacher.full_name}
         </option>
       ))}
     </select>

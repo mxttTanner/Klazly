@@ -1,0 +1,189 @@
+{
+  "common": {
+    "logout": "Log out",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "actions": "Actions",
+    "name": "Full name",
+    "email": "Email",
+    "back": "Back",
+    "loading": "Loading...",
+    "noResults": "No results.",
+    "language": "Language",
+    "languageVi": "Tiếng Việt",
+    "languageEn": "English",
+    "appName": "Parent Portal"
+  },
+  "landing": {
+    "title": "Parent Portal",
+    "tagline": "A platform connecting English language centers, teachers, and parents — track your child's progress after every lesson.",
+    "login": "Log in",
+    "demo": "View demo"
+  },
+  "login": {
+    "title": "Log in",
+    "subtitle": "Parent portal for English language centers.",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Log in",
+    "submitting": "Logging in...",
+    "invalidCredentials": "Incorrect email or password."
+  },
+  "admin": {
+    "navTitle": "Admin",
+    "navTeachers": "Teachers",
+    "navParents": "Parents",
+    "navClasses": "Classes",
+    "navStudents": "Students",
+    "dashboard": {
+      "title": "Dashboard",
+      "subtitle": "Center overview.",
+      "teachers": "Teachers",
+      "parents": "Parents",
+      "classes": "Classes",
+      "students": "Students"
+    },
+    "teachers": {
+      "title": "Teachers",
+      "subtitle": "Add teacher accounts for the center. Share the initial password through Zalo or an internal channel.",
+      "fullName": "Full name",
+      "email": "Email",
+      "initialPassword": "Initial password",
+      "passwordPlaceholder": "At least 8 characters",
+      "submit": "Add teacher",
+      "submitting": "Adding...",
+      "validation": "Please enter a valid email, full name, and password of at least 8 characters.",
+      "createUserError": "Could not create account: {message}",
+      "saveProfileError": "Could not save teacher profile: {message}",
+      "addedHint": "Added teacher {name}. Please pass the password to the teacher through a private channel.",
+      "empty": "No teachers yet."
+    },
+    "parents": {
+      "title": "Parents",
+      "subtitle": "Create parent accounts to link them with students.",
+      "submit": "Add parent",
+      "submitting": "Adding...",
+      "saveProfileError": "Could not save parent profile: {message}",
+      "addedHint": "Added parent {name}. Please pass the password to the parent through a private channel.",
+      "empty": "No parents yet."
+    },
+    "classes": {
+      "title": "Classes",
+      "subtitle": "Create classes and assign a lead teacher.",
+      "className": "Class name",
+      "teacher": "Teacher",
+      "schedule": "Schedule",
+      "schedulePlaceholder": "e.g. Mon-Wed-Fri, 5:30-7:00 PM",
+      "unassigned": "Unassigned",
+      "submit": "Create class",
+      "submitting": "Creating...",
+      "validation": "Please enter a valid class name.",
+      "invalidTeacher": "Invalid teacher.",
+      "createError": "Could not create class: {message}",
+      "createdHint": "Created class {name}.",
+      "empty": "No classes yet."
+    },
+    "students": {
+      "title": "Students",
+      "subtitle": "Add students, assign classes, and link parent accounts.",
+      "fullName": "Student full name",
+      "age": "Age",
+      "class": "Class",
+      "parent": "Parent",
+      "unassignedClass": "No class",
+      "unassignedParent": "No parent",
+      "submit": "Add student",
+      "submitting": "Adding...",
+      "validation": "Please enter a valid student name.",
+      "invalidClass": "Invalid class.",
+      "invalidParent": "Invalid parent.",
+      "createError": "Could not create student: {message}",
+      "createdHint": "Added student {name}.",
+      "empty": "No students yet."
+    }
+  },
+  "teacher": {
+    "navTitle": "Teacher portal",
+    "home": {
+      "title": "My classes",
+      "subtitle": "Pick a class to see students and record a new lesson.",
+      "noSchedule": "No schedule yet.",
+      "empty": "You have not been assigned to any class yet. Contact the admin."
+    },
+    "class": {
+      "back": "← My classes",
+      "newLesson": "Record new lesson",
+      "studentsHeader": "Students ({count})",
+      "noStudents": "This class has no students.",
+      "recentLessonsHeader": "Recent lessons",
+      "vocabulary": "Vocabulary",
+      "grammar": "Grammar",
+      "noLessons": "No lessons recorded yet."
+    },
+    "lessonForm": {
+      "title": "Record new lesson",
+      "summary": "Class {className} • {count} students",
+      "noStudents": "This class has no students yet. Please ask the admin to enroll students.",
+      "generalHeader": "Class-wide info",
+      "generalSubtitle": "Applies to the whole {className} class.",
+      "lessonDate": "Lesson date",
+      "vocabulary": "Vocabulary",
+      "vocabularyPlaceholder": "e.g. family, mother, father, sister, brother",
+      "grammar": "Grammar",
+      "grammarPlaceholder": "e.g. Present perfect — Have you ever ___?",
+      "speaking": "Speaking activity",
+      "speakingPlaceholder": "e.g. Pair-work introducing your family.",
+      "homework": "Homework",
+      "homeworkPlaceholder": "e.g. Workbook page 14, exercises 1-3.",
+      "generalNote": "Note for the whole class",
+      "generalNotePlaceholder": "e.g. Class participated well; some students need pronunciation practice.",
+      "perStudentHeader": "Per-student notes",
+      "perStudentSubtitle": "Rate behavior, leave a note, and tick homework completion for each student.",
+      "behavior": "Behavior",
+      "behaviorNone": "— Not rated —",
+      "individualNote": "Individual note",
+      "individualNotePlaceholder": "Note for the parent",
+      "homeworkDone": "Homework done",
+      "submit": "Save lesson",
+      "submitting": "Saving...",
+      "validation": "Invalid data. Please check the fields.",
+      "noPermission": "You don't have permission to record lessons for this class.",
+      "saveLessonError": "Could not save lesson: {message}",
+      "saveUpdatesError": "Could not save student notes: {message}"
+    }
+  },
+  "parent": {
+    "navTitle": "Parent portal",
+    "home": {
+      "title": "Your children",
+      "subtitle": "Pick a child to see their recent progress.",
+      "class": "Class:",
+      "teacher": "Teacher:",
+      "schedule": "Schedule:",
+      "noClass": "Not enrolled in a class.",
+      "empty": "Your account is not linked to any student yet. Please contact the center."
+    },
+    "student": {
+      "back": "← All children",
+      "classLine": "Class {className}",
+      "classWithTeacher": "Class {className} • Teacher {teacher}",
+      "noClass": "Not enrolled in a class.",
+      "vocabulary": "Vocabulary",
+      "grammar": "Grammar",
+      "speaking": "Speaking / listening",
+      "homework": "Homework",
+      "generalNote": "Class note",
+      "perStudentHeader": "Notes for your child",
+      "homeworkDone": "Homework done",
+      "homeworkNotDone": "Homework not done",
+      "noLessons": "No lessons have been recorded for your child yet."
+    }
+  },
+  "behavior": {
+    "great": "Excellent",
+    "good": "Good",
+    "okay": "Fair",
+    "needs_attention": "Needs attention"
+  }
+}

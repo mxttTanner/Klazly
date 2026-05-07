@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import {
   Table,
@@ -15,6 +16,9 @@ export const dynamic = "force-dynamic";
 
 export default async function TeachersPage() {
   const supabase = createClient();
+  const t = await getTranslations("admin.teachers");
+  const tc = await getTranslations("common");
+
   const { data: teachers } = await supabase
     .from("users")
     .select("id, full_name, email, created_at")
@@ -24,11 +28,8 @@ export default async function TeachersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Giáo viên</h1>
-        <p className="text-muted-foreground text-sm">
-          Thêm tài khoản giáo viên cho trung tâm. Chia sẻ mật khẩu khởi tạo qua
-          Zalo hoặc kênh nội bộ.
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
       <TeacherForm />
@@ -37,22 +38,24 @@ export default async function TeachersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Họ và tên</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead className="w-32 text-right">Hành động</TableHead>
+              <TableHead>{t("fullName")}</TableHead>
+              <TableHead>{t("email")}</TableHead>
+              <TableHead className="w-32 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {teachers && teachers.length > 0 ? (
-              teachers.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.full_name}</TableCell>
+              teachers.map((teacher) => (
+                <TableRow key={teacher.id}>
+                  <TableCell className="font-medium">
+                    {teacher.full_name}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {t.email}
+                    {teacher.email}
                   </TableCell>
                   <TableCell className="text-right">
                     <form action={removeTeacher}>
-                      <input type="hidden" name="id" value={t.id} />
+                      <input type="hidden" name="id" value={teacher.id} />
                       <button
                         type="submit"
                         className={buttonVariants({
@@ -60,7 +63,7 @@ export default async function TeachersPage() {
                           size: "sm",
                         })}
                       >
-                        Xoá
+                        {tc("delete")}
                       </button>
                     </form>
                   </TableCell>
@@ -72,7 +75,7 @@ export default async function TeachersPage() {
                   colSpan={3}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
-                  Chưa có giáo viên nào.
+                  {t("empty")}
                 </TableCell>
               </TableRow>
             )}
