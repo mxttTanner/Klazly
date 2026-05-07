@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
+import { PrintButton } from "@/components/print-button";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +44,20 @@ export default async function StudentProgressPage({
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
-  const { data: student } = await supabase
-    .from("students")
-    .select(
-      "id, full_name, age, parent_user_id, class:classes(id, name, teacher:users!classes_teacher_id_fkey(full_name))",
-    )
-    .eq("id", params.id)
-    .single();
+  const [{ data: student }, { data: center }] = await Promise.all([
+    supabase
+      .from("students")
+      .select(
+        "id, full_name, age, parent_user_id, class:classes(id, name, teacher:users!classes_teacher_id_fkey(full_name))",
+      )
+      .eq("id", params.id)
+      .single(),
+    supabase
+      .from("centers")
+      .select("name")
+      .eq("id", user.center_id)
+      .single(),
+  ]);
 
   if (!student || student.parent_user_id !== user.id) notFound();
 
@@ -87,29 +95,51 @@ export default async function StudentProgressPage({
     updateByLesson.set(u.lesson_id, u);
   }
 
+  const printedOn = new Date().toLocaleDateString(dateLocale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  const classLineText = cls
+    ? teacher
+      ? t("classWithTeacher", {
+          className: cls.name,
+          teacher: teacher.full_name,
+        })
+      : t("classLine", { className: cls.name })
+    : t("noClass");
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex items-start justify-between gap-3 print:hidden">
         <Link
           href="/parent"
           className="text-muted-foreground hover:text-foreground text-sm"
         >
           {t("back")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+        <PrintButton label={t("print")} />
+      </div>
+
+      <header className="space-y-1 print:break-inside-avoid">
+        <p className="text-muted-foreground text-xs uppercase tracking-wide print:hidden">
+          {center?.name}
+        </p>
+        <p className="hidden text-sm font-medium print:block">
+          {center?.name}
+        </p>
+        <p className="hidden text-xs uppercase tracking-wide print:block">
+          {t("printHeading")}
+        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">
           {student.full_name}
         </h1>
-        <p className="text-muted-foreground text-sm">
-          {cls
-            ? teacher
-              ? t("classWithTeacher", {
-                  className: cls.name,
-                  teacher: teacher.full_name,
-                })
-              : t("classLine", { className: cls.name })
-            : t("noClass")}
+        <p className="text-muted-foreground text-sm">{classLineText}</p>
+        <p className="hidden text-xs print:block">
+          {t("printedOn", { date: printedOn })}
         </p>
-      </div>
+      </header>
 
       {lessons.length > 0 ? (
         <ul className="space-y-4">
@@ -119,7 +149,10 @@ export default async function StudentProgressPage({
             const ratingTone = rating ? BEHAVIOR_TONES[rating] : null;
             const ratingLabel = rating ? tBehavior(rating) : null;
             return (
-              <li key={l.id} className="bg-card rounded-lg border p-4 sm:p-5">
+              <li
+                key={l.id}
+                className="bg-card rounded-lg border p-4 print:break-inside-avoid print:bg-transparent print:border-black print:p-3 sm:p-5"
+              >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h2 className="font-semibold">
                     {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
@@ -131,7 +164,7 @@ export default async function StudentProgressPage({
                   </h2>
                   {ratingLabel && ratingTone ? (
                     <span
-                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ratingTone}`}
+                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ratingTone} print:bg-transparent print:border print:border-black`}
                     >
                       {ratingLabel}
                     </span>
@@ -157,13 +190,14 @@ export default async function StudentProgressPage({
                 </dl>
 
                 {u ? (
-                  <div className="bg-muted/40 mt-4 rounded-md p-3 text-sm">
+                  <div className="bg-muted/40 mt-4 rounded-md p-3 text-sm print:bg-transparent print:border print:border-dashed print:border-black">
                     <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
                       {t("perStudentHeader")}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge
                         variant={u.homework_completed ? "default" : "outline"}
+                        className="print:bg-transparent print:text-foreground print:border print:border-black"
                       >
                         {u.homework_completed
                           ? t("homeworkDone")

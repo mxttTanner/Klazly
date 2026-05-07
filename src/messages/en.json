@@ -177,7 +177,10 @@
       "perStudentHeader": "Notes for your child",
       "homeworkDone": "Homework done",
       "homeworkNotDone": "Homework not done",
-      "noLessons": "No lessons have been recorded for your child yet."
+      "noLessons": "No lessons have been recorded for your child yet.",
+      "print": "Print report",
+      "printHeading": "Progress report",
+      "printedOn": "Printed on {date}"
     }
   },
   "behavior": {

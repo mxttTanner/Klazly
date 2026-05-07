@@ -123,3 +123,48 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  @page {
+    size: A4;
+    margin: 1.2cm;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  /* Anything explicitly marked with print:hidden disappears. */
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  /* Page wrappers shouldn't fight the printer's own margins. */
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  .print\:max-w-full {
+    max-width: 100% !important;
+  }
+  /* Cards & badges look harsh with bg colors on paper. */
+  .print\:border-black {
+    border-color: #000 !important;
+  }
+  .print\:bg-transparent {
+    background-color: transparent !important;
+  }
+  .print\:break-inside-avoid {
+    break-inside: avoid;
+  }
+  a[href]::after {
+    content: "" !important;
+  }
+}
+
+.print-only {
+  display: none;
+}

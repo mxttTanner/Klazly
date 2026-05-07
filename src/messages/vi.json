@@ -177,7 +177,10 @@
       "perStudentHeader": "Nhận xét cho con bạn",
       "homeworkDone": "Đã làm bài tập",
       "homeworkNotDone": "Chưa làm bài tập",
-      "noLessons": "Chưa có bài học nào được ghi nhận cho con bạn."
+      "noLessons": "Chưa có bài học nào được ghi nhận cho con bạn.",
+      "print": "In báo cáo",
+      "printHeading": "Báo cáo tiến trình học tập",
+      "printedOn": "In ngày {date}"
     }
   },
   "behavior": {
