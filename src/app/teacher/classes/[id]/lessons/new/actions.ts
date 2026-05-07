@@ -1,0 +1,122 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { requireRole } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+
+const studentUpdateSchema = z.object({
+  student_id: z.string().uuid(),
+  behavior_rating: z
+    .enum(["great", "good", "okay", "needs_attention"])
+    .optional()
+    .nullable(),
+  individual_note: z.string().max(500).optional().nullable(),
+  homework_completed: z.boolean(),
+});
+
+const lessonSchema = z.object({
+  class_id: z.string().uuid(),
+  lesson_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  vocabulary: z.string().max(1000).optional().nullable(),
+  grammar_point: z.string().max(1000).optional().nullable(),
+  speaking_activity: z.string().max(1000).optional().nullable(),
+  homework: z.string().max(1000).optional().nullable(),
+  general_note: z.string().max(2000).optional().nullable(),
+  updates: z.array(studentUpdateSchema).min(1),
+});
+
+function nullable(v: FormDataEntryValue | null): string | null {
+  const s = String(v ?? "").trim();
+  return s.length > 0 ? s : null;
+}
+
+export async function createLesson(_prev: unknown, formData: FormData) {
+  const teacher = await requireRole("teacher");
+
+  const class_id = String(formData.get("class_id") ?? "");
+  const studentIds = formData.getAll("student_id").map(String);
+
+  const updates = studentIds.map((sid) => {
+    const ratingRaw = String(formData.get(`behavior_${sid}`) ?? "");
+    const noteRaw = formData.get(`note_${sid}`);
+    const hwDone = formData.get(`homework_${sid}`) === "on";
+    return {
+      student_id: sid,
+      behavior_rating:
+        ratingRaw && ratingRaw !== "none"
+          ? (ratingRaw as "great" | "good" | "okay" | "needs_attention")
+          : null,
+      individual_note: nullable(noteRaw),
+      homework_completed: hwDone,
+    };
+  });
+
+  const parsed = lessonSchema.safeParse({
+    class_id,
+    lesson_date: formData.get("lesson_date"),
+    vocabulary: nullable(formData.get("vocabulary")),
+    grammar_point: nullable(formData.get("grammar_point")),
+    speaking_activity: nullable(formData.get("speaking_activity")),
+    homework: nullable(formData.get("homework")),
+    general_note: nullable(formData.get("general_note")),
+    updates,
+  });
+
+  if (!parsed.success) {
+    return {
+      error: "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại các trường.",
+    };
+  }
+
+  const supabase = createClient();
+
+  // RLS will block this if the class doesn't belong to the teacher,
+  // but we double-check up front to give a clear error message.
+  const { data: cls } = await supabase
+    .from("classes")
+    .select("id, teacher_id, center_id")
+    .eq("id", parsed.data.class_id)
+    .single();
+  if (!cls || cls.teacher_id !== teacher.id) {
+    return { error: "Bạn không có quyền ghi bài học cho lớp này." };
+  }
+
+  const { data: lesson, error: lErr } = await supabase
+    .from("lessons")
+    .insert({
+      class_id: parsed.data.class_id,
+      teacher_id: teacher.id,
+      lesson_date: parsed.data.lesson_date,
+      vocabulary: parsed.data.vocabulary,
+      grammar_point: parsed.data.grammar_point,
+      speaking_activity: parsed.data.speaking_activity,
+      homework: parsed.data.homework,
+      general_note: parsed.data.general_note,
+    })
+    .select()
+    .single();
+  if (lErr || !lesson) {
+    return { error: `Không thể lưu bài học: ${lErr?.message ?? "lỗi không rõ"}` };
+  }
+
+  const updateRows = parsed.data.updates.map((u) => ({
+    lesson_id: lesson.id,
+    student_id: u.student_id,
+    behavior_rating: u.behavior_rating,
+    individual_note: u.individual_note,
+    homework_completed: u.homework_completed,
+  }));
+
+  const { error: uErr } = await supabase
+    .from("student_lesson_updates")
+    .insert(updateRows);
+  if (uErr) {
+    await supabase.from("lessons").delete().eq("id", lesson.id);
+    return { error: `Không thể lưu nhận xét học sinh: ${uErr.message}` };
+  }
+
+  revalidatePath(`/teacher/classes/${parsed.data.class_id}`);
+  redirect(`/teacher/classes/${parsed.data.class_id}`);
+}
