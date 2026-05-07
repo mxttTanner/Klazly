@@ -42,7 +42,20 @@
       "teachers": "Giáo viên",
       "parents": "Phụ huynh",
       "classes": "Lớp học",
-      "students": "Học sinh"
+      "students": "Học sinh",
+      "weekHeader": "7 ngày gần nhất",
+      "lessonsLogged": "Bài học đã ghi",
+      "homeworkCompletion": "Tỷ lệ làm bài tập",
+      "behaviorBreakdown": "Phân bố thái độ",
+      "noWeekData": "Chưa có dữ liệu tuần này.",
+      "teacherActivityHeader": "Hoạt động giáo viên",
+      "teacherClassesCol": "Số lớp",
+      "teacherLessonsWeek": "Tuần này",
+      "teacherLessonsTotal": "Tổng bài học",
+      "recentLessonsHeader": "Bài học gần đây",
+      "lessonClassCol": "Lớp",
+      "lessonTeacherCol": "Giáo viên",
+      "lessonDateCol": "Ngày"
     },
     "teachers": {
       "title": "Giáo viên",

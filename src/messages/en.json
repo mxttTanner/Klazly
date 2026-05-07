@@ -42,7 +42,20 @@
       "teachers": "Teachers",
       "parents": "Parents",
       "classes": "Classes",
-      "students": "Students"
+      "students": "Students",
+      "weekHeader": "Last 7 days",
+      "lessonsLogged": "Lessons logged",
+      "homeworkCompletion": "Homework completion",
+      "behaviorBreakdown": "Behavior breakdown",
+      "noWeekData": "No data for this week yet.",
+      "teacherActivityHeader": "Teacher activity",
+      "teacherClassesCol": "Classes",
+      "teacherLessonsWeek": "This week",
+      "teacherLessonsTotal": "Total lessons",
+      "recentLessonsHeader": "Recent lessons",
+      "lessonClassCol": "Class",
+      "lessonTeacherCol": "Teacher",
+      "lessonDateCol": "Date"
     },
     "teachers": {
       "title": "Teachers",
