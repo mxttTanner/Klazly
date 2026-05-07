@@ -30,16 +30,16 @@ Web-based SaaS for English language centers in Vietnam. Centers pay to use it. T
 
 ## Build status
 - [x] Project setup (Next.js, Tailwind, shadcn/ui, Supabase)
-- [ ] Database schema and RLS policies
-- [ ] Authentication with 3 roles
-- [ ] Seed script with fake data
-- [ ] Center admin: manage teachers, classes, students
-- [ ] Teacher: lesson update form
-- [ ] Parent: view child's progress
-- [ ] Vietnamese and English translations
-- [ ] Print-friendly parent report
-- [ ] Analytics on admin dashboard
-- [ ] Demo mode for sales
+- [x] Database schema and RLS policies
+- [x] Authentication with 3 roles
+- [x] Seed script with fake data
+- [x] Center admin: manage teachers, classes, students
+- [x] Teacher: lesson update form
+- [x] Parent: view child's progress
+- [x] Vietnamese and English translations
+- [x] Print-friendly parent report
+- [x] Analytics on admin dashboard
+- [x] Demo mode for sales
 
 ## Known issues
 (none yet)

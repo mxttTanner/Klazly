@@ -201,5 +201,11 @@
     "good": "Tốt",
     "okay": "Khá",
     "needs_attention": "Cần lưu ý"
+  },
+  "demo": {
+    "loading": "Đang chuẩn bị bản demo...",
+    "loadError": "Không thể tải bản demo. Vui lòng thử lại sau.",
+    "banner": "BẢN DEMO • Đây là môi trường trình bày sản phẩm. Dữ liệu có thể được khôi phục bất kỳ lúc nào.",
+    "exit": "Thoát demo"
   }
 }

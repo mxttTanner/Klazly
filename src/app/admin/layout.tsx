@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
+import { DemoBanner } from "@/components/demo-banner";
 
 export default async function AdminLayout({
   children,
@@ -21,6 +22,7 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-dvh">
+      <DemoBanner email={user.email} />
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-6">

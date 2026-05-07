@@ -201,5 +201,11 @@
     "good": "Good",
     "okay": "Fair",
     "needs_attention": "Needs attention"
+  },
+  "demo": {
+    "loading": "Preparing demo...",
+    "loadError": "Could not load the demo. Please try again later.",
+    "banner": "DEMO • This is a sales demonstration. Data may be reset at any time.",
+    "exit": "Exit demo"
   }
 }
