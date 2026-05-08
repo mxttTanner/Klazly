@@ -1,6 +1,8 @@
 import { getLocale, getTranslations } from "next-intl/server";
+import { Building2, GraduationCap, Plus, Sparkles, Trash2, Users } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -15,6 +17,13 @@ import { buttonVariants } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
+const STATUS_TONES: Record<string, string> = {
+  trial: "bg-amber-100 text-amber-800",
+  active: "bg-emerald-100 text-emerald-800",
+  past_due: "bg-rose-100 text-rose-800",
+  canceled: "bg-slate-100 text-slate-700",
+};
+
 export default async function SuperAdminHomePage() {
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
@@ -23,87 +32,178 @@ export default async function SuperAdminHomePage() {
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
   const supabase = createAdminClient();
-  const { data: centers } = await supabase
-    .from("centers")
-    .select(
-      "id, name, contact_email, contact_phone, subscription_status, created_at",
-    )
-    .order("created_at", { ascending: false });
+
+  const [
+    { data: centers },
+    { count: activeCount },
+    { count: studentCount },
+    { count: lessonCount },
+  ] = await Promise.all([
+    supabase
+      .from("centers")
+      .select(
+        "id, name, contact_email, contact_phone, subscription_status, created_at",
+      )
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("centers")
+      .select("id", { count: "exact", head: true })
+      .eq("subscription_status", "active"),
+    supabase.from("students").select("id", { count: "exact", head: true }),
+    supabase.from("lessons").select("id", { count: "exact", head: true }),
+  ]);
+
+  const stats = [
+    {
+      label: t("statsCenters"),
+      value: centers?.length ?? 0,
+      icon: Building2,
+      tone: "text-sky-600",
+    },
+    {
+      label: t("statsActive"),
+      value: activeCount ?? 0,
+      icon: Sparkles,
+      tone: "text-emerald-600",
+    },
+    {
+      label: t("statsStudents"),
+      value: studentCount ?? 0,
+      icon: GraduationCap,
+      tone: "text-violet-600",
+    },
+    {
+      label: t("statsLessons"),
+      value: lessonCount ?? 0,
+      icon: Users,
+      tone: "text-amber-600",
+    },
+  ];
+
+  const statusKey = (s: string) =>
+    ({
+      trial: t("statusTrial"),
+      active: t("statusActive"),
+      past_due: t("statusPastDue"),
+      canceled: t("statusCanceled"),
+    })[s] ?? s;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">{t("createHeader")}</h2>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((s) => {
+          const Icon = s.icon;
+          return (
+            <Card key={s.label}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-muted-foreground text-sm font-medium">
+                  {s.label}
+                </CardTitle>
+                <Icon className={`size-4 ${s.tone}`} />
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-semibold">{s.value}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Plus className="text-primary size-5" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("createHeader")}
+          </h2>
+        </div>
+        <p className="text-muted-foreground text-sm">{t("createSubtitle")}</p>
         <CenterForm />
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">
-          {t("listHeader", { count: centers?.length ?? 0 })}
-        </h2>
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("centerName")}</TableHead>
-                <TableHead>{t("adminEmail")}</TableHead>
-                <TableHead className="w-32">{t("status")}</TableHead>
-                <TableHead className="w-32">{t("created")}</TableHead>
-                <TableHead className="w-24 text-right">{tc("actions")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {centers && centers.length > 0 ? (
-                centers.map((c) => (
-                  <TableRow key={c.id}>
-                    <TableCell className="font-medium">{c.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {c.contact_email ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {c.subscription_status}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString(dateLocale, {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <form action={deleteCenterCascade}>
-                        <input type="hidden" name="id" value={c.id} />
-                        <button
-                          type="submit"
-                          className={buttonVariants({
-                            variant: "destructive",
-                            size: "sm",
-                          })}
-                        >
-                          {tc("delete")}
-                        </button>
-                      </form>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-muted-foreground py-6 text-center text-sm"
-                  >
-                    {t("empty")}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Building2 className="text-primary size-5" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("listHeader", { count: centers?.length ?? 0 })}
+          </h2>
         </div>
+
+        {centers && centers.length > 0 ? (
+          <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("centerName")}</TableHead>
+                  <TableHead>{t("adminEmail")}</TableHead>
+                  <TableHead className="w-32">{t("status")}</TableHead>
+                  <TableHead className="w-32">{t("created")}</TableHead>
+                  <TableHead className="w-24 text-right">
+                    {tc("actions")}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {centers.map((c) => {
+                  const tone =
+                    STATUS_TONES[c.subscription_status] ??
+                    "bg-slate-100 text-slate-700";
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2 font-medium">
+                          <Building2 className="text-muted-foreground size-4" />
+                          {c.name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {c.contact_email ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}
+                        >
+                          {statusKey(c.subscription_status)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(c.created_at).toLocaleDateString(dateLocale, {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <form action={deleteCenterCascade}>
+                          <input type="hidden" name="id" value={c.id} />
+                          <button
+                            type="submit"
+                            className={buttonVariants({
+                              variant: "destructive",
+                              size: "sm",
+                            })}
+                            aria-label={tc("delete")}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </form>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
+            <Building2 className="size-8 opacity-50" />
+            <p>{t("empty")}</p>
+          </div>
+        )}
       </section>
     </div>
   );
