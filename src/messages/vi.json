@@ -207,5 +207,29 @@
     "loadError": "Không thể tải bản demo. Vui lòng thử lại sau.",
     "banner": "BẢN DEMO • Đây là môi trường trình bày sản phẩm. Dữ liệu có thể được khôi phục bất kỳ lúc nào.",
     "exit": "Thoát demo"
+  },
+  "superAdmin": {
+    "navTitle": "Bảng quản trị nền tảng",
+    "ownerStrip": "Đăng nhập với tư cách chủ nền tảng • {email}",
+    "title": "Quản trị nền tảng",
+    "subtitle": "Tạo trung tâm mới và tài khoản quản trị đầu tiên cho từng trung tâm khách hàng.",
+    "createHeader": "Thêm trung tâm mới",
+    "listHeader": "Trung tâm hiện có ({count})",
+    "centerName": "Tên trung tâm",
+    "contactPhone": "Số điện thoại",
+    "adminName": "Họ và tên quản trị",
+    "adminEmail": "Email quản trị",
+    "adminPassword": "Mật khẩu khởi tạo",
+    "adminPasswordPlaceholder": "Tối thiểu 8 ký tự",
+    "submit": "Tạo trung tâm",
+    "submitting": "Đang tạo...",
+    "status": "Trạng thái",
+    "created": "Ngày tạo",
+    "validation": "Vui lòng kiểm tra lại các trường nhập.",
+    "createCenterError": "Không thể tạo trung tâm: {message}",
+    "createUserError": "Không thể tạo tài khoản quản trị: {message}",
+    "createProfileError": "Không thể lưu hồ sơ quản trị: {message}",
+    "createdHint": "Đã tạo trung tâm {center}. Quản trị có thể đăng nhập bằng {email}.",
+    "empty": "Chưa có trung tâm nào."
   }
 }

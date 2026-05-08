@@ -207,5 +207,29 @@
     "loadError": "Could not load the demo. Please try again later.",
     "banner": "DEMO • This is a sales demonstration. Data may be reset at any time.",
     "exit": "Exit demo"
+  },
+  "superAdmin": {
+    "navTitle": "Platform admin",
+    "ownerStrip": "Signed in as platform owner • {email}",
+    "title": "Platform admin",
+    "subtitle": "Create new center accounts and their first admin user.",
+    "createHeader": "Add a new center",
+    "listHeader": "Existing centers ({count})",
+    "centerName": "Center name",
+    "contactPhone": "Phone number",
+    "adminName": "Admin full name",
+    "adminEmail": "Admin email",
+    "adminPassword": "Initial password",
+    "adminPasswordPlaceholder": "At least 8 characters",
+    "submit": "Create center",
+    "submitting": "Creating...",
+    "status": "Status",
+    "created": "Created",
+    "validation": "Please double-check the fields.",
+    "createCenterError": "Could not create center: {message}",
+    "createUserError": "Could not create admin account: {message}",
+    "createProfileError": "Could not save admin profile: {message}",
+    "createdHint": "Created center {center}. The admin can log in with {email}.",
+    "empty": "No centers yet."
   }
 }
