@@ -55,7 +55,7 @@ export default async function ClassDetailPage({
       .order("full_name", { ascending: true }),
     supabase
       .from("lessons")
-      .select("id, lesson_date, vocabulary, grammar_point, general_note")
+      .select("id, lesson_date, title, vocabulary, grammar_point, general_note")
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
       .limit(10),
@@ -144,14 +144,27 @@ export default async function ClassDetailPage({
                 className="rounded-lg border bg-card p-4 text-sm shadow-sm"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="font-medium">
-                    {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </p>
+                  <div>
+                    <p className="font-medium">
+                      {l.title ??
+                        new Date(l.lesson_date).toLocaleDateString(dateLocale, {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                    </p>
+                    {l.title ? (
+                      <p className="text-muted-foreground text-xs">
+                        {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                        })}
+                      </p>
+                    ) : null}
+                  </div>
                   <div className="flex gap-1">
                     <Link
                       href={`/teacher/classes/${cls.id}/lessons/${l.id}/edit`}

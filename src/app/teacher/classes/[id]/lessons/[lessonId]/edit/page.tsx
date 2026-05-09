@@ -30,7 +30,7 @@ export default async function EditLessonPage({
   const { data: lesson } = await supabase
     .from("lessons")
     .select(
-      "id, lesson_date, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet_id, class_id",
+      "id, lesson_date, title, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet_id, class_id",
     )
     .eq("id", params.lessonId)
     .single();
@@ -64,6 +64,7 @@ export default async function EditLessonPage({
 
   const defaults: LessonDefaults = {
     lesson_date: lesson.lesson_date,
+    title: lesson.title ?? null,
     vocabulary: lesson.vocabulary,
     grammar_point: lesson.grammar_point,
     speaking_activity: lesson.speaking_activity,

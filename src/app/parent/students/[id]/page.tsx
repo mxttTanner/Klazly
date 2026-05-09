@@ -3,14 +3,10 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   ArrowLeft,
-  BookOpen,
   ClipboardList,
   FileText,
   GraduationCap,
   MessageSquareText,
-  Mic2,
-  PencilLine,
-  ScrollText,
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -29,11 +25,7 @@ const BEHAVIOR_TONES: Record<string, string> = {
 type LessonRow = {
   id: string;
   lesson_date: string;
-  vocabulary: string | null;
-  grammar_point: string | null;
-  speaking_activity: string | null;
-  homework: string | null;
-  general_note: string | null;
+  title: string | null;
   worksheet:
     | { id: string; name: string; public_url: string }
     | { id: string; name: string; public_url: string }[]
@@ -88,7 +80,7 @@ export default async function StudentProgressPage({
     ? await supabase
         .from("lessons")
         .select(
-          "id, lesson_date, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet:worksheets(id, name, public_url)",
+          "id, lesson_date, title, worksheet:worksheets(id, name, public_url)",
         )
         .eq("class_id", cls.id)
         .order("lesson_date", { ascending: false })
@@ -125,18 +117,6 @@ export default async function StudentProgressPage({
         })
       : t("classLine", { className: cls.name })
     : t("noClass");
-
-  const sections = [
-    { key: "vocabulary" as const, icon: BookOpen, value: null as string | null },
-    { key: "grammar" as const, icon: PencilLine, value: null as string | null },
-    { key: "speaking" as const, icon: Mic2, value: null as string | null },
-    { key: "homework" as const, icon: ScrollText, value: null as string | null },
-    {
-      key: "generalNote" as const,
-      icon: MessageSquareText,
-      value: null as string | null,
-    },
-  ];
 
   return (
     <div className="space-y-6">
@@ -184,33 +164,40 @@ export default async function StudentProgressPage({
       </header>
 
       {lessons.length > 0 ? (
-        <ul className="space-y-4">
+        <ul className="space-y-3">
           {lessons.map((l) => {
             const u = updateByLesson.get(l.id);
             const rating = u?.behavior_rating;
             const ratingTone = rating ? BEHAVIOR_TONES[rating] : null;
             const ratingLabel = rating ? tBehavior(rating) : null;
-            const fields = [
-              { ...sections[0], value: l.vocabulary },
-              { ...sections[1], value: l.grammar_point },
-              { ...sections[2], value: l.speaking_activity },
-              { ...sections[3], value: l.homework },
-              { ...sections[4], value: l.general_note },
-            ].filter((f) => f.value);
+            const ws = Array.isArray(l.worksheet)
+              ? l.worksheet[0]
+              : l.worksheet;
+            const dateText = new Date(l.lesson_date).toLocaleDateString(
+              dateLocale,
+              {
+                weekday: "short",
+                day: "2-digit",
+                month: "2-digit",
+              },
+            );
             return (
               <li
                 key={l.id}
-                className="rounded-lg border bg-card p-4 shadow-sm print:break-inside-avoid print:bg-transparent print:border-black print:p-3 sm:p-5"
+                className="rounded-lg border bg-card p-4 shadow-sm print:break-inside-avoid print:bg-transparent print:border-black print:p-3"
               >
+                {/* Header line: title (or fallback to date) + behavior badge */}
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="font-semibold">
-                    {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })}
-                  </h2>
+                  <div>
+                    <h2 className="text-base font-semibold">
+                      {l.title ?? dateText}
+                    </h2>
+                    {l.title ? (
+                      <p className="text-muted-foreground text-xs">
+                        {dateText}
+                      </p>
+                    ) : null}
+                  </div>
                   {ratingLabel && ratingTone ? (
                     <span
                       className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ratingTone} print:bg-transparent print:border print:border-black`}
@@ -220,55 +207,16 @@ export default async function StudentProgressPage({
                   ) : null}
                 </div>
 
-                {fields.length > 0 ? (
-                  <dl className="mt-3 space-y-2.5 text-sm">
-                    {fields.map((f) => {
-                      const Icon = f.icon;
-                      return (
-                        <div
-                          key={f.key}
-                          className="grid grid-cols-[7rem_1fr] items-start gap-2 sm:grid-cols-[9rem_1fr]"
-                        >
-                          <dt className="text-muted-foreground inline-flex items-center gap-1.5">
-                            <Icon className="size-3.5" />
-                            {t(f.key)}
-                          </dt>
-                          <dd>{f.value}</dd>
-                        </div>
-                      );
-                    })}
-                  </dl>
-                ) : null}
-
-                {(() => {
-                  const ws = Array.isArray(l.worksheet)
-                    ? l.worksheet[0]
-                    : l.worksheet;
-                  return ws ? (
-                    <div className="mt-3 print:hidden">
-                      <a
-                        href={ws.public_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm font-medium hover:bg-muted/40"
-                      >
-                        <FileText className="size-4" />
-                        {tWorksheets("viewAttachment")}
-                        <span className="text-muted-foreground text-xs font-normal">
-                          ({ws.name})
-                        </span>
-                      </a>
-                    </div>
-                  ) : null;
-                })()}
-
+                {/* Per-child feedback (the only "reading" content for parents) */}
                 {u ? (
-                  <div className="bg-muted/40 mt-4 rounded-md p-3 text-sm print:bg-transparent print:border print:border-dashed print:border-black">
-                    <p className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
-                      <MessageSquareText className="size-3.5" />
-                      {t("perStudentHeader")}
-                    </p>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <div className="mt-3 space-y-2 text-sm">
+                    {u.individual_note ? (
+                      <p className="flex gap-2">
+                        <MessageSquareText className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
+                        <span>{u.individual_note}</span>
+                      </p>
+                    ) : null}
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge
                         variant={u.homework_completed ? "default" : "outline"}
                         className="print:bg-transparent print:text-foreground print:border print:border-black"
@@ -277,10 +225,18 @@ export default async function StudentProgressPage({
                           ? t("homeworkDone")
                           : t("homeworkNotDone")}
                       </Badge>
+                      {ws ? (
+                        <a
+                          href={ws.public_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 text-xs font-medium hover:bg-muted/40 print:hidden"
+                        >
+                          <FileText className="size-3.5" />
+                          {tWorksheets("viewAttachment")}
+                        </a>
+                      ) : null}
                     </div>
-                    {u.individual_note ? (
-                      <p className="mt-2">{u.individual_note}</p>
-                    ) : null}
                   </div>
                 ) : null}
               </li>

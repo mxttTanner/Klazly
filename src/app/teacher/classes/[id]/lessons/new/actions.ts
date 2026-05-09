@@ -134,6 +134,7 @@ const studentUpdateSchema = z.object({
 const lessonSchema = z.object({
   class_id: z.string().uuid(),
   lesson_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  title: z.string().max(120).optional().nullable(),
   vocabulary: z.string().max(1000).optional().nullable(),
   grammar_point: z.string().max(1000).optional().nullable(),
   speaking_activity: z.string().max(1000).optional().nullable(),
@@ -170,6 +171,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
   const parsed = lessonSchema.safeParse({
     class_id,
     lesson_date: formData.get("lesson_date"),
+    title: nullableString(formData.get("title")),
     vocabulary: nullableString(formData.get("vocabulary")),
     grammar_point: nullableString(formData.get("grammar_point")),
     speaking_activity: nullableString(formData.get("speaking_activity")),
@@ -213,6 +215,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
       class_id: parsed.data.class_id,
       teacher_id: teacher.id,
       lesson_date: parsed.data.lesson_date,
+      title: parsed.data.title,
       vocabulary: parsed.data.vocabulary,
       grammar_point: parsed.data.grammar_point,
       speaking_activity: parsed.data.speaking_activity,
@@ -258,6 +261,7 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   const parsed = lessonSchema.safeParse({
     class_id,
     lesson_date: formData.get("lesson_date"),
+    title: nullableString(formData.get("title")),
     vocabulary: nullableString(formData.get("vocabulary")),
     grammar_point: nullableString(formData.get("grammar_point")),
     speaking_activity: nullableString(formData.get("speaking_activity")),
@@ -307,6 +311,7 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     .from("lessons")
     .update({
       lesson_date: parsed.data.lesson_date,
+      title: parsed.data.title,
       vocabulary: parsed.data.vocabulary,
       grammar_point: parsed.data.grammar_point,
       speaking_activity: parsed.data.speaking_activity,

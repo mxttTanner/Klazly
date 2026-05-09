@@ -25,6 +25,7 @@ export type StudentDefault = {
 
 export type LessonDefaults = {
   lesson_date: string;
+  title: string | null;
   vocabulary: string | null;
   grammar_point: string | null;
   speaking_activity: string | null;
@@ -95,6 +96,7 @@ export function LessonForm({
 
   // Populate defaults from edit-mode existing data, otherwise template, otherwise blank.
   const lessonDateDefault = defaults?.lesson_date ?? defaultDate;
+  const titleDefault = defaults?.title ?? "";
   const vocabDefault =
     defaults?.vocabulary ?? selectedTemplate?.vocabulary ?? "";
   const grammarDefault =
@@ -158,6 +160,16 @@ export function LessonForm({
                 required
                 defaultValue={lessonDateDefault}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="title">{t("title")}</Label>
+              <Input
+                id="title"
+                name="title"
+                defaultValue={titleDefault}
+                placeholder={t("titlePlaceholder")}
+              />
+              <p className="text-muted-foreground text-xs">{t("titleHelp")}</p>
             </div>
           </div>
 
