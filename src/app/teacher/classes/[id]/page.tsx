@@ -50,12 +50,14 @@ export default async function ClassDetailPage({
   const [{ data: students }, { data: lessons }] = await Promise.all([
     supabase
       .from("students")
-      .select("id, full_name, age")
+      .select("id, full_name, age, overall_level")
       .eq("class_id", cls.id)
       .order("full_name", { ascending: true }),
     supabase
       .from("lessons")
-      .select("id, lesson_date, title, vocabulary, grammar_point, general_note")
+      .select(
+        "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note",
+      )
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
       .limit(10),
@@ -146,15 +148,21 @@ export default async function ClassDetailPage({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">
-                      {l.title ??
-                        new Date(l.lesson_date).toLocaleDateString(dateLocale, {
-                          weekday: "long",
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
+                      {l.unit && l.lesson_number
+                        ? `${l.unit} — ${l.lesson_number}`
+                        : (l.unit ??
+                          l.lesson_number ??
+                          new Date(l.lesson_date).toLocaleDateString(
+                            dateLocale,
+                            {
+                              weekday: "long",
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            },
+                          ))}
                     </p>
-                    {l.title ? (
+                    {(l.unit || l.lesson_number) ? (
                       <p className="text-muted-foreground text-xs">
                         {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
                           weekday: "long",

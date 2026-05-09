@@ -25,7 +25,8 @@ const BEHAVIOR_TONES: Record<string, string> = {
 type LessonRow = {
   id: string;
   lesson_date: string;
-  title: string | null;
+  unit: string | null;
+  lesson_number: string | null;
   worksheet:
     | { id: string; name: string; public_url: string }
     | { id: string; name: string; public_url: string }[]
@@ -80,7 +81,7 @@ export default async function StudentProgressPage({
     ? await supabase
         .from("lessons")
         .select(
-          "id, lesson_date, title, worksheet:worksheets(id, name, public_url)",
+          "id, lesson_date, unit, lesson_number, worksheet:worksheets(id, name, public_url)",
         )
         .eq("class_id", cls.id)
         .order("lesson_date", { ascending: false })
@@ -186,13 +187,15 @@ export default async function StudentProgressPage({
                 key={l.id}
                 className="rounded-lg border bg-card p-4 shadow-sm print:break-inside-avoid print:bg-transparent print:border-black print:p-3"
               >
-                {/* Header line: title (or fallback to date) + behavior badge */}
+                {/* Header line: unit/lesson identifier + behavior badge */}
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <div>
                     <h2 className="text-base font-semibold">
-                      {l.title ?? dateText}
+                      {l.unit && l.lesson_number
+                        ? `${l.unit} — ${l.lesson_number}`
+                        : (l.unit ?? l.lesson_number ?? dateText)}
                     </h2>
-                    {l.title ? (
+                    {(l.unit || l.lesson_number) ? (
                       <p className="text-muted-foreground text-xs">
                         {dateText}
                       </p>

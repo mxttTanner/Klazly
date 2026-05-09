@@ -13,6 +13,7 @@ import { InlineSelect } from "./inline-select";
 import { deleteStudent } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
 import { SearchInput } from "@/components/search-input";
+import { LevelSelect } from "@/components/level-select";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +26,13 @@ export default async function StudentsPage({
   const t = await getTranslations("admin.students");
   const tc = await getTranslations("common");
   const tAdmin = await getTranslations("admin");
+  const tLevel = await getTranslations("level");
 
   const q = searchParams.q?.trim() ?? "";
 
   let query = supabase
     .from("students")
-    .select("id, full_name, age, class_id, parent_user_id")
+    .select("id, full_name, age, class_id, parent_user_id, overall_level")
     .order("full_name", { ascending: true });
   if (q) query = query.ilike("full_name", `%${q}%`);
 
@@ -71,6 +73,7 @@ export default async function StudentsPage({
             <TableRow>
               <TableHead>{t("fullName")}</TableHead>
               <TableHead className="w-20">{t("age")}</TableHead>
+              <TableHead className="w-44">{tLevel("header")}</TableHead>
               <TableHead className="w-56">{t("class")}</TableHead>
               <TableHead className="w-56">{t("parent")}</TableHead>
               <TableHead className="w-24 text-right">{tc("actions")}</TableHead>
@@ -83,6 +86,12 @@ export default async function StudentsPage({
                   <TableCell className="font-medium">{s.full_name}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {s.age ?? "—"}
+                  </TableCell>
+                  <TableCell>
+                    <LevelSelect
+                      studentId={s.id}
+                      currentLevel={s.overall_level ?? null}
+                    />
                   </TableCell>
                   <TableCell>
                     <InlineSelect
@@ -121,7 +130,7 @@ export default async function StudentsPage({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
                   {q ? tAdmin("searchEmpty") : t("empty")}

@@ -205,9 +205,11 @@
       "generalHeader": "Thông tin chung",
       "generalSubtitle": "Áp dụng cho cả lớp {className}.",
       "lessonDate": "Ngày học",
-      "title": "Tên buổi học",
-      "titlePlaceholder": "VD: Bài 1 - Family",
-      "titleHelp": "Tên ngắn để phụ huynh dễ nhận biết. Có thể bỏ trống.",
+      "unit": "Bài / Unit",
+      "unitPlaceholder": "VD: Bài 1",
+      "lessonNumber": "Phần / Lesson",
+      "lessonNumberPlaceholder": "VD: Phần 2",
+      "unitHelp": "Bài và phần là tên ngắn phụ huynh nhìn thấy đầu tiên. Có thể bỏ trống.",
       "vocabulary": "Từ vựng",
       "vocabularyPlaceholder": "VD: family, mother, father, sister, brother",
       "grammar": "Ngữ pháp",
@@ -265,6 +267,13 @@
   },
   "behavior": {
     "great": "Xuất sắc",
+    "good": "Tốt",
+    "okay": "Khá",
+    "needs_attention": "Cần lưu ý"
+  },
+  "level": {
+    "header": "Đánh giá chung",
+    "none": "Chưa đánh giá",
     "good": "Tốt",
     "okay": "Khá",
     "needs_attention": "Cần lưu ý"

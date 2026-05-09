@@ -25,7 +25,8 @@ export type StudentDefault = {
 
 export type LessonDefaults = {
   lesson_date: string;
-  title: string | null;
+  unit: string | null;
+  lesson_number: string | null;
   vocabulary: string | null;
   grammar_point: string | null;
   speaking_activity: string | null;
@@ -96,7 +97,8 @@ export function LessonForm({
 
   // Populate defaults from edit-mode existing data, otherwise template, otherwise blank.
   const lessonDateDefault = defaults?.lesson_date ?? defaultDate;
-  const titleDefault = defaults?.title ?? "";
+  const unitDefault = defaults?.unit ?? "";
+  const lessonNumberDefault = defaults?.lesson_number ?? "";
   const vocabDefault =
     defaults?.vocabulary ?? selectedTemplate?.vocabulary ?? "";
   const grammarDefault =
@@ -150,7 +152,7 @@ export function LessonForm({
             </p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="lesson_date">{t("lessonDate")}</Label>
               <Input
@@ -162,16 +164,25 @@ export function LessonForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="title">{t("title")}</Label>
+              <Label htmlFor="unit">{t("unit")}</Label>
               <Input
-                id="title"
-                name="title"
-                defaultValue={titleDefault}
-                placeholder={t("titlePlaceholder")}
+                id="unit"
+                name="unit"
+                defaultValue={unitDefault}
+                placeholder={t("unitPlaceholder")}
               />
-              <p className="text-muted-foreground text-xs">{t("titleHelp")}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lesson_number">{t("lessonNumber")}</Label>
+              <Input
+                id="lesson_number"
+                name="lesson_number"
+                defaultValue={lessonNumberDefault}
+                placeholder={t("lessonNumberPlaceholder")}
+              />
             </div>
           </div>
+          <p className="text-muted-foreground text-xs">{t("unitHelp")}</p>
 
           <div className="space-y-2">
             <Label htmlFor="vocabulary">{t("vocabulary")}</Label>
