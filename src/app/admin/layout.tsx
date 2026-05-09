@@ -5,10 +5,9 @@ import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
 import { BrandLogo } from "@/components/brand-logo";
-import {
-  AdminSidebarNav,
-  buildAdminNavItems,
-} from "./admin-sidebar";
+import { SubscriptionBanner } from "@/components/subscription-banner";
+import { AdminSidebarNav } from "./admin-sidebar";
+import { buildAdminNavItems } from "./nav-config";
 import { AdminMobileSidebar } from "./mobile-sidebar";
 
 export default async function AdminLayout({
@@ -23,6 +22,7 @@ export default async function AdminLayout({
   return (
     <div className="bg-muted/20 min-h-dvh">
       <DemoBanner email={user.email} />
+      <SubscriptionBanner centerId={user.center_id} />
 
       <div className="flex">
         {/* Desktop sidebar */}

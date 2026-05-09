@@ -196,6 +196,10 @@
     },
     "lessonForm": {
       "title": "Ghi nhận bài học mới",
+      "editTitle": "Sửa bài học",
+      "edit": "Sửa",
+      "delete": "Xoá bài học",
+      "deleteConfirm": "Xoá bài học này?",
       "summary": "Lớp {className} • {count} học sinh",
       "noStudents": "Lớp chưa có học sinh nào. Vui lòng yêu cầu quản trị viên xếp học sinh vào lớp.",
       "generalHeader": "Thông tin chung",
@@ -330,6 +334,14 @@
     "noFile": "Vui lòng chọn một tệp.",
     "tooLarge": "Tệp quá lớn. Tối đa 2MB.",
     "badType": "Định dạng không được hỗ trợ. Dùng PNG, JPG, WebP hoặc SVG."
+  },
+  "subscription": {
+    "trialActive": "Bạn đang trong thời gian dùng thử.",
+    "trialDaysLeft": "Bạn đang dùng thử — còn {n} ngày. Liên hệ để gia hạn.",
+    "trialExpired": "Thời gian dùng thử đã hết. Vui lòng liên hệ để tiếp tục sử dụng.",
+    "pastDue": "Tài khoản quá hạn thanh toán. Vui lòng liên hệ.",
+    "canceled": "Tài khoản đã bị huỷ.",
+    "active": "Đang hoạt động"
   },
   "demo": {
     "loading": "Đang chuẩn bị bản demo...",

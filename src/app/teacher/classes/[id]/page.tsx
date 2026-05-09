@@ -6,11 +6,14 @@ import {
   CalendarClock,
   ClipboardList,
   GraduationCap,
+  Pencil,
   Plus,
+  Trash2,
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
+import { deleteLesson } from "./lessons/new/actions";
 import {
   Table,
   TableBody,
@@ -32,6 +35,7 @@ export default async function ClassDetailPage({
   const t = await getTranslations("teacher.class");
   const tHome = await getTranslations("teacher.home");
   const tStudent = await getTranslations("admin.students");
+  const tForm = await getTranslations("teacher.lessonForm");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -139,14 +143,42 @@ export default async function ClassDetailPage({
                 key={l.id}
                 className="rounded-lg border bg-card p-4 text-sm shadow-sm"
               >
-                <p className="font-medium">
-                  {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
-                    weekday: "long",
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  })}
-                </p>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="font-medium">
+                    {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })}
+                  </p>
+                  <div className="flex gap-1">
+                    <Link
+                      href={`/teacher/classes/${cls.id}/lessons/${l.id}/edit`}
+                      className={buttonVariants({
+                        variant: "outline",
+                        size: "sm",
+                      })}
+                      aria-label={tForm("edit")}
+                    >
+                      <Pencil className="size-3.5" />
+                    </Link>
+                    <form action={deleteLesson}>
+                      <input type="hidden" name="lesson_id" value={l.id} />
+                      <input type="hidden" name="class_id" value={cls.id} />
+                      <button
+                        type="submit"
+                        className={buttonVariants({
+                          variant: "destructive",
+                          size: "sm",
+                        })}
+                        aria-label={tForm("delete")}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </form>
+                  </div>
+                </div>
                 {l.vocabulary ? (
                   <p className="text-muted-foreground mt-1">
                     <span className="text-foreground font-medium">

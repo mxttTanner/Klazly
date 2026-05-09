@@ -12,10 +12,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SubmitButton } from "@/components/submit-button";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { createLesson, saveLessonTemplate } from "./actions";
+import { createLesson, saveLessonTemplate, updateLesson } from "./actions";
 import type { Template } from "./page";
 
 type Worksheet = { id: string; name: string; file_type: string };
+
+export type StudentDefault = {
+  behavior_rating: string | null;
+  individual_note: string | null;
+  homework_completed: boolean;
+};
+
+export type LessonDefaults = {
+  lesson_date: string;
+  vocabulary: string | null;
+  grammar_point: string | null;
+  speaking_activity: string | null;
+  homework: string | null;
+  general_note: string | null;
+  worksheet_id: string | null;
+  studentUpdates: Record<string, StudentDefault>;
+};
 
 const initialState: { error?: string } = {};
 const templateState: { error?: string; success?: string } = {};
@@ -28,6 +45,9 @@ export function LessonForm({
   templates,
   selectedTemplate,
   worksheets,
+  mode = "create",
+  lessonId,
+  defaults,
 }: {
   classId: string;
   className: string;
@@ -36,6 +56,9 @@ export function LessonForm({
   templates: Template[];
   selectedTemplate: Template | null;
   worksheets: Worksheet[];
+  mode?: "create" | "edit";
+  lessonId?: string;
+  defaults?: LessonDefaults;
 }) {
   const t = useTranslations("teacher.lessonForm");
   const tBehavior = useTranslations("behavior");
@@ -45,7 +68,10 @@ export function LessonForm({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [state, action] = useFormState(createLesson, initialState);
+  const [state, action] = useFormState(
+    mode === "edit" ? updateLesson : createLesson,
+    initialState,
+  );
   const [tplSaveState, tplSaveAction] = useFormState(
     saveLessonTemplate,
     templateState,
@@ -67,13 +93,26 @@ export function LessonForm({
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
-  // Forcing a remount when the template changes lets the uncontrolled
-  // textareas re-read their defaultValue prop.
-  const formKey = selectedTemplate?.id ?? "blank";
+  // Populate defaults from edit-mode existing data, otherwise template, otherwise blank.
+  const lessonDateDefault = defaults?.lesson_date ?? defaultDate;
+  const vocabDefault =
+    defaults?.vocabulary ?? selectedTemplate?.vocabulary ?? "";
+  const grammarDefault =
+    defaults?.grammar_point ?? selectedTemplate?.grammar_point ?? "";
+  const speakingDefault =
+    defaults?.speaking_activity ?? selectedTemplate?.speaking_activity ?? "";
+  const homeworkDefault =
+    defaults?.homework ?? selectedTemplate?.homework ?? "";
+  const generalDefault =
+    defaults?.general_note ?? selectedTemplate?.general_note ?? "";
+  const worksheetDefault = defaults?.worksheet_id ?? "none";
+
+  const formKey = `${mode}-${selectedTemplate?.id ?? lessonId ?? "blank"}`;
+  const isEdit = mode === "edit";
 
   return (
     <div className="space-y-6">
-      {templates.length > 0 ? (
+      {!isEdit && templates.length > 0 ? (
         <div className="bg-card flex flex-wrap items-center gap-3 rounded-lg border p-4">
           <Sparkles className="text-primary size-4" />
           <Label htmlFor="template-picker" className="font-medium">
@@ -97,6 +136,9 @@ export function LessonForm({
 
       <form key={formKey} action={action} className="space-y-8">
         <input type="hidden" name="class_id" value={classId} />
+        {isEdit && lessonId ? (
+          <input type="hidden" name="lesson_id" value={lessonId} />
+        ) : null}
 
         <section className="space-y-4 rounded-lg border bg-card p-6">
           <div>
@@ -114,7 +156,7 @@ export function LessonForm({
                 name="lesson_date"
                 type="date"
                 required
-                defaultValue={defaultDate}
+                defaultValue={lessonDateDefault}
               />
             </div>
           </div>
@@ -125,7 +167,7 @@ export function LessonForm({
               id="vocabulary"
               name="vocabulary"
               rows={2}
-              defaultValue={selectedTemplate?.vocabulary ?? ""}
+              defaultValue={vocabDefault}
               placeholder={t("vocabularyPlaceholder")}
             />
           </div>
@@ -136,7 +178,7 @@ export function LessonForm({
               id="grammar_point"
               name="grammar_point"
               rows={2}
-              defaultValue={selectedTemplate?.grammar_point ?? ""}
+              defaultValue={grammarDefault}
               placeholder={t("grammarPlaceholder")}
             />
           </div>
@@ -147,7 +189,7 @@ export function LessonForm({
               id="speaking_activity"
               name="speaking_activity"
               rows={2}
-              defaultValue={selectedTemplate?.speaking_activity ?? ""}
+              defaultValue={speakingDefault}
               placeholder={t("speakingPlaceholder")}
             />
           </div>
@@ -158,7 +200,7 @@ export function LessonForm({
               id="homework"
               name="homework"
               rows={2}
-              defaultValue={selectedTemplate?.homework ?? ""}
+              defaultValue={homeworkDefault}
               placeholder={t("homeworkPlaceholder")}
             />
           </div>
@@ -169,7 +211,7 @@ export function LessonForm({
               id="general_note"
               name="general_note"
               rows={3}
-              defaultValue={selectedTemplate?.general_note ?? ""}
+              defaultValue={generalDefault}
               placeholder={t("generalNotePlaceholder")}
             />
           </div>
@@ -190,7 +232,7 @@ export function LessonForm({
                 <select
                   id="worksheet_id"
                   name="worksheet_id"
-                  defaultValue="none"
+                  defaultValue={worksheetDefault}
                   className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
                 >
                   <option value="none">{tWorksheets("lessonNone")}</option>
@@ -228,52 +270,63 @@ export function LessonForm({
           </div>
 
           <div className="space-y-6">
-            {students.map((s) => (
-              <div
-                key={s.id}
-                className="grid gap-4 rounded-md border p-4 sm:grid-cols-[1fr_1fr_auto]"
-              >
-                <input type="hidden" name="student_id" value={s.id} />
+            {students.map((s) => {
+              const su = defaults?.studentUpdates[s.id];
+              return (
+                <div
+                  key={s.id}
+                  className="grid gap-4 rounded-md border p-4 sm:grid-cols-[1fr_1fr_auto]"
+                >
+                  <input type="hidden" name="student_id" value={s.id} />
 
-                <div className="space-y-2 sm:col-span-3">
-                  <p className="font-medium">{s.full_name}</p>
-                </div>
+                  <div className="space-y-2 sm:col-span-3">
+                    <p className="font-medium">{s.full_name}</p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor={`behavior_${s.id}`}>{t("behavior")}</Label>
-                  <select
-                    id={`behavior_${s.id}`}
-                    name={`behavior_${s.id}`}
-                    defaultValue="none"
-                    className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-                  >
-                    <option value="none">{t("behaviorNone")}</option>
-                    {behaviorOptions.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`behavior_${s.id}`}>{t("behavior")}</Label>
+                    <select
+                      id={`behavior_${s.id}`}
+                      name={`behavior_${s.id}`}
+                      defaultValue={su?.behavior_rating ?? "none"}
+                      className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                    >
+                      <option value="none">{t("behaviorNone")}</option>
+                      {behaviorOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor={`note_${s.id}`}>{t("individualNote")}</Label>
-                  <Textarea
-                    id={`note_${s.id}`}
-                    name={`note_${s.id}`}
-                    rows={2}
-                    placeholder={t("individualNotePlaceholder")}
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`note_${s.id}`}>{t("individualNote")}</Label>
+                    <Textarea
+                      id={`note_${s.id}`}
+                      name={`note_${s.id}`}
+                      rows={2}
+                      defaultValue={su?.individual_note ?? ""}
+                      placeholder={t("individualNotePlaceholder")}
+                    />
+                  </div>
 
-                <div className="flex items-end gap-2">
-                  <Checkbox id={`homework_${s.id}`} name={`homework_${s.id}`} />
-                  <Label htmlFor={`homework_${s.id}`} className="font-normal">
-                    {t("homeworkDone")}
-                  </Label>
+                  <div className="flex items-end gap-2">
+                    <Checkbox
+                      id={`homework_${s.id}`}
+                      name={`homework_${s.id}`}
+                      defaultChecked={su?.homework_completed ?? false}
+                    />
+                    <Label
+                      htmlFor={`homework_${s.id}`}
+                      className="font-normal"
+                    >
+                      {t("homeworkDone")}
+                    </Label>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -284,15 +337,19 @@ export function LessonForm({
         ) : null}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowSaveTpl((v) => !v)}
-            className="inline-flex items-center gap-1.5"
-          >
-            <Bookmark className="size-4" />
-            {tTemplates("saveButton")}
-          </Button>
+          {!isEdit ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSaveTpl((v) => !v)}
+              className="inline-flex items-center gap-1.5"
+            >
+              <Bookmark className="size-4" />
+              {tTemplates("saveButton")}
+            </Button>
+          ) : (
+            <span />
+          )}
           <div className="flex gap-3">
             <Link
               href={`/teacher/classes/${classId}`}
@@ -301,14 +358,14 @@ export function LessonForm({
               {tCommon("cancel")}
             </Link>
             <SubmitButton
-              idleLabel={t("submit")}
+              idleLabel={isEdit ? tCommon("save") : t("submit")}
               pendingLabel={t("submitting")}
             />
           </div>
         </div>
       </form>
 
-      {showSaveTpl ? (
+      {!isEdit && showSaveTpl ? (
         <form
           action={tplSaveAction}
           className="space-y-3 rounded-lg border bg-muted/30 p-4"
@@ -327,7 +384,6 @@ export function LessonForm({
                 placeholder={tTemplates("namePlaceholder")}
               />
             </div>
-            {/* Snapshot of the current form values, captured server-side. */}
             <input
               type="hidden"
               name="vocabulary"

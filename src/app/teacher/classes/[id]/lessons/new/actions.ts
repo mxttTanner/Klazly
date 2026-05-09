@@ -142,19 +142,9 @@ const lessonSchema = z.object({
   updates: z.array(studentUpdateSchema).min(1),
 });
 
-function nullable(v: FormDataEntryValue | null): string | null {
-  const s = String(v ?? "").trim();
-  return s.length > 0 ? s : null;
-}
-
-export async function createLesson(_prev: unknown, formData: FormData) {
-  const teacher = await requireRole("teacher");
-  const t = await getTranslations("teacher.lessonForm");
-
-  const class_id = String(formData.get("class_id") ?? "");
+function buildUpdates(formData: FormData) {
   const studentIds = formData.getAll("student_id").map(String);
-
-  const updates = studentIds.map((sid) => {
+  return studentIds.map((sid) => {
     const ratingRaw = String(formData.get(`behavior_${sid}`) ?? "");
     const noteRaw = formData.get(`note_${sid}`);
     const hwDone = formData.get(`homework_${sid}`) === "on";
@@ -164,19 +154,27 @@ export async function createLesson(_prev: unknown, formData: FormData) {
         ratingRaw && ratingRaw !== "none"
           ? (ratingRaw as "great" | "good" | "okay" | "needs_attention")
           : null,
-      individual_note: nullable(noteRaw),
+      individual_note: nullableString(noteRaw),
       homework_completed: hwDone,
     };
   });
+}
+
+export async function createLesson(_prev: unknown, formData: FormData) {
+  const teacher = await requireRole("teacher");
+  const t = await getTranslations("teacher.lessonForm");
+
+  const class_id = String(formData.get("class_id") ?? "");
+  const updates = buildUpdates(formData);
 
   const parsed = lessonSchema.safeParse({
     class_id,
     lesson_date: formData.get("lesson_date"),
-    vocabulary: nullable(formData.get("vocabulary")),
-    grammar_point: nullable(formData.get("grammar_point")),
-    speaking_activity: nullable(formData.get("speaking_activity")),
-    homework: nullable(formData.get("homework")),
-    general_note: nullable(formData.get("general_note")),
+    vocabulary: nullableString(formData.get("vocabulary")),
+    grammar_point: nullableString(formData.get("grammar_point")),
+    speaking_activity: nullableString(formData.get("speaking_activity")),
+    homework: nullableString(formData.get("homework")),
+    general_note: nullableString(formData.get("general_note")),
     updates,
   });
 
@@ -193,7 +191,6 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     return { error: t("noPermission") };
   }
 
-  // Worksheet attachment: either an existing library entry, or upload + add to library.
   let worksheetId: string | null = null;
   const pickedRaw = String(formData.get("worksheet_id") ?? "");
   if (pickedRaw && pickedRaw !== "none") {
@@ -205,9 +202,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
       teacher.id,
     );
     if (uploaded.error) {
-      return {
-        error: t("saveLessonError", { message: uploaded.error }),
-      };
+      return { error: t("saveLessonError", { message: uploaded.error }) };
     }
     worksheetId = uploaded.id;
   }
@@ -228,9 +223,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     .select()
     .single();
   if (lErr || !lesson) {
-    return {
-      error: t("saveLessonError", { message: lErr?.message ?? "" }),
-    };
+    return { error: t("saveLessonError", { message: lErr?.message ?? "" }) };
   }
 
   const updateRows = parsed.data.updates.map((u) => ({
@@ -251,4 +244,126 @@ export async function createLesson(_prev: unknown, formData: FormData) {
 
   revalidatePath(`/teacher/classes/${parsed.data.class_id}`);
   redirect(`/teacher/classes/${parsed.data.class_id}`);
+}
+
+export async function updateLesson(_prev: unknown, formData: FormData) {
+  const teacher = await requireRole("teacher");
+  const t = await getTranslations("teacher.lessonForm");
+
+  const lessonId = String(formData.get("lesson_id") ?? "");
+  const class_id = String(formData.get("class_id") ?? "");
+  if (!lessonId) return { error: t("validation") };
+
+  const updates = buildUpdates(formData);
+  const parsed = lessonSchema.safeParse({
+    class_id,
+    lesson_date: formData.get("lesson_date"),
+    vocabulary: nullableString(formData.get("vocabulary")),
+    grammar_point: nullableString(formData.get("grammar_point")),
+    speaking_activity: nullableString(formData.get("speaking_activity")),
+    homework: nullableString(formData.get("homework")),
+    general_note: nullableString(formData.get("general_note")),
+    updates,
+  });
+  if (!parsed.success) return { error: t("validation") };
+
+  const supabase = createClient();
+
+  // Verify the lesson belongs to a class this teacher teaches.
+  const { data: existing } = await supabase
+    .from("lessons")
+    .select("id, class_id, class:classes!inner(teacher_id, center_id)")
+    .eq("id", lessonId)
+    .single();
+  type ClassRow = { teacher_id: string; center_id: string };
+  const cls = existing
+    ? (Array.isArray(existing.class) ? existing.class[0] : existing.class) as
+        | ClassRow
+        | undefined
+    : undefined;
+  if (!existing || !cls || cls.teacher_id !== teacher.id) {
+    return { error: t("noPermission") };
+  }
+
+  let worksheetId: string | null = null;
+  const pickedRaw = String(formData.get("worksheet_id") ?? "");
+  if (pickedRaw === "none") {
+    worksheetId = null;
+  } else if (pickedRaw) {
+    worksheetId = pickedRaw;
+  } else {
+    const uploaded = await maybeUploadInlineWorksheet(
+      formData,
+      teacher.center_id,
+      teacher.id,
+    );
+    if (uploaded.error) {
+      return { error: t("saveLessonError", { message: uploaded.error }) };
+    }
+    worksheetId = uploaded.id;
+  }
+
+  const { error: lErr } = await supabase
+    .from("lessons")
+    .update({
+      lesson_date: parsed.data.lesson_date,
+      vocabulary: parsed.data.vocabulary,
+      grammar_point: parsed.data.grammar_point,
+      speaking_activity: parsed.data.speaking_activity,
+      homework: parsed.data.homework,
+      general_note: parsed.data.general_note,
+      worksheet_id: worksheetId,
+    })
+    .eq("id", lessonId);
+  if (lErr) {
+    return { error: t("saveLessonError", { message: lErr.message }) };
+  }
+
+  // Replace per-student rows: delete then re-insert.
+  await supabase
+    .from("student_lesson_updates")
+    .delete()
+    .eq("lesson_id", lessonId);
+
+  const updateRows = parsed.data.updates.map((u) => ({
+    lesson_id: lessonId,
+    student_id: u.student_id,
+    behavior_rating: u.behavior_rating,
+    individual_note: u.individual_note,
+    homework_completed: u.homework_completed,
+  }));
+  const { error: uErr } = await supabase
+    .from("student_lesson_updates")
+    .insert(updateRows);
+  if (uErr) {
+    return { error: t("saveUpdatesError", { message: uErr.message }) };
+  }
+
+  revalidatePath(`/teacher/classes/${parsed.data.class_id}`);
+  redirect(`/teacher/classes/${parsed.data.class_id}`);
+}
+
+export async function deleteLesson(formData: FormData) {
+  const teacher = await requireRole("teacher");
+  const lessonId = String(formData.get("lesson_id") ?? "");
+  const classId = String(formData.get("class_id") ?? "");
+  if (!lessonId) return;
+
+  const supabase = createClient();
+
+  const { data: existing } = await supabase
+    .from("lessons")
+    .select("id, class_id, class:classes!inner(teacher_id)")
+    .eq("id", lessonId)
+    .single();
+  type ClassRow = { teacher_id: string };
+  const cls = existing
+    ? (Array.isArray(existing.class) ? existing.class[0] : existing.class) as
+        | ClassRow
+        | undefined
+    : undefined;
+  if (!existing || !cls || cls.teacher_id !== teacher.id) return;
+
+  await supabase.from("lessons").delete().eq("id", lessonId);
+  if (classId) revalidatePath(`/teacher/classes/${classId}`);
 }

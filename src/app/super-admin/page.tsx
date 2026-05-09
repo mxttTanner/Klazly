@@ -13,16 +13,10 @@ import {
 } from "@/components/ui/table";
 import { CenterForm } from "./center-form";
 import { deleteCenterCascade } from "./actions";
+import { StatusSelect } from "./status-select";
 import { buttonVariants } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_TONES: Record<string, string> = {
-  trial: "bg-amber-100 text-amber-800",
-  active: "bg-emerald-100 text-emerald-800",
-  past_due: "bg-rose-100 text-rose-800",
-  canceled: "bg-slate-100 text-slate-700",
-};
 
 export default async function SuperAdminHomePage() {
   await requireSuperAdmin();
@@ -79,14 +73,6 @@ export default async function SuperAdminHomePage() {
       tone: "text-amber-600",
     },
   ];
-
-  const statusKey = (s: string) =>
-    ({
-      trial: t("statusTrial"),
-      active: t("statusActive"),
-      past_due: t("statusPastDue"),
-      canceled: t("statusCanceled"),
-    })[s] ?? s;
 
   return (
     <div className="space-y-10">
@@ -149,9 +135,6 @@ export default async function SuperAdminHomePage() {
               </TableHeader>
               <TableBody>
                 {centers.map((c) => {
-                  const tone =
-                    STATUS_TONES[c.subscription_status] ??
-                    "bg-slate-100 text-slate-700";
                   return (
                     <TableRow key={c.id}>
                       <TableCell>
@@ -164,11 +147,10 @@ export default async function SuperAdminHomePage() {
                         {c.contact_email ?? "—"}
                       </TableCell>
                       <TableCell>
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}
-                        >
-                          {statusKey(c.subscription_status)}
-                        </span>
+                        <StatusSelect
+                          centerId={c.id}
+                          currentStatus={c.subscription_status}
+                        />
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(c.created_at).toLocaleDateString(dateLocale, {

@@ -196,6 +196,10 @@
     },
     "lessonForm": {
       "title": "Record new lesson",
+      "editTitle": "Edit lesson",
+      "edit": "Edit",
+      "delete": "Delete lesson",
+      "deleteConfirm": "Delete this lesson?",
       "summary": "Class {className} • {count} students",
       "noStudents": "This class has no students yet. Please ask the admin to enroll students.",
       "generalHeader": "Class-wide info",
@@ -330,6 +334,14 @@
     "noFile": "Please pick a file.",
     "tooLarge": "File too large. Max 2MB.",
     "badType": "Unsupported format. Use PNG, JPG, WebP, or SVG."
+  },
+  "subscription": {
+    "trialActive": "You are on a free trial.",
+    "trialDaysLeft": "Trial — {n} days left. Contact us to upgrade.",
+    "trialExpired": "Your trial has ended. Please contact us to keep using the platform.",
+    "pastDue": "Payment past due. Please get in touch.",
+    "canceled": "Account canceled.",
+    "active": "Active"
   },
   "demo": {
     "loading": "Preparing demo...",

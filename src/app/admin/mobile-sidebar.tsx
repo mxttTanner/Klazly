@@ -9,7 +9,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { AdminSidebarNav, type NavItem } from "./admin-sidebar";
+import { AdminSidebarNav } from "./admin-sidebar";
+import type { NavItem } from "./nav-config";
 
 export function AdminMobileSidebar({
   items,

@@ -29,6 +29,10 @@ export async function createCenter(_prev: unknown, formData: FormData) {
 
   const supabase = createAdminClient();
 
+  // Default trial: 14 days from creation.
+  const trialEnds = new Date();
+  trialEnds.setDate(trialEnds.getDate() + 14);
+
   const { data: center, error: centerErr } = await supabase
     .from("centers")
     .insert({
@@ -36,6 +40,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       contact_email: parsed.data.admin_email,
       contact_phone: parsed.data.contact_phone,
       subscription_status: "trial",
+      trial_ends_at: trialEnds.toISOString(),
     })
     .select()
     .single();
@@ -79,6 +84,25 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       email: parsed.data.admin_email,
     }),
   };
+}
+
+export async function updateSubscriptionStatus(formData: FormData) {
+  await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (
+    !id ||
+    !["trial", "active", "past_due", "canceled"].includes(status)
+  )
+    return;
+
+  const supabase = createAdminClient();
+  await supabase
+    .from("centers")
+    .update({ subscription_status: status })
+    .eq("id", id);
+
+  revalidatePath("/super-admin");
 }
 
 export async function deleteCenterCascade(formData: FormData) {
