@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   BookOpen,
+  FileText,
   GraduationCap,
   Heart,
   Settings,
@@ -26,6 +27,7 @@ export function buildAdminNavItems(t: (k: string) => string): NavItem[] {
     { href: "/admin/parents", label: t("navParents"), icon: Heart },
     { href: "/admin/classes", label: t("navClasses"), icon: BookOpen },
     { href: "/admin/students", label: t("navStudents"), icon: GraduationCap },
+    { href: "/admin/worksheets", label: t("navWorksheets"), icon: FileText },
     { href: "/admin/import", label: t("navImport"), icon: Upload },
     { href: "/admin/settings", label: t("navSettings"), icon: Settings },
   ];

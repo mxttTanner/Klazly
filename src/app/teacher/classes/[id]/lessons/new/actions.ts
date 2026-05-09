@@ -6,6 +6,75 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+const ALLOWED_WORKSHEET_TYPES = [
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+];
+const MAX_WORKSHEET_BYTES = 5 * 1024 * 1024;
+
+async function maybeUploadInlineWorksheet(
+  formData: FormData,
+  centerId: string,
+  uploaderId: string,
+): Promise<{ id: string | null; error?: string }> {
+  const file = formData.get("worksheet_file");
+  if (!(file instanceof File) || file.size === 0) return { id: null };
+
+  if (file.size > MAX_WORKSHEET_BYTES) {
+    return { id: null, error: "Worksheet too large (max 5MB)." };
+  }
+  if (!ALLOWED_WORKSHEET_TYPES.includes(file.type)) {
+    return { id: null, error: "Worksheet must be PDF, PNG, JPG, or WebP." };
+  }
+
+  const supabase = createAdminClient();
+  const ext =
+    file.type === "application/pdf"
+      ? "pdf"
+      : file.type === "image/jpeg"
+        ? "jpg"
+        : file.type === "image/png"
+          ? "png"
+          : "webp";
+  const fileId = crypto.randomUUID();
+  const storagePath = `${centerId}/${fileId}.${ext}`;
+
+  const { error: uploadErr } = await supabase.storage
+    .from("worksheets")
+    .upload(storagePath, file, {
+      upsert: false,
+      contentType: file.type,
+      cacheControl: "3600",
+    });
+  if (uploadErr) return { id: null, error: uploadErr.message };
+
+  const { data: urlData } = supabase.storage
+    .from("worksheets")
+    .getPublicUrl(storagePath);
+
+  const { data: inserted, error: insertErr } = await supabase
+    .from("worksheets")
+    .insert({
+      center_id: centerId,
+      uploaded_by: uploaderId,
+      name: file.name,
+      storage_path: storagePath,
+      public_url: urlData.publicUrl,
+      file_type: file.type,
+      size_bytes: file.size,
+    })
+    .select("id")
+    .single();
+  if (insertErr || !inserted) {
+    await supabase.storage.from("worksheets").remove([storagePath]);
+    return { id: null, error: insertErr?.message ?? "insert failed" };
+  }
+  return { id: inserted.id };
+}
 
 const templateSchema = z.object({
   name: z.string().min(1).max(120),
@@ -124,6 +193,25 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     return { error: t("noPermission") };
   }
 
+  // Worksheet attachment: either an existing library entry, or upload + add to library.
+  let worksheetId: string | null = null;
+  const pickedRaw = String(formData.get("worksheet_id") ?? "");
+  if (pickedRaw && pickedRaw !== "none") {
+    worksheetId = pickedRaw;
+  } else {
+    const uploaded = await maybeUploadInlineWorksheet(
+      formData,
+      teacher.center_id,
+      teacher.id,
+    );
+    if (uploaded.error) {
+      return {
+        error: t("saveLessonError", { message: uploaded.error }),
+      };
+    }
+    worksheetId = uploaded.id;
+  }
+
   const { data: lesson, error: lErr } = await supabase
     .from("lessons")
     .insert({
@@ -135,6 +223,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
       speaking_activity: parsed.data.speaking_activity,
       homework: parsed.data.homework,
       general_note: parsed.data.general_note,
+      worksheet_id: worksheetId,
     })
     .select()
     .single();

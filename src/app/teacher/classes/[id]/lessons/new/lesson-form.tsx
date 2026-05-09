@@ -5,7 +5,7 @@ import { useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFormState } from "react-dom";
 import { useTranslations } from "next-intl";
-import { Bookmark, Sparkles } from "lucide-react";
+import { Bookmark, FileText, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,8 @@ import { SubmitButton } from "@/components/submit-button";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { createLesson, saveLessonTemplate } from "./actions";
 import type { Template } from "./page";
+
+type Worksheet = { id: string; name: string; file_type: string };
 
 const initialState: { error?: string } = {};
 const templateState: { error?: string; success?: string } = {};
@@ -25,6 +27,7 @@ export function LessonForm({
   defaultDate,
   templates,
   selectedTemplate,
+  worksheets,
 }: {
   classId: string;
   className: string;
@@ -32,11 +35,13 @@ export function LessonForm({
   defaultDate: string;
   templates: Template[];
   selectedTemplate: Template | null;
+  worksheets: Worksheet[];
 }) {
   const t = useTranslations("teacher.lessonForm");
   const tBehavior = useTranslations("behavior");
   const tCommon = useTranslations("common");
   const tTemplates = useTranslations("teacher.templates");
+  const tWorksheets = useTranslations("worksheets");
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -167,6 +172,50 @@ export function LessonForm({
               defaultValue={selectedTemplate?.general_note ?? ""}
               placeholder={t("generalNotePlaceholder")}
             />
+          </div>
+
+          <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+            <div className="flex items-center gap-2">
+              <FileText className="text-primary size-4" />
+              <Label className="font-medium">{tWorksheets("lessonAttach")}</Label>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {tWorksheets("lessonAttachHelp")}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="worksheet_id" className="text-xs font-normal">
+                  {tWorksheets("lessonPickFromLibrary")}
+                </Label>
+                <select
+                  id="worksheet_id"
+                  name="worksheet_id"
+                  defaultValue="none"
+                  className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                >
+                  <option value="none">{tWorksheets("lessonNone")}</option>
+                  {worksheets.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label
+                  htmlFor="worksheet_file"
+                  className="text-xs font-normal"
+                >
+                  {tWorksheets("lessonOrUpload")}
+                </Label>
+                <Input
+                  id="worksheet_file"
+                  name="worksheet_file"
+                  type="file"
+                  accept="application/pdf,image/png,image/jpeg,image/webp"
+                />
+              </div>
+            </div>
           </div>
         </section>
 

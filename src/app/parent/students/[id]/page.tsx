@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BookOpen,
   ClipboardList,
+  FileText,
   GraduationCap,
   MessageSquareText,
   Mic2,
@@ -33,6 +34,10 @@ type LessonRow = {
   speaking_activity: string | null;
   homework: string | null;
   general_note: string | null;
+  worksheet:
+    | { id: string; name: string; public_url: string }
+    | { id: string; name: string; public_url: string }[]
+    | null;
 };
 
 type UpdateRow = {
@@ -51,6 +56,7 @@ export default async function StudentProgressPage({
   const supabase = createClient();
   const t = await getTranslations("parent.student");
   const tBehavior = await getTranslations("behavior");
+  const tWorksheets = await getTranslations("worksheets");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -82,7 +88,7 @@ export default async function StudentProgressPage({
     ? await supabase
         .from("lessons")
         .select(
-          "id, lesson_date, vocabulary, grammar_point, speaking_activity, homework, general_note",
+          "id, lesson_date, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet:worksheets(id, name, public_url)",
         )
         .eq("class_id", cls.id)
         .order("lesson_date", { ascending: false })
@@ -233,6 +239,28 @@ export default async function StudentProgressPage({
                     })}
                   </dl>
                 ) : null}
+
+                {(() => {
+                  const ws = Array.isArray(l.worksheet)
+                    ? l.worksheet[0]
+                    : l.worksheet;
+                  return ws ? (
+                    <div className="mt-3 print:hidden">
+                      <a
+                        href={ws.public_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary inline-flex items-center gap-2 rounded-md border bg-card px-3 py-1.5 text-sm font-medium hover:bg-muted/40"
+                      >
+                        <FileText className="size-4" />
+                        {tWorksheets("viewAttachment")}
+                        <span className="text-muted-foreground text-xs font-normal">
+                          ({ws.name})
+                        </span>
+                      </a>
+                    </div>
+                  ) : null;
+                })()}
 
                 {u ? (
                   <div className="bg-muted/40 mt-4 rounded-md p-3 text-sm print:bg-transparent print:border print:border-dashed print:border-black">

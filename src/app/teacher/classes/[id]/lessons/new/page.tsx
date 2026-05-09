@@ -34,21 +34,31 @@ export default async function NewLessonPage({
     .single();
   if (!cls || cls.teacher_id !== user.id) notFound();
 
-  const [{ data: students }, { data: templates }] = await Promise.all([
-    supabase
-      .from("students")
-      .select("id, full_name")
-      .eq("class_id", cls.id)
-      .order("full_name", { ascending: true }),
-    supabase
-      .from("lesson_templates")
-      .select(
-        "id, name, vocabulary, grammar_point, speaking_activity, homework, general_note",
-      )
-      .order("name", { ascending: true }),
-  ]);
+  const [{ data: students }, { data: templates }, { data: worksheets }] =
+    await Promise.all([
+      supabase
+        .from("students")
+        .select("id, full_name")
+        .eq("class_id", cls.id)
+        .order("full_name", { ascending: true }),
+      supabase
+        .from("lesson_templates")
+        .select(
+          "id, name, vocabulary, grammar_point, speaking_activity, homework, general_note",
+        )
+        .order("name", { ascending: true }),
+      supabase
+        .from("worksheets")
+        .select("id, name, file_type")
+        .order("created_at", { ascending: false }),
+    ]);
 
   const allTemplates = (templates ?? []) as Template[];
+  const worksheetOptions = (worksheets ?? []) as Array<{
+    id: string;
+    name: string;
+    file_type: string;
+  }>;
   const selectedTemplate =
     searchParams.template
       ? allTemplates.find((tpl) => tpl.id === searchParams.template) ?? null
@@ -80,6 +90,7 @@ export default async function NewLessonPage({
           defaultDate={defaultDate}
           templates={allTemplates}
           selectedTemplate={selectedTemplate}
+          worksheets={worksheetOptions}
         />
       ) : (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
