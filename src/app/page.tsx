@@ -199,39 +199,83 @@ export default async function HomePage() {
       {/* Pricing */}
       <section className="border-b">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-          <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
-            {t("pricingTitle")}
-          </h2>
-          <div className="mx-auto mt-10 max-w-md">
-            <div className="bg-card rounded-2xl border-2 border-primary/30 p-8 shadow-xl shadow-primary/10">
-              <div className="text-center">
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-4xl font-bold tracking-tight">
-                    {t("pricingPrice")}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {t("pricingPeriod")}
-                  </span>
-                </div>
-                <p className="text-muted-foreground mt-2 text-sm">
-                  {t("pricingNote")}
-                </p>
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              {t("pricingTitle")}
+            </h2>
+            <p className="text-muted-foreground mt-3 text-balance text-base">
+              {t("pricingSubtitle")}
+            </p>
+          </div>
+
+          <div className="mx-auto mt-10 grid max-w-3xl gap-6 sm:grid-cols-2">
+            {/* Monthly */}
+            <div className="bg-card flex flex-col rounded-2xl border p-8 shadow-sm">
+              <div className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                {t("pricingMonthlyName")}
               </div>
-              <ul className="mt-6 space-y-3 text-sm">
-                {pricingItems.map((item) => (
-                  <li key={item} className="flex items-start gap-2">
-                    <Check className="text-primary mt-0.5 size-4 shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-3xl font-bold tracking-tight">
+                  {t("pricingMonthlyPrice")}
+                </span>
+                <span className="text-muted-foreground text-sm">
+                  {t("pricingMonthlyPeriod")}
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {t("pricingMonthlyNote")}
+              </p>
               <Link
                 href="/demo"
-                className={`${buttonVariants({ size: "lg" })} mt-8 w-full`}
+                className={`${buttonVariants({ variant: "outline", size: "lg" })} mt-auto w-full`}
               >
                 {t("pricingCta")}
               </Link>
             </div>
+
+            {/* Annual — highlighted */}
+            <div className="bg-card relative flex flex-col rounded-2xl border-2 border-primary p-8 shadow-xl shadow-primary/10">
+              <div className="absolute -top-3 right-6 inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+                {t("pricingAnnualBadge")}
+              </div>
+              <div className="text-primary text-sm font-medium uppercase tracking-wide">
+                {t("pricingAnnualName")}
+              </div>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-3xl font-bold tracking-tight">
+                  {t("pricingAnnualPrice")}
+                </span>
+                <span className="text-muted-foreground text-sm">
+                  {t("pricingAnnualPeriod")}
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-1 text-xs">
+                {t("pricingAnnualEquivalent")}
+              </p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {t("pricingAnnualNote")}
+              </p>
+              <Link
+                href="/demo"
+                className={`${buttonVariants({ size: "lg" })} mt-auto w-full`}
+              >
+                {t("pricingCta")}
+              </Link>
+            </div>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-2xl">
+            <p className="text-muted-foreground mb-4 text-center text-sm">
+              {t("pricingNote")}
+            </p>
+            <ul className="grid gap-3 text-sm sm:grid-cols-2">
+              {pricingItems.map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <Check className="text-primary mt-0.5 size-4 shrink-0" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
