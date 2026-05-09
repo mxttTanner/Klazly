@@ -1,0 +1,74 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
+import { requireRole } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+
+export async function uploadCenterLogo(_prev: unknown, formData: FormData) {
+  const admin = await requireRole("admin");
+  const t = await getTranslations("settings");
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: t("noFile") };
+  }
+  if (file.size > MAX_BYTES) {
+    return { error: t("tooLarge") };
+  }
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return { error: t("badType") };
+  }
+
+  const supabase = createAdminClient();
+  const ext = file.type === "image/svg+xml" ? "svg" : file.type.split("/")[1];
+  const path = `${admin.center_id}.${ext}`;
+
+  const { error: uploadErr } = await supabase.storage
+    .from("logos")
+    .upload(path, file, {
+      upsert: true,
+      contentType: file.type,
+      cacheControl: "60",
+    });
+  if (uploadErr) {
+    return { error: t("uploadError", { message: uploadErr.message }) };
+  }
+
+  const { data: urlData } = supabase.storage.from("logos").getPublicUrl(path);
+  // Cache-bust so the new logo shows immediately after a re-upload.
+  const bustedUrl = `${urlData.publicUrl}?v=${Date.now()}`;
+
+  const { error: updateErr } = await supabase
+    .from("centers")
+    .update({ logo_url: bustedUrl })
+    .eq("id", admin.center_id);
+  if (updateErr) {
+    return { error: t("uploadError", { message: updateErr.message }) };
+  }
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/parent", "layout");
+  return { success: t("uploadSuccess") };
+}
+
+export async function removeCenterLogo() {
+  const admin = await requireRole("admin");
+  const supabase = createAdminClient();
+
+  // Best-effort delete every plausible extension; we don't know what was uploaded.
+  for (const ext of ["png", "jpeg", "jpg", "webp", "svg"]) {
+    await supabase.storage.from("logos").remove([`${admin.center_id}.${ext}`]);
+  }
+
+  await supabase
+    .from("centers")
+    .update({ logo_url: null })
+    .eq("id", admin.center_id);
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/parent", "layout");
+}

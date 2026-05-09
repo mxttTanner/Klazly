@@ -1,11 +1,15 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { BookOpen, GraduationCap, Heart, UserSquare2 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
 import { BrandLogo } from "@/components/brand-logo";
+import {
+  AdminSidebarNav,
+  buildAdminNavItems,
+} from "./admin-sidebar";
+import { AdminMobileSidebar } from "./mobile-sidebar";
 
 export default async function AdminLayout({
   children,
@@ -14,69 +18,58 @@ export default async function AdminLayout({
 }) {
   const user = await requireRole("admin");
   const t = await getTranslations("admin");
-
-  const navLinks = [
-    { href: "/admin/teachers", label: t("navTeachers"), icon: UserSquare2 },
-    { href: "/admin/parents", label: t("navParents"), icon: Heart },
-    { href: "/admin/classes", label: t("navClasses"), icon: BookOpen },
-    { href: "/admin/students", label: t("navStudents"), icon: GraduationCap },
-  ];
+  const items = buildAdminNavItems((k) => t(k));
 
   return (
-    <div className="min-h-dvh">
+    <div className="bg-muted/20 min-h-dvh">
       <DemoBanner email={user.email} />
-      <header className="border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <div className="flex items-center gap-6">
+
+      <div className="flex">
+        {/* Desktop sidebar */}
+        <aside className="bg-background sticky top-0 hidden h-dvh w-60 shrink-0 border-r md:flex md:flex-col">
+          <div className="border-b p-4">
             <Link
               href="/admin"
               className="inline-flex items-center gap-2.5"
               aria-label={t("navTitle")}
             >
               <BrandLogo size="sm" showText={false} />
-              <span className="text-base font-semibold">{t("navTitle")}</span>
+              <span className="text-sm font-semibold">{t("navTitle")}</span>
             </Link>
-            <nav className="hidden gap-4 text-sm md:flex">
-              {navLinks.map((l) => {
-                const Icon = l.icon;
-                return (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
-                  >
-                    <Icon className="size-3.5" />
-                    {l.label}
-                  </Link>
-                );
-              })}
-            </nav>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-muted-foreground hidden text-sm sm:inline">
-              {user.full_name}
-            </span>
-            <LanguageToggle />
-            <LogoutButton />
+          <div className="flex-1 overflow-y-auto p-3">
+            <AdminSidebarNav items={items} />
           </div>
-        </div>
-        <nav className="mx-auto flex max-w-6xl gap-4 overflow-x-auto px-6 pb-3 text-sm md:hidden">
-          {navLinks.map((l) => {
-            const Icon = l.icon;
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap"
-              >
-                <Icon className="size-3.5" />
-                {l.label}
+        </aside>
+
+        {/* Main column */}
+        <div className="min-w-0 flex-1">
+          {/* Top bar */}
+          <header className="bg-background sticky top-0 z-10 flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
+            <div className="flex items-center gap-2 md:hidden">
+              <AdminMobileSidebar
+                items={items}
+                brandLabel={t("navTitle")}
+                triggerLabel={t("openMenu")}
+              />
+              <Link href="/admin" className="inline-flex items-center gap-2">
+                <BrandLogo size="sm" showText={false} />
+                <span className="text-sm font-semibold">{t("navTitle")}</span>
               </Link>
-            );
-          })}
-        </nav>
-      </header>
-      <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>
+            </div>
+            <div className="hidden md:block" />
+            <div className="flex items-center gap-3">
+              <span className="text-muted-foreground hidden text-sm sm:inline">
+                {user.full_name}
+              </span>
+              <LanguageToggle />
+              <LogoutButton />
+            </div>
+          </header>
+
+          <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+        </div>
+      </div>
     </div>
   );
 }

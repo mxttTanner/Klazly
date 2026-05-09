@@ -12,21 +12,32 @@ import { ClassForm } from "./class-form";
 import { ChangeTeacherForm } from "./change-teacher-form";
 import { deleteClass } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
+import { SearchInput } from "@/components/search-input";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClassesPage() {
+export default async function ClassesPage({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
   const supabase = createClient();
   const t = await getTranslations("admin.classes");
   const tc = await getTranslations("common");
+  const tAdmin = await getTranslations("admin");
+
+  const q = searchParams.q?.trim() ?? "";
+
+  let query = supabase
+    .from("classes")
+    .select(
+      "id, name, schedule_text, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)",
+    )
+    .order("name", { ascending: true });
+  if (q) query = query.ilike("name", `%${q}%`);
 
   const [{ data: classes }, { data: teachers }] = await Promise.all([
-    supabase
-      .from("classes")
-      .select(
-        "id, name, schedule_text, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)",
-      )
-      .order("name", { ascending: true }),
+    query,
     supabase
       .from("users")
       .select("id, full_name")
@@ -43,7 +54,9 @@ export default async function ClassesPage() {
 
       <ClassForm teachers={teachers ?? []} />
 
-      <div className="rounded-lg border">
+      <SearchInput placeholder={tAdmin("search")} />
+
+      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -90,7 +103,7 @@ export default async function ClassesPage() {
                   colSpan={4}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
-                  {t("empty")}
+                  {q ? tAdmin("searchEmpty") : t("empty")}
                 </TableCell>
               </TableRow>
             )}

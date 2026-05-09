@@ -7,6 +7,51 @@ import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
+const templateSchema = z.object({
+  name: z.string().min(1).max(120),
+  vocabulary: z.string().max(1000).optional().nullable(),
+  grammar_point: z.string().max(1000).optional().nullable(),
+  speaking_activity: z.string().max(1000).optional().nullable(),
+  homework: z.string().max(1000).optional().nullable(),
+  general_note: z.string().max(2000).optional().nullable(),
+});
+
+function nullableString(v: FormDataEntryValue | null): string | null {
+  const s = String(v ?? "").trim();
+  return s.length > 0 ? s : null;
+}
+
+export async function saveLessonTemplate(_prev: unknown, formData: FormData) {
+  const teacher = await requireRole("teacher");
+  const t = await getTranslations("teacher.templates");
+
+  const parsed = templateSchema.safeParse({
+    name: formData.get("template_name"),
+    vocabulary: nullableString(formData.get("vocabulary")),
+    grammar_point: nullableString(formData.get("grammar_point")),
+    speaking_activity: nullableString(formData.get("speaking_activity")),
+    homework: nullableString(formData.get("homework")),
+    general_note: nullableString(formData.get("general_note")),
+  });
+  if (!parsed.success) return { error: t("validation") };
+
+  const supabase = createClient();
+  const { error } = await supabase.from("lesson_templates").insert({
+    center_id: teacher.center_id,
+    created_by: teacher.id,
+    name: parsed.data.name,
+    vocabulary: parsed.data.vocabulary,
+    grammar_point: parsed.data.grammar_point,
+    speaking_activity: parsed.data.speaking_activity,
+    homework: parsed.data.homework,
+    general_note: parsed.data.general_note,
+  });
+  if (error) return { error: t("saveError", { message: error.message }) };
+
+  revalidatePath(`/teacher/classes`, "layout");
+  return { success: t("saveSuccess", { name: parsed.data.name }) };
+}
+
 const studentUpdateSchema = z.object({
   student_id: z.string().uuid(),
   behavior_rating: z

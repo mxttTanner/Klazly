@@ -6,10 +6,22 @@ import { LessonForm } from "./lesson-form";
 
 export const dynamic = "force-dynamic";
 
+export type Template = {
+  id: string;
+  name: string;
+  vocabulary: string | null;
+  grammar_point: string | null;
+  speaking_activity: string | null;
+  homework: string | null;
+  general_note: string | null;
+};
+
 export default async function NewLessonPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams: { template?: string };
 }) {
   const user = await requireRole("teacher");
   const supabase = createClient();
@@ -22,11 +34,25 @@ export default async function NewLessonPage({
     .single();
   if (!cls || cls.teacher_id !== user.id) notFound();
 
-  const { data: students } = await supabase
-    .from("students")
-    .select("id, full_name")
-    .eq("class_id", cls.id)
-    .order("full_name", { ascending: true });
+  const [{ data: students }, { data: templates }] = await Promise.all([
+    supabase
+      .from("students")
+      .select("id, full_name")
+      .eq("class_id", cls.id)
+      .order("full_name", { ascending: true }),
+    supabase
+      .from("lesson_templates")
+      .select(
+        "id, name, vocabulary, grammar_point, speaking_activity, homework, general_note",
+      )
+      .order("name", { ascending: true }),
+  ]);
+
+  const allTemplates = (templates ?? []) as Template[];
+  const selectedTemplate =
+    searchParams.template
+      ? allTemplates.find((tpl) => tpl.id === searchParams.template) ?? null
+      : null;
 
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -52,6 +78,8 @@ export default async function NewLessonPage({
           className={cls.name}
           students={students}
           defaultDate={defaultDate}
+          templates={allTemplates}
+          selectedTemplate={selectedTemplate}
         />
       ) : (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">

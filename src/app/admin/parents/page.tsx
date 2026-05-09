@@ -11,20 +11,31 @@ import {
 import { ParentForm } from "./parent-form";
 import { removeParent } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
+import { SearchInput } from "@/components/search-input";
 
 export const dynamic = "force-dynamic";
 
-export default async function ParentsPage() {
+export default async function ParentsPage({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
   const supabase = createClient();
   const t = await getTranslations("admin.parents");
   const tt = await getTranslations("admin.teachers");
   const tc = await getTranslations("common");
+  const tAdmin = await getTranslations("admin");
 
-  const { data: parents } = await supabase
+  const q = searchParams.q?.trim() ?? "";
+
+  let query = supabase
     .from("users")
     .select("id, full_name, email, created_at")
     .eq("role", "parent")
     .order("created_at", { ascending: true });
+  if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
+
+  const { data: parents } = await query;
 
   return (
     <div className="space-y-6">
@@ -35,7 +46,9 @@ export default async function ParentsPage() {
 
       <ParentForm />
 
-      <div className="rounded-lg border">
+      <SearchInput placeholder={tAdmin("search")} />
+
+      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -74,7 +87,7 @@ export default async function ParentsPage() {
                   colSpan={3}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
-                  {t("empty")}
+                  {q ? tAdmin("searchEmpty") : t("empty")}
                 </TableCell>
               </TableRow>
             )}

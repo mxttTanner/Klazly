@@ -64,7 +64,7 @@ export default async function StudentProgressPage({
       .single(),
     supabase
       .from("centers")
-      .select("name")
+      .select("name, logo_url")
       .eq("id", user.center_id)
       .single(),
   ]);
@@ -145,16 +145,28 @@ export default async function StudentProgressPage({
         <PrintButton label={t("print")} />
       </div>
 
-      <header className="space-y-1 print:break-inside-avoid">
-        <p className="text-muted-foreground text-xs uppercase tracking-wide print:hidden">
-          {center?.name}
-        </p>
-        <p className="hidden text-sm font-medium print:block">
-          {center?.name}
-        </p>
-        <p className="hidden text-xs uppercase tracking-wide print:block">
-          {t("printHeading")}
-        </p>
+      <header className="space-y-2 print:break-inside-avoid">
+        <div className="flex items-center gap-3">
+          {center?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={center.logo_url}
+              alt={center?.name ?? ""}
+              className="size-10 rounded-md object-contain"
+            />
+          ) : null}
+          <div className="space-y-0.5">
+            <p className="text-muted-foreground text-xs uppercase tracking-wide print:hidden">
+              {center?.name}
+            </p>
+            <p className="hidden text-sm font-medium print:block">
+              {center?.name}
+            </p>
+            <p className="hidden text-xs uppercase tracking-wide print:block">
+              {t("printHeading")}
+            </p>
+          </div>
+        </div>
         <h1 className="inline-flex items-center gap-2 text-3xl font-semibold tracking-tight">
           <GraduationCap className="text-amber-600 size-7 print:hidden" />
           {student.full_name}
