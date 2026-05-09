@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { BookOpen, CalendarClock, ChevronRight, GraduationCap, UserCircle2 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,10 +21,10 @@ export default async function ParentHomePage() {
     .order("full_name", { ascending: true });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       {students && students.length > 0 ? (
@@ -37,32 +38,32 @@ export default async function ParentHomePage() {
               : null;
             return (
               <Link key={s.id} href={`/parent/students/${s.id}`}>
-                <Card className="transition hover:bg-muted/40">
-                  <CardHeader className="pb-2">
-                    <CardTitle>{s.full_name}</CardTitle>
+                <Card className="group transition hover:bg-muted/40 hover:shadow-md">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <GraduationCap className="text-amber-600 size-5" />
+                      {s.full_name}
+                    </CardTitle>
+                    <ChevronRight className="text-muted-foreground group-hover:text-foreground size-4 transition" />
                   </CardHeader>
-                  <CardContent className="text-muted-foreground space-y-1 text-sm">
+                  <CardContent className="text-muted-foreground space-y-1.5 text-sm">
                     {cls ? (
                       <>
-                        <p>
+                        <p className="inline-flex items-center gap-2">
+                          <BookOpen className="size-3.5" />
                           <span className="text-foreground font-medium">
-                            {t("class")}
-                          </span>{" "}
-                          {cls.name}
+                            {cls.name}
+                          </span>
                         </p>
                         {teacher ? (
-                          <p>
-                            <span className="text-foreground font-medium">
-                              {t("teacher")}
-                            </span>{" "}
+                          <p className="inline-flex items-center gap-2">
+                            <UserCircle2 className="size-3.5" />
                             {teacher.full_name}
                           </p>
                         ) : null}
                         {cls.schedule_text ? (
-                          <p>
-                            <span className="text-foreground font-medium">
-                              {t("schedule")}
-                            </span>{" "}
+                          <p className="inline-flex items-center gap-2">
+                            <CalendarClock className="size-3.5" />
                             {cls.schedule_text}
                           </p>
                         ) : null}
@@ -77,9 +78,10 @@ export default async function ParentHomePage() {
           })}
         </div>
       ) : (
-        <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          {t("empty")}
-        </p>
+        <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
+          <GraduationCap className="size-8 opacity-50" />
+          <p>{t("empty")}</p>
+        </div>
       )}
     </div>
   );

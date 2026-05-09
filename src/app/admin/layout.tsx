@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { BookOpen, GraduationCap, Heart, UserSquare2 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -14,10 +15,10 @@ export default async function AdminLayout({
   const t = await getTranslations("admin");
 
   const navLinks = [
-    { href: "/admin/teachers", label: t("navTeachers") },
-    { href: "/admin/parents", label: t("navParents") },
-    { href: "/admin/classes", label: t("navClasses") },
-    { href: "/admin/students", label: t("navStudents") },
+    { href: "/admin/teachers", label: t("navTeachers"), icon: UserSquare2 },
+    { href: "/admin/parents", label: t("navParents"), icon: Heart },
+    { href: "/admin/classes", label: t("navClasses"), icon: BookOpen },
+    { href: "/admin/students", label: t("navStudents"), icon: GraduationCap },
   ];
 
   return (
@@ -30,15 +31,19 @@ export default async function AdminLayout({
               {t("navTitle")}
             </Link>
             <nav className="hidden gap-4 text-sm md:flex">
-              {navLinks.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  {l.label}
-                </Link>
-              ))}
+              {navLinks.map((l) => {
+                const Icon = l.icon;
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+                  >
+                    <Icon className="size-3.5" />
+                    {l.label}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
           <div className="flex items-center gap-3">
@@ -50,15 +55,19 @@ export default async function AdminLayout({
           </div>
         </div>
         <nav className="mx-auto flex max-w-6xl gap-4 overflow-x-auto px-6 pb-3 text-sm md:hidden">
-          {navLinks.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-muted-foreground hover:text-foreground whitespace-nowrap"
-            >
-              {l.label}
-            </Link>
-          ))}
+          {navLinks.map((l) => {
+            const Icon = l.icon;
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 whitespace-nowrap"
+              >
+                <Icon className="size-3.5" />
+                {l.label}
+              </Link>
+            );
+          })}
         </nav>
       </header>
       <div className="mx-auto max-w-6xl px-6 py-8">{children}</div>

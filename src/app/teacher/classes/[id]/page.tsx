@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import {
+  ArrowLeft,
+  CalendarClock,
+  ClipboardList,
+  GraduationCap,
+  Plus,
+} from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
@@ -24,10 +31,7 @@ export default async function ClassDetailPage({
   const supabase = createClient();
   const t = await getTranslations("teacher.class");
   const tHome = await getTranslations("teacher.home");
-  const tFullName = await getTranslations("admin.students");
-  const tAge = tFullName;
-  const tCommon = await getTranslations("common");
-  void tCommon;
+  const tStudent = await getTranslations("admin.students");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -54,40 +58,46 @@ export default async function ClassDetailPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <Link
             href="/teacher"
-            className="text-muted-foreground hover:text-foreground text-sm"
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
           >
-            {t("back")}
+            <ArrowLeft className="size-3.5" />
+            {tHome("title")}
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             {cls.name}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground mt-1 inline-flex items-center gap-1.5 text-sm">
+            <CalendarClock className="size-3.5" />
             {cls.schedule_text ?? tHome("noSchedule")}
           </p>
         </div>
         <Link
           href={`/teacher/classes/${cls.id}/lessons/new`}
-          className={buttonVariants()}
+          className={`${buttonVariants()} inline-flex items-center gap-1.5`}
         >
+          <Plus className="size-4" />
           {t("newLesson")}
         </Link>
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">
-          {t("studentsHeader", { count: students?.length ?? 0 })}
-        </h2>
-        <div className="rounded-lg border">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="text-primary size-5" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("studentsHeader", { count: students?.length ?? 0 })}
+          </h2>
+        </div>
+        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{tFullName("fullName")}</TableHead>
-                <TableHead className="w-20">{tAge("age")}</TableHead>
+                <TableHead>{tStudent("fullName")}</TableHead>
+                <TableHead className="w-20">{tStudent("age")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,11 +126,19 @@ export default async function ClassDetailPage({
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">{t("recentLessonsHeader")}</h2>
+        <div className="flex items-center gap-2">
+          <ClipboardList className="text-primary size-5" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("recentLessonsHeader")}
+          </h2>
+        </div>
         {lessons && lessons.length > 0 ? (
           <ul className="space-y-3">
             {lessons.map((l) => (
-              <li key={l.id} className="rounded-lg border p-4 text-sm">
+              <li
+                key={l.id}
+                className="rounded-lg border bg-card p-4 text-sm shadow-sm"
+              >
                 <p className="font-medium">
                   {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
                     weekday: "long",
@@ -152,9 +170,10 @@ export default async function ClassDetailPage({
             ))}
           </ul>
         ) : (
-          <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-center text-sm">
-            {t("noLessons")}
-          </p>
+          <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm">
+            <ClipboardList className="size-8 opacity-50" />
+            <p>{t("noLessons")}</p>
+          </div>
         )}
       </section>
     </div>

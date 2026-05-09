@@ -1,5 +1,16 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
+import {
+  BookOpen,
+  CalendarDays,
+  ClipboardList,
+  Clock3,
+  GraduationCap,
+  Heart,
+  ListChecks,
+  Users,
+  UserSquare2,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -143,38 +154,71 @@ export default async function AdminHomePage() {
   }
 
   const cards = [
-    { label: t("teachers"), href: "/admin/teachers", count: teacherCount ?? 0 },
-    { label: t("parents"), href: "/admin/parents", count: parentCount ?? 0 },
-    { label: t("classes"), href: "/admin/classes", count: classCount ?? 0 },
-    { label: t("students"), href: "/admin/students", count: studentCount ?? 0 },
+    {
+      label: t("teachers"),
+      href: "/admin/teachers",
+      count: teacherCount ?? 0,
+      icon: UserSquare2,
+      tone: "text-sky-600",
+    },
+    {
+      label: t("parents"),
+      href: "/admin/parents",
+      count: parentCount ?? 0,
+      icon: Heart,
+      tone: "text-rose-600",
+    },
+    {
+      label: t("classes"),
+      href: "/admin/classes",
+      count: classCount ?? 0,
+      icon: BookOpen,
+      tone: "text-violet-600",
+    },
+    {
+      label: t("students"),
+      href: "/admin/students",
+      count: studentCount ?? 0,
+      icon: GraduationCap,
+      tone: "text-amber-600",
+    },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <Link key={c.href} href={c.href}>
-            <Card className="transition hover:bg-muted/40">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-muted-foreground text-sm font-medium">
-                  {c.label}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-semibold">{c.count}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {cards.map((c) => {
+          const Icon = c.icon;
+          return (
+            <Link key={c.href} href={c.href}>
+              <Card className="transition hover:bg-muted/40">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-muted-foreground text-sm font-medium">
+                    {c.label}
+                  </CardTitle>
+                  <Icon className={`size-4 ${c.tone}`} />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-semibold">{c.count}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">{t("weekHeader")}</h2>
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="text-primary size-5" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("weekHeader")}
+          </h2>
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-2">
@@ -240,9 +284,14 @@ export default async function AdminHomePage() {
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">{t("teacherActivityHeader")}</h2>
-        <div className="rounded-lg border">
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <ListChecks className="text-primary size-5" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("teacherActivityHeader")}
+          </h2>
+        </div>
+        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -260,20 +309,36 @@ export default async function AdminHomePage() {
             </TableHeader>
             <TableBody>
               {teachers && teachers.length > 0 ? (
-                teachers.map((tr) => (
-                  <TableRow key={tr.id}>
-                    <TableCell className="font-medium">{tr.full_name}</TableCell>
-                    <TableCell className="text-right">
-                      {classesByTeacher.get(tr.id) ?? 0}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {lessonsByTeacherWeek.get(tr.id) ?? 0}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {lessonsByTeacherTotal.get(tr.id) ?? 0}
-                    </TableCell>
-                  </TableRow>
-                ))
+                teachers.map((tr) => {
+                  const weekVal = lessonsByTeacherWeek.get(tr.id) ?? 0;
+                  return (
+                    <TableRow key={tr.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2 font-medium">
+                          <UserSquare2 className="text-muted-foreground size-4" />
+                          {tr.full_name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {classesByTeacher.get(tr.id) ?? 0}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={
+                            weekVal === 0
+                              ? "text-rose-600 font-medium"
+                              : "text-foreground"
+                          }
+                        >
+                          {weekVal}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {lessonsByTeacherTotal.get(tr.id) ?? 0}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell
@@ -289,13 +354,18 @@ export default async function AdminHomePage() {
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">{t("recentLessonsHeader")}</h2>
-        <div className="rounded-lg border">
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Clock3 className="text-primary size-5" />
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("recentLessonsHeader")}
+          </h2>
+        </div>
+        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("lessonDateCol")}</TableHead>
+                <TableHead className="w-32">{t("lessonDateCol")}</TableHead>
                 <TableHead>{t("lessonClassCol")}</TableHead>
                 <TableHead>{t("lessonTeacherCol")}</TableHead>
               </TableRow>
@@ -314,7 +384,12 @@ export default async function AdminHomePage() {
                           year: "numeric",
                         })}
                       </TableCell>
-                      <TableCell>{cls?.name ?? "—"}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <ClipboardList className="text-muted-foreground size-4" />
+                          {cls?.name ?? "—"}
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {tr?.full_name ?? "—"}
                       </TableCell>
@@ -325,9 +400,9 @@ export default async function AdminHomePage() {
                 <TableRow>
                   <TableCell
                     colSpan={3}
-                    className="text-muted-foreground py-6 text-center text-sm"
+                    className="text-muted-foreground flex items-center justify-center gap-2 py-6 text-center text-sm"
                   >
-                    —
+                    <Users className="size-4 opacity-50" />—
                   </TableCell>
                 </TableRow>
               )}

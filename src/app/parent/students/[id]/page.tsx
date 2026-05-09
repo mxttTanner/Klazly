@@ -1,6 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
+import {
+  ArrowLeft,
+  BookOpen,
+  ClipboardList,
+  GraduationCap,
+  MessageSquareText,
+  Mic2,
+  PencilLine,
+  ScrollText,
+} from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
@@ -110,13 +120,26 @@ export default async function StudentProgressPage({
       : t("classLine", { className: cls.name })
     : t("noClass");
 
+  const sections = [
+    { key: "vocabulary" as const, icon: BookOpen, value: null as string | null },
+    { key: "grammar" as const, icon: PencilLine, value: null as string | null },
+    { key: "speaking" as const, icon: Mic2, value: null as string | null },
+    { key: "homework" as const, icon: ScrollText, value: null as string | null },
+    {
+      key: "generalNote" as const,
+      icon: MessageSquareText,
+      value: null as string | null,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3 print:hidden">
         <Link
           href="/parent"
-          className="text-muted-foreground hover:text-foreground text-sm"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
         >
+          <ArrowLeft className="size-3.5" />
           {t("back")}
         </Link>
         <PrintButton label={t("print")} />
@@ -132,7 +155,8 @@ export default async function StudentProgressPage({
         <p className="hidden text-xs uppercase tracking-wide print:block">
           {t("printHeading")}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <h1 className="inline-flex items-center gap-2 text-3xl font-semibold tracking-tight">
+          <GraduationCap className="text-amber-600 size-7 print:hidden" />
           {student.full_name}
         </h1>
         <p className="text-muted-foreground text-sm">{classLineText}</p>
@@ -148,10 +172,17 @@ export default async function StudentProgressPage({
             const rating = u?.behavior_rating;
             const ratingTone = rating ? BEHAVIOR_TONES[rating] : null;
             const ratingLabel = rating ? tBehavior(rating) : null;
+            const fields = [
+              { ...sections[0], value: l.vocabulary },
+              { ...sections[1], value: l.grammar_point },
+              { ...sections[2], value: l.speaking_activity },
+              { ...sections[3], value: l.homework },
+              { ...sections[4], value: l.general_note },
+            ].filter((f) => f.value);
             return (
               <li
                 key={l.id}
-                className="bg-card rounded-lg border p-4 print:break-inside-avoid print:bg-transparent print:border-black print:p-3 sm:p-5"
+                className="rounded-lg border bg-card p-4 shadow-sm print:break-inside-avoid print:bg-transparent print:border-black print:p-3 sm:p-5"
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h2 className="font-semibold">
@@ -171,27 +202,30 @@ export default async function StudentProgressPage({
                   ) : null}
                 </div>
 
-                <dl className="mt-3 space-y-2 text-sm">
-                  {l.vocabulary ? (
-                    <Field label={t("vocabulary")} value={l.vocabulary} />
-                  ) : null}
-                  {l.grammar_point ? (
-                    <Field label={t("grammar")} value={l.grammar_point} />
-                  ) : null}
-                  {l.speaking_activity ? (
-                    <Field label={t("speaking")} value={l.speaking_activity} />
-                  ) : null}
-                  {l.homework ? (
-                    <Field label={t("homework")} value={l.homework} />
-                  ) : null}
-                  {l.general_note ? (
-                    <Field label={t("generalNote")} value={l.general_note} />
-                  ) : null}
-                </dl>
+                {fields.length > 0 ? (
+                  <dl className="mt-3 space-y-2.5 text-sm">
+                    {fields.map((f) => {
+                      const Icon = f.icon;
+                      return (
+                        <div
+                          key={f.key}
+                          className="grid grid-cols-[7rem_1fr] items-start gap-2 sm:grid-cols-[9rem_1fr]"
+                        >
+                          <dt className="text-muted-foreground inline-flex items-center gap-1.5">
+                            <Icon className="size-3.5" />
+                            {t(f.key)}
+                          </dt>
+                          <dd>{f.value}</dd>
+                        </div>
+                      );
+                    })}
+                  </dl>
+                ) : null}
 
                 {u ? (
                   <div className="bg-muted/40 mt-4 rounded-md p-3 text-sm print:bg-transparent print:border print:border-dashed print:border-black">
-                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    <p className="text-muted-foreground inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+                      <MessageSquareText className="size-3.5" />
                       {t("perStudentHeader")}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -214,19 +248,11 @@ export default async function StudentProgressPage({
           })}
         </ul>
       ) : (
-        <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          {t("noLessons")}
-        </p>
+        <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
+          <ClipboardList className="size-8 opacity-50" />
+          <p>{t("noLessons")}</p>
+        </div>
       )}
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid grid-cols-[7rem_1fr] gap-2 sm:grid-cols-[8rem_1fr]">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd>{value}</dd>
     </div>
   );
 }
