@@ -346,8 +346,23 @@
   "demo": {
     "loading": "Preparing demo...",
     "loadError": "Could not load the demo. Please try again later.",
-    "banner": "DEMO • This is a sales demonstration. Data may be reset at any time.",
-    "exit": "Exit demo"
+    "banner": "DEMO • Data may be reset at any time.",
+    "exit": "Exit demo",
+    "chooserTitle": "View the demo by role",
+    "chooserSubtitle": "Pick the role you want to experience. You can switch between all three at any time from the demo banner.",
+    "chooserHint": "Or",
+    "backHome": "back to home",
+    "enterAs": "Enter",
+    "roleAdminTitle": "Center admin",
+    "roleAdminDesc": "Dashboard, manage classes / teachers / students / parents, teacher activity analytics, center logo settings.",
+    "roleTeacherTitle": "Teacher",
+    "roleTeacherDesc": "View classes, record a new lesson in 60 seconds, attach worksheets, save lesson templates.",
+    "roleParentTitle": "Parent",
+    "roleParentDesc": "See your child's progress — vocabulary, grammar, behavior, homework per lesson. Print a PDF report.",
+    "switchLabel": "Switch role:",
+    "switchAdmin": "Admin",
+    "switchTeacher": "Teacher",
+    "switchParent": "Parent"
   },
   "superAdmin": {
     "navTitle": "Platform admin",

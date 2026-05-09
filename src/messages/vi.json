@@ -346,8 +346,23 @@
   "demo": {
     "loading": "Đang chuẩn bị bản demo...",
     "loadError": "Không thể tải bản demo. Vui lòng thử lại sau.",
-    "banner": "BẢN DEMO • Đây là môi trường trình bày sản phẩm. Dữ liệu có thể được khôi phục bất kỳ lúc nào.",
-    "exit": "Thoát demo"
+    "banner": "BẢN DEMO • Dữ liệu có thể được khôi phục bất kỳ lúc nào.",
+    "exit": "Thoát demo",
+    "chooserTitle": "Xem demo theo từng góc nhìn",
+    "chooserSubtitle": "Chọn vai trò bạn muốn trải nghiệm. Bạn có thể chuyển đổi giữa ba vai trò bất kỳ lúc nào ngay trên thanh demo.",
+    "chooserHint": "Hoặc",
+    "backHome": "quay về trang chủ",
+    "enterAs": "Vào xem",
+    "roleAdminTitle": "Quản trị trung tâm",
+    "roleAdminDesc": "Bảng tổng quan, quản lý lớp / giáo viên / học sinh / phụ huynh, phân tích hoạt động giáo viên, cài đặt logo trung tâm.",
+    "roleTeacherTitle": "Giáo viên",
+    "roleTeacherDesc": "Xem lớp, ghi nhận buổi học mới trong 60 giây, đính kèm tài liệu, lưu mẫu bài học.",
+    "roleParentTitle": "Phụ huynh",
+    "roleParentDesc": "Xem tiến trình học của con — từ vựng, ngữ pháp, thái độ, bài tập từng buổi. In báo cáo PDF.",
+    "switchLabel": "Chuyển vai trò:",
+    "switchAdmin": "Quản trị",
+    "switchTeacher": "Giáo viên",
+    "switchParent": "Phụ huynh"
   },
   "superAdmin": {
     "navTitle": "Bảng quản trị nền tảng",
