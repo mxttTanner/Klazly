@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default async function AdminLayout({
   children,
@@ -27,8 +28,13 @@ export default async function AdminLayout({
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-6">
-            <Link href="/admin" className="text-lg font-semibold">
-              {t("navTitle")}
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-2.5"
+              aria-label={t("navTitle")}
+            >
+              <BrandLogo size="sm" showText={false} />
+              <span className="text-base font-semibold">{t("navTitle")}</span>
             </Link>
             <nav className="hidden gap-4 text-sm md:flex">
               {navLinks.map((l) => {

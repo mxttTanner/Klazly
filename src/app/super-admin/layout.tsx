@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
+import { BrandLogo } from "@/components/brand-logo";
 
 export default async function SuperAdminLayout({
   children,
@@ -21,8 +22,13 @@ export default async function SuperAdminLayout({
       </div>
       <header className="border-b">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
-          <Link href="/super-admin" className="text-lg font-semibold">
-            {t("navTitle")}
+          <Link
+            href="/super-admin"
+            className="inline-flex items-center gap-2.5"
+            aria-label={t("navTitle")}
+          >
+            <BrandLogo size="sm" showText={false} />
+            <span className="text-base font-semibold">{t("navTitle")}</span>
           </Link>
           <div className="flex items-center gap-3">
             <LanguageToggle />
