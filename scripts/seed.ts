@@ -34,12 +34,55 @@ async function nuke() {
   await supabase.from("audit_log").delete().not("id", "is", null);
   await supabase.from("centers").delete().not("id", "is", null);
 
-  const { data, error } = await supabase.auth.admin.listUsers();
-  if (error) throw error;
-  for (const u of data.users) {
-    await supabase.auth.admin.deleteUser(u.id);
+  // Paginate so we don't miss anyone past the default 50-user page.
+  const all: { id: string; email?: string }[] = [];
+  let page = 1;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error) throw error;
+    all.push(...data.users);
+    if (data.users.length < 1000) break;
+    page++;
   }
-  console.log(`  Deleted ${data.users.length} auth user(s).`);
+
+  // Don't nuke the platform super-admin account.
+  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const toDelete = all.filter(
+    (u) => !u.email || !superAdminEmail.includes(u.email.toLowerCase()),
+  );
+
+  for (const u of toDelete) {
+    // Pass shouldSoftDelete=false so the email becomes immediately reusable.
+    await supabase.auth.admin.deleteUser(u.id, false);
+  }
+  console.log(
+    `  Deleted ${toDelete.length} auth user(s); preserved ${all.length - toDelete.length} super-admin account(s).`,
+  );
+}
+
+async function findExistingUserId(email: string): Promise<string | null> {
+  let page = 1;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error) return null;
+    const hit = data.users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    );
+    if (hit) return hit.id;
+    if (data.users.length < 1000) return null;
+    page++;
+  }
 }
 
 async function createUser(
@@ -48,11 +91,23 @@ async function createUser(
   role: "admin" | "teacher" | "parent",
   centerId: string,
 ): Promise<string> {
-  const { data, error } = await supabase.auth.admin.createUser({
+  let { data, error } = await supabase.auth.admin.createUser({
     email,
     password: SHARED_PASSWORD,
     email_confirm: true,
   });
+  if (error?.message?.includes("already been registered")) {
+    // Soft-deleted or otherwise reserved email — hard-delete and retry.
+    const existingId = await findExistingUserId(email);
+    if (existingId) {
+      await supabase.auth.admin.deleteUser(existingId, false);
+    }
+    ({ data, error } = await supabase.auth.admin.createUser({
+      email,
+      password: SHARED_PASSWORD,
+      email_confirm: true,
+    }));
+  }
   if (error) throw new Error(`auth.createUser ${email}: ${error.message}`);
   const id = data.user!.id;
 
