@@ -2,14 +2,36 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { NavItem } from "./nav-config";
+import {
+  BarChart3,
+  BookOpen,
+  FileText,
+  GraduationCap,
+  Heart,
+  Settings,
+  Upload,
+  UserSquare2,
+  type LucideIcon,
+} from "lucide-react";
+import type { NavItem, NavKey } from "./nav-config";
+
+const ICONS: Record<NavKey, LucideIcon> = {
+  overview: BarChart3,
+  teachers: UserSquare2,
+  parents: Heart,
+  classes: BookOpen,
+  students: GraduationCap,
+  worksheets: FileText,
+  import: Upload,
+  settings: Settings,
+};
 
 export function AdminSidebarNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
   return (
     <nav className="flex flex-col gap-1">
       {items.map((item) => {
-        const Icon = item.icon;
+        const Icon = ICONS[item.key];
         const active =
           pathname === item.href ||
           (item.href !== "/admin" && pathname.startsWith(item.href));
