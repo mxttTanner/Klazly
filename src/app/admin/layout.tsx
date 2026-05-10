@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
-import { BrandLogo } from "@/components/brand-logo";
+import { CenterLogo } from "@/components/center-logo";
 import { SubscriptionBanner } from "@/components/subscription-banner";
 import { AdminSidebarNav } from "./admin-sidebar";
 import { buildAdminNavItems } from "./nav-config";
@@ -19,6 +20,14 @@ export default async function AdminLayout({
   const t = await getTranslations("admin");
   const items = buildAdminNavItems((k) => t(k));
 
+  // Center identity for the topbar logo (uploaded logo + name if set).
+  const supabase = createClient();
+  const { data: center } = await supabase
+    .from("centers")
+    .select("name, logo_url")
+    .eq("id", user.center_id)
+    .single();
+
   return (
     <div className="bg-muted/20 min-h-dvh">
       <DemoBanner email={user.email} />
@@ -30,11 +39,14 @@ export default async function AdminLayout({
           <div className="border-b p-4">
             <Link
               href="/admin"
-              className="inline-flex items-center gap-2.5"
+              className="inline-flex max-w-full items-center gap-2.5"
               aria-label={t("navTitle")}
             >
-              <BrandLogo size="sm" showText={false} />
-              <span className="text-sm font-semibold">{t("navTitle")}</span>
+              <CenterLogo
+                centerName={center?.name ?? t("navTitle")}
+                logoUrl={center?.logo_url ?? null}
+                size="sm"
+              />
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto p-3">
@@ -53,8 +65,11 @@ export default async function AdminLayout({
                 triggerLabel={t("openMenu")}
               />
               <Link href="/admin" className="inline-flex items-center gap-2">
-                <BrandLogo size="sm" showText={false} />
-                <span className="text-sm font-semibold">{t("navTitle")}</span>
+                <CenterLogo
+                  centerName={center?.name ?? t("navTitle")}
+                  logoUrl={center?.logo_url ?? null}
+                  size="sm"
+                />
               </Link>
             </div>
             <div className="hidden md:block" />

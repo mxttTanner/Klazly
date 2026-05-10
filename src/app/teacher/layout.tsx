@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
-import { BrandLogo } from "@/components/brand-logo";
+import { CenterLogo } from "@/components/center-logo";
 
 export default async function TeacherLayout({
   children,
@@ -13,6 +14,13 @@ export default async function TeacherLayout({
 }) {
   const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher");
+
+  const supabase = createClient();
+  const { data: center } = await supabase
+    .from("centers")
+    .select("name, logo_url")
+    .eq("id", user.center_id)
+    .single();
 
   return (
     <div className="min-h-dvh">
@@ -24,8 +32,11 @@ export default async function TeacherLayout({
             className="inline-flex items-center gap-2.5"
             aria-label={t("navTitle")}
           >
-            <BrandLogo size="sm" showText={false} />
-            <span className="text-base font-semibold">{t("navTitle")}</span>
+            <CenterLogo
+              centerName={center?.name ?? t("navTitle")}
+              logoUrl={center?.logo_url ?? null}
+              size="sm"
+            />
           </Link>
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground hidden text-sm sm:inline">
