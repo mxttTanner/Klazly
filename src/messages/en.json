@@ -330,6 +330,8 @@
   "import": {
     "title": "CSV import",
     "subtitle": "Bulk-upload parents and students instead of adding them one by one.",
+    "inlineToggleParents": "Bulk import parents from CSV",
+    "inlineToggleStudents": "Bulk import students from CSV",
     "parentsHeader": "Import parents",
     "parentsHelp": "CSV with 3 columns: full_name, email, password. Password column can be blank — the system will generate a random password.",
     "parentsPasswordNote": "Note: if you leave password blank, you'll need to reset it for the parent later (password reset is not built yet).",
@@ -349,7 +351,13 @@
     "skipped": "Skipped {n} existing rows.",
     "errorsHeader": "{n} rows had errors:",
     "row": "Row {n}",
-    "moreErrors": "...and {n} more errors."
+    "moreErrors": "...and {n} more errors.",
+    "legacyHint": "CSV import now lives on the Parents and Students pages — click below to jump straight in.",
+    "legacyParentsTitle": "Import parents",
+    "legacyParentsHint": "Bulk-add parent accounts from a CSV.",
+    "legacyStudentsTitle": "Import students",
+    "legacyStudentsHint": "Bulk-add students and link them to classes + parents.",
+    "legacyOpen": "Open"
   },
   "worksheets": {
     "title": "Center worksheets",
@@ -384,6 +392,9 @@
   "settings": {
     "title": "Center settings",
     "subtitle": "Manage your center's logo and information.",
+    "navCenter": "Center",
+    "navPrograms": "Programs",
+    "navReport": "Report",
     "logoSection": "Center logo",
     "logoSectionHelp": "Your logo will appear on the parent dashboard and on printable PDF reports.",
     "logoUpload": "Upload a new logo",

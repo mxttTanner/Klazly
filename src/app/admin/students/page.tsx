@@ -14,6 +14,7 @@ import { deleteStudent } from "./actions";
 import { SearchInput } from "@/components/search-input";
 import { LevelSelect } from "@/components/level-select";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { InlineImportSection } from "@/components/inline-import-section";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function StudentsPage({
   const tc = await getTranslations("common");
   const tAdmin = await getTranslations("admin");
   const tLevel = await getTranslations("level");
+  const tImport = await getTranslations("import");
 
   const q = searchParams.q?.trim() ?? "";
 
@@ -64,6 +66,16 @@ export default async function StudentsPage({
       </div>
 
       <StudentForm classes={classes ?? []} parents={parents ?? []} />
+
+      <InlineImportSection
+        variant="students"
+        toggleLabel={tImport("inlineToggleStudents")}
+        helpText={tImport("studentsHelp")}
+        exampleCsv={`full_name,age,class_name,parent_email
+Phạm Minh An,8,Lớp Junior A,binh@parent.test
+Nguyễn Bảo Ngọc,10,Lớp Junior A,hoa@parent.test`}
+        noteText={tImport("studentsNote")}
+      />
 
       <SearchInput placeholder={tAdmin("search")} />
 

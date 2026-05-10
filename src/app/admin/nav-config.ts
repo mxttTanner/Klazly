@@ -12,7 +12,6 @@ export type NavKey =
   | "classes"
   | "students"
   | "worksheets"
-  | "import"
   | "settings";
 
 export type NavItem = {
@@ -21,6 +20,9 @@ export type NavItem = {
   label: string;
 };
 
+// CSV import deliberately not in the sidebar — it lives inline as an
+// expandable section on /admin/parents and /admin/students. The
+// /admin/import route still exists as a fallback for old bookmarks.
 export function buildAdminNavItems(t: (k: string) => string): NavItem[] {
   return [
     { key: "overview", href: "/admin", label: t("navOverview") },
@@ -29,7 +31,6 @@ export function buildAdminNavItems(t: (k: string) => string): NavItem[] {
     { key: "classes", href: "/admin/classes", label: t("navClasses") },
     { key: "students", href: "/admin/students", label: t("navStudents") },
     { key: "worksheets", href: "/admin/worksheets", label: t("navWorksheets") },
-    { key: "import", href: "/admin/import", label: t("navImport") },
     { key: "settings", href: "/admin/settings", label: t("navSettings") },
   ];
 }

@@ -9,7 +9,6 @@ import {
   GraduationCap,
   Heart,
   Settings,
-  Upload,
   UserSquare2,
   type LucideIcon,
 } from "lucide-react";
@@ -22,7 +21,6 @@ const ICONS: Record<NavKey, LucideIcon> = {
   classes: BookOpen,
   students: GraduationCap,
   worksheets: FileText,
-  import: Upload,
   settings: Settings,
 };
 

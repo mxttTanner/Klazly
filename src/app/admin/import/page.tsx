@@ -1,50 +1,74 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { GraduationCap, Heart } from "lucide-react";
+import { GraduationCap, Heart, Upload } from "lucide-react";
 import { requireRole } from "@/lib/auth";
-import { ImportForm } from "./import-form";
+import { buttonVariants } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-export default async function ImportPage() {
+/**
+ * /admin/import is no longer a top-level nav item — CSV import lives inline
+ * on /admin/parents and /admin/students. We keep this route around as a
+ * small redirect page for old bookmarks / sales-sheet links.
+ */
+export default async function ImportLegacyPage() {
   await requireRole("admin");
   const t = await getTranslations("import");
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("title")}
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          {t("legacyHint")}
+        </p>
       </div>
 
-      <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Heart className="text-rose-600 size-5" />
-          <h2 className="text-lg font-semibold">{t("parentsHeader")}</h2>
-        </div>
-        <p className="text-muted-foreground text-sm">{t("parentsHelp")}</p>
-        <pre className="bg-muted text-muted-foreground overflow-x-auto rounded-md p-3 text-xs">
-{`full_name,email,password
-Phạm Văn Bình,binh@parent.test,changeme123
-Nguyễn Thị Hoa,hoa@parent.test,changeme123`}
-        </pre>
-        <p className="text-muted-foreground text-xs">{t("parentsPasswordNote")}</p>
-        <ImportForm variant="parents" />
-      </section>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/admin/parents"
+          className="bg-card group rounded-lg border p-5 shadow-sm transition hover:shadow-md"
+        >
+          <div className="bg-rose-50 text-rose-700 inline-flex size-10 items-center justify-center rounded-lg">
+            <Heart className="size-5" />
+          </div>
+          <h2 className="mt-3 text-base font-semibold">
+            {t("legacyParentsTitle")}
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {t("legacyParentsHint")}
+          </p>
+          <span
+            className={`${buttonVariants({ variant: "outline", size: "sm" })} mt-3 inline-flex items-center gap-1.5`}
+          >
+            <Upload className="size-3.5" />
+            {t("legacyOpen")}
+          </span>
+        </Link>
 
-      <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="text-amber-600 size-5" />
-          <h2 className="text-lg font-semibold">{t("studentsHeader")}</h2>
-        </div>
-        <p className="text-muted-foreground text-sm">{t("studentsHelp")}</p>
-        <pre className="bg-muted text-muted-foreground overflow-x-auto rounded-md p-3 text-xs">
-{`full_name,age,class_name,parent_email
-Phạm Minh An,8,Lớp Junior A,binh@parent.test
-Nguyễn Bảo Ngọc,10,Lớp Junior A,hoa@parent.test`}
-        </pre>
-        <p className="text-muted-foreground text-xs">{t("studentsNote")}</p>
-        <ImportForm variant="students" />
-      </section>
+        <Link
+          href="/admin/students"
+          className="bg-card group rounded-lg border p-5 shadow-sm transition hover:shadow-md"
+        >
+          <div className="bg-amber-50 text-amber-700 inline-flex size-10 items-center justify-center rounded-lg">
+            <GraduationCap className="size-5" />
+          </div>
+          <h2 className="mt-3 text-base font-semibold">
+            {t("legacyStudentsTitle")}
+          </h2>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {t("legacyStudentsHint")}
+          </p>
+          <span
+            className={`${buttonVariants({ variant: "outline", size: "sm" })} mt-3 inline-flex items-center gap-1.5`}
+          >
+            <Upload className="size-3.5" />
+            {t("legacyOpen")}
+          </span>
+        </Link>
+      </div>
     </div>
   );
 }

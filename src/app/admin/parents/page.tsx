@@ -12,6 +12,7 @@ import { ParentForm } from "./parent-form";
 import { removeParent } from "./actions";
 import { SearchInput } from "@/components/search-input";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { InlineImportSection } from "@/components/inline-import-section";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function ParentsPage({
   const tt = await getTranslations("admin.teachers");
   const tc = await getTranslations("common");
   const tAdmin = await getTranslations("admin");
+  const tImport = await getTranslations("import");
 
   const q = searchParams.q?.trim() ?? "";
 
@@ -45,6 +47,16 @@ export default async function ParentsPage({
       </div>
 
       <ParentForm />
+
+      <InlineImportSection
+        variant="parents"
+        toggleLabel={tImport("inlineToggleParents")}
+        helpText={tImport("parentsHelp")}
+        exampleCsv={`full_name,email,password
+Phạm Văn Bình,binh@parent.test,changeme123
+Nguyễn Thị Hoa,hoa@parent.test,changeme123`}
+        noteText={tImport("parentsPasswordNote")}
+      />
 
       <SearchInput placeholder={tAdmin("search")} />
 

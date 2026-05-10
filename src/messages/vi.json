@@ -330,6 +330,8 @@
   "import": {
     "title": "Nhập từ CSV",
     "subtitle": "Tải lên danh sách phụ huynh và học sinh hàng loạt thay vì nhập từng người.",
+    "inlineToggleParents": "Nhập danh sách phụ huynh từ CSV",
+    "inlineToggleStudents": "Nhập danh sách học sinh từ CSV",
     "parentsHeader": "Nhập phụ huynh",
     "parentsHelp": "Tệp CSV với 3 cột: full_name, email, password. Cột password có thể để trống — hệ thống sẽ sinh mật khẩu ngẫu nhiên.",
     "parentsPasswordNote": "Lưu ý: nếu để trống cột password, bạn sẽ cần đặt lại mật khẩu cho phụ huynh sau (tính năng đặt lại mật khẩu chưa có).",
@@ -349,7 +351,13 @@
     "skipped": "Bỏ qua {n} mục đã tồn tại.",
     "errorsHeader": "{n} dòng có lỗi:",
     "row": "Dòng {n}",
-    "moreErrors": "...và {n} lỗi khác."
+    "moreErrors": "...và {n} lỗi khác.",
+    "legacyHint": "Tính năng nhập CSV đã chuyển sang trang Phụ huynh và Học sinh — bấm bên dưới để mở trực tiếp.",
+    "legacyParentsTitle": "Nhập phụ huynh",
+    "legacyParentsHint": "Thêm hàng loạt tài khoản phụ huynh từ tệp CSV.",
+    "legacyStudentsTitle": "Nhập học sinh",
+    "legacyStudentsHint": "Thêm hàng loạt học sinh và liên kết với lớp + phụ huynh.",
+    "legacyOpen": "Mở"
   },
   "worksheets": {
     "title": "Tài liệu trung tâm",
@@ -384,6 +392,9 @@
   "settings": {
     "title": "Cài đặt trung tâm",
     "subtitle": "Quản lý logo và thông tin trung tâm của bạn.",
+    "navCenter": "Trung tâm",
+    "navPrograms": "Chương trình",
+    "navReport": "Báo cáo",
     "logoSection": "Logo trung tâm",
     "logoSectionHelp": "Logo sẽ hiển thị trên trang phụ huynh và trên báo cáo PDF.",
     "logoUpload": "Tải lên logo mới",
