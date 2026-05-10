@@ -235,6 +235,9 @@ export default async function HomePage() {
               >
                 {t("pricingCta")}
               </Link>
+              <p className="text-muted-foreground mt-2 text-center text-xs">
+                {t("pricingTrialInline")}
+              </p>
             </div>
 
             {/* Annual — highlighted */}
@@ -265,6 +268,9 @@ export default async function HomePage() {
               >
                 {t("pricingCta")}
               </Link>
+              <p className="text-primary mt-2 text-center text-xs font-medium">
+                {t("pricingTrialInline")}
+              </p>
             </div>
           </div>
 
