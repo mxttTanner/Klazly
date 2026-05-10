@@ -282,20 +282,33 @@ export default async function HomePage() {
 
       {/* Footer */}
       <footer className="bg-muted/20">
-        <div className="text-muted-foreground mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-8 text-xs sm:flex-row sm:px-6">
-          <div className="flex items-center gap-2">
-            <BrandLogo size="sm" showText={false} />
-            <span>{t("footerCopyright", { year })}</span>
+        <div className="text-muted-foreground mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-xs sm:px-6">
+          <div className="flex w-full flex-col items-center justify-between gap-3 sm:flex-row">
+            <div className="flex items-center gap-2">
+              <BrandLogo size="sm" showText={false} />
+              <span>{t("footerCopyright", { year })}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <ScrollText className="size-3.5" />
+              <span>{t("footerContact")}</span>
+              <a
+                href="mailto:matthewstadlers14@gmail.com"
+                className="hover:text-foreground"
+              >
+                matthewstadlers14@gmail.com
+              </a>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <ScrollText className="size-3.5" />
-            <span>{t("footerContact")}</span>
-            <a
-              href="mailto:matthewstadlers14@gmail.com"
-              className="hover:text-foreground"
-            >
-              matthewstadlers14@gmail.com
-            </a>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <Link href="/legal/terms" className="hover:text-foreground">
+              {t("footerTerms")}
+            </Link>
+            <span className="opacity-40">·</span>
+            <Link href="/legal/privacy" className="hover:text-foreground">
+              {t("footerPrivacy")}
+            </Link>
+            <span className="opacity-40">·</span>
+            <span>{t("footerOwnership")}</span>
           </div>
         </div>
       </footer>
