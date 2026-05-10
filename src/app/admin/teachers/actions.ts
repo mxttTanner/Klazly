@@ -7,8 +7,11 @@ import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const inviteSchema = z.object({
-  email: z.string().email(),
-  full_name: z.string().min(1).max(120),
+  // Lowercase so a teacher invited as "Jean@x.com" can be looked up later
+  // as "jean@x.com" (consistent with CSV import + auth providers, which
+  // typically normalise email anyway).
+  email: z.string().email().transform((s) => s.trim().toLowerCase()),
+  full_name: z.string().trim().min(1).max(120),
   password: z.string().min(8).max(72),
 });
 

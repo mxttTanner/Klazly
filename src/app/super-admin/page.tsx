@@ -120,7 +120,7 @@ export default async function SuperAdminHomePage() {
         </div>
 
         {centers && centers.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>

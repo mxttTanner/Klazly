@@ -59,7 +59,7 @@ export default async function WorksheetsPage() {
             {t("libraryHeader", { count: worksheets?.length ?? 0 })}
           </h2>
         </div>
-        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -95,7 +95,7 @@ export default async function WorksheetsPage() {
                         </a>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs uppercase">
-                        {isImage ? "image" : "pdf"}
+                        {isImage ? t("typeImage") : t("typePdf")}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatBytes(w.size_bytes)}

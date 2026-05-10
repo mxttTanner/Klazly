@@ -8,6 +8,13 @@ export function parseCsv(text: string): string[][] {
   let field = "";
   let inQuotes = false;
 
+  // Strip UTF-8 BOM that Excel writes by default. Without this the first
+  // header (e.g. "full_name") shows up as "﻿full_name" and every row
+  // import fails with a "missing required field" error.
+  if (text.charCodeAt(0) === 0xfeff) {
+    text = text.slice(1);
+  }
+
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (inQuotes) {

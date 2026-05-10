@@ -12,6 +12,7 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/print-button";
+import { parseDateOnly } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -191,9 +192,10 @@ export default async function StudentProgressPage({
   // server so the parent-facing card is in the initial HTML.
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const monthlyLessons = lessons.filter(
-    (l) => new Date(l.lesson_date) >= thirtyDaysAgo,
-  );
+  const monthlyLessons = lessons.filter((l) => {
+    const d = parseDateOnly(l.lesson_date);
+    return d !== null && d >= thirtyDaysAgo;
+  });
   const monthlyUpdates = monthlyLessons
     .map((l) => updateByLesson.get(l.id))
     .filter((u): u is UpdateRow => Boolean(u));
@@ -229,11 +231,11 @@ export default async function StudentProgressPage({
 
   // Date range for the report period (oldest → newest among rendered lessons).
   const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString(dateLocale, {
+    parseDateOnly(d)?.toLocaleDateString(dateLocale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
-    });
+    }) ?? "";
   const periodFrom =
     lessons.length > 0
       ? fmtDate(lessons[lessons.length - 1].lesson_date)
@@ -458,14 +460,12 @@ export default async function StudentProgressPage({
             const ws = Array.isArray(l.worksheet)
               ? l.worksheet[0]
               : l.worksheet;
-            const dateText = new Date(l.lesson_date).toLocaleDateString(
-              dateLocale,
-              {
+            const dateText =
+              parseDateOnly(l.lesson_date)?.toLocaleDateString(dateLocale, {
                 weekday: "short",
                 day: "2-digit",
                 month: "2-digit",
-              },
-            );
+              }) ?? "";
             return (
               <li
                 key={l.id}

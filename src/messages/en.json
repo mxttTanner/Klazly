@@ -421,6 +421,8 @@
     "namePlaceholder": "e.g. Week 1 exercises",
     "file": "File",
     "type": "Type",
+    "typeImage": "image",
+    "typePdf": "pdf",
     "size": "Size",
     "uploadedBy": "Uploaded by",
     "uploadedAt": "Uploaded",

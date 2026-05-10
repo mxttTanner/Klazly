@@ -14,6 +14,7 @@ import {
   UserSquare2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { parseDateOnly } from "@/lib/utils";
 import { toneForProgram } from "@/lib/programs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -299,7 +300,7 @@ export default async function AdminHomePage({
             {t("teacherActivityHeader")}
           </h2>
         </div>
-        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -369,7 +370,7 @@ export default async function AdminHomePage({
             {t("recentLessonsHeader")}
           </h2>
         </div>
-        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -386,7 +387,7 @@ export default async function AdminHomePage({
                   return (
                     <TableRow key={l.id}>
                       <TableCell className="text-muted-foreground">
-                        {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
+                        {parseDateOnly(l.lesson_date)?.toLocaleDateString(dateLocale, {
                           day: "2-digit",
                           month: "2-digit",
                           year: "numeric",

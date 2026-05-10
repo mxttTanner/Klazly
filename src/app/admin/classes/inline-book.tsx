@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,14 @@ export function InlineBook({
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(currentBook ?? "");
   const [pending, startTransition] = useTransition();
+
+  // Keep local state in sync if the prop changes (e.g., another admin
+  // edited the book in another browser, or our own action revalidated
+  // the row). Only resync while not editing — don't clobber the user's
+  // in-progress text.
+  useEffect(() => {
+    if (!editing) setValue(currentBook ?? "");
+  }, [currentBook, editing]);
 
   function save() {
     const fd = new FormData();

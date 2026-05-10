@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
 import { LevelSelect } from "@/components/level-select";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { parseDateOnly } from "@/lib/utils";
 import { deleteLesson } from "./lessons/new/actions";
 import {
   Table,
@@ -194,7 +195,7 @@ export default async function ClassDetailPage({
             {t("studentsHeader", { count: students?.length ?? 0 })}
           </h2>
         </div>
-        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -290,7 +291,7 @@ export default async function ClassDetailPage({
                         );
                         return parts.length > 0
                           ? parts.join(" — ")
-                          : new Date(l.lesson_date).toLocaleDateString(
+                          : parseDateOnly(l.lesson_date)?.toLocaleDateString(
                               dateLocale,
                               {
                                 weekday: "long",
@@ -298,12 +299,12 @@ export default async function ClassDetailPage({
                                 month: "2-digit",
                                 year: "numeric",
                               },
-                            );
+                            ) ?? "";
                       })()}
                     </p>
                     {l.unit || l.lesson_number || l.topic ? (
                       <p className="text-muted-foreground text-xs">
-                        {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
+                        {parseDateOnly(l.lesson_date)?.toLocaleDateString(dateLocale, {
                           weekday: "long",
                           day: "2-digit",
                           month: "2-digit",

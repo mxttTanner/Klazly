@@ -421,6 +421,8 @@
     "namePlaceholder": "VD: Bài tập tuần 1",
     "file": "Tệp",
     "type": "Loại",
+    "typeImage": "ảnh",
+    "typePdf": "pdf",
     "size": "Dung lượng",
     "uploadedBy": "Người tải",
     "uploadedAt": "Ngày tải",

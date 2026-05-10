@@ -107,7 +107,7 @@ export default async function ClassesPage({
 
       <SearchInput placeholder={tAdmin("search")} />
 
-      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

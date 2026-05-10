@@ -8,16 +8,20 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { csvToRecords } from "@/lib/csv";
 
 const parentRowSchema = z.object({
-  full_name: z.string().min(1).max(120),
-  email: z.string().email(),
+  full_name: z.string().trim().min(1).max(120),
+  email: z.string().email().transform((s) => s.trim().toLowerCase()),
   password: z.string().min(8).max(72).optional(),
 });
 
 const studentRowSchema = z.object({
-  full_name: z.string().min(1).max(120),
+  full_name: z.string().trim().min(1).max(120),
   age: z.string().optional(),
-  class_name: z.string().optional(),
-  parent_email: z.string().email().optional(),
+  class_name: z.string().trim().optional(),
+  parent_email: z
+    .string()
+    .email()
+    .transform((s) => s.trim().toLowerCase())
+    .optional(),
 });
 
 export type ImportResult = {

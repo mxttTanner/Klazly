@@ -29,7 +29,7 @@ export function ClassForm({
     <form
       ref={formRef}
       action={action}
-      className="grid gap-4 rounded-lg border p-4 sm:grid-cols-6"
+      className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-6"
     >
       <div className="space-y-2 sm:col-span-1">
         <Label htmlFor="name">{t("className")}</Label>
@@ -97,12 +97,12 @@ export function ClassForm({
         />
       </div>
       {state.error ? (
-        <p className="text-destructive sm:col-span-6 text-sm" role="alert">
+        <p className="text-destructive sm:col-span-2 lg:col-span-6 text-sm" role="alert">
           {state.error}
         </p>
       ) : null}
       {state.success ? (
-        <p className="sm:col-span-6 text-sm text-emerald-600">
+        <p className="sm:col-span-2 lg:col-span-6 text-sm text-emerald-600">
           {state.success}
         </p>
       ) : null}

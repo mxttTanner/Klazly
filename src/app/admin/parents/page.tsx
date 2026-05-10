@@ -60,7 +60,7 @@ Nguyễn Thị Hoa,hoa@parent.test,changeme123`}
 
       <SearchInput placeholder={tAdmin("search")} />
 
-      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
