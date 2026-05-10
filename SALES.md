@@ -83,6 +83,8 @@ Hầu hết các trung tâm tiếng Anh tại Việt Nam vẫn quản lý liên 
 
 ## Bảng giá
 
+> 🚀 **Giá ra mắt — có thời hạn.** Đây là mức giá khi sản phẩm còn mới. Khi chúng tôi bổ sung tính năng (thông báo email, phân tích chuyên sâu, tích hợp Zalo), giá sẽ tăng. **Các trung tâm tham gia trong giai đoạn ra mắt sẽ giữ nguyên mức giá hiện tại suốt thời gian còn duy trì thuê bao** — kể cả sau khi giá tăng cho khách hàng mới.
+
 Trung tâm cần thời gian để nhập học sinh, đào tạo giáo viên, làm quen với hệ thống. Vì vậy chúng tôi chỉ cung cấp **gói 6 tháng và 12 tháng**.
 
 | Gói | Giá | Tương đương | Tiết kiệm |

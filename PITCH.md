@@ -12,7 +12,7 @@
 >
 > 👉 https://parent-portal-nine.vercel.app/demo
 >
-> Nếu thấy phù hợp, em tạo tài khoản trung tâm cho anh/chị trong 5 phút. Sau 14 ngày dùng thử miễn phí, gói **6 tháng là 5.4tr** hoặc **1 năm 9.6tr** (rẻ hơn 20%). Cảm ơn anh/chị đã đọc!
+> Nếu thấy phù hợp, em tạo tài khoản trung tâm cho anh/chị trong 5 phút. Sau 14 ngày dùng thử miễn phí, gói **6 tháng là 5.4tr** hoặc **1 năm 9.6tr** (rẻ hơn 20%). **Đây là giá ra mắt** — các trung tâm tham gia bây giờ sẽ giữ nguyên mức giá này suốt thời gian còn dùng, kể cả khi em tăng giá sau này. Cảm ơn anh/chị đã đọc!
 
 ---
 
@@ -40,6 +40,8 @@
 >
 > - Gói **6 tháng: 5.400.000 VNĐ** (= 900k/tháng, tiết kiệm 10%)
 > - Gói **1 năm: 9.600.000 VNĐ** (= 800k/tháng, tiết kiệm 20%)
+>
+> 🚀 **Đây là giá ra mắt.** Khi em bổ sung tính năng (thông báo email, phân tích chuyên sâu, tích hợp Zalo) giá sẽ tăng. Các trung tâm tham gia bây giờ giữ nguyên mức giá này suốt thời gian còn dùng — kể cả khi em tăng giá cho khách hàng mới.
 >
 > Không giới hạn lớp / học sinh / phụ huynh / giáo viên. Báo cáo PDF không giới hạn. Hỗ trợ qua Zalo / email.
 >

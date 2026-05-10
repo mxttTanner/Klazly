@@ -197,10 +197,14 @@ export default async function HomePage() {
       </section>
 
       {/* Pricing */}
-      <section className="border-b">
+      <section id="pricing" className="border-b">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <span className="bg-amber-100 text-amber-800 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+              <Sparkles className="size-3.5" />
+              {t("pricingLaunchBadge")}
+            </span>
+            <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
               {t("pricingTitle")}
             </h2>
             <p className="text-muted-foreground mt-3 text-balance text-base">
@@ -262,6 +266,15 @@ export default async function HomePage() {
                 {t("pricingCta")}
               </Link>
             </div>
+          </div>
+
+          <div className="mx-auto mt-8 max-w-2xl rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
+            <p className="text-amber-900 text-sm font-medium">
+              {t("pricingLockInTitle")}
+            </p>
+            <p className="text-amber-800 mt-1 text-xs leading-relaxed">
+              {t("pricingLockInBody")}
+            </p>
           </div>
 
           <div className="mx-auto mt-10 max-w-2xl">

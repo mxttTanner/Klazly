@@ -85,6 +85,12 @@ Within the first month of switching:
 | **6 months** | 5,400,000 VND prepaid | 900,000 VND/mo | 10% |
 | **1 year** ⭐ | 9,600,000 VND prepaid | 800,000 VND/mo | 20% |
 
+🚀 **Launch pricing — limited time.** These are our launch rates. As we add
+features (email notifications, deeper analytics, Zalo integration) prices
+will increase. **Centers who join during launch keep their current rate
+for as long as they remain subscribed** — even after we raise prices for
+new customers.
+
 Both plans include unlimited classes, students, parents, teachers, lessons,
 PDF reports. Free 14-day trial. No credit card required.
 
