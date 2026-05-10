@@ -1,8 +1,9 @@
 import { getTranslations } from "next-intl/server";
-import { ImageIcon } from "lucide-react";
+import { FileText, ImageIcon } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { LogoUploadForm } from "./logo-upload-form";
+import { ReportSettingsForm } from "./report-settings-form";
 import { removeCenterLogo } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -15,7 +16,9 @@ export default async function SettingsPage() {
 
   const { data: center } = await supabase
     .from("centers")
-    .select("name, logo_url")
+    .select(
+      "name, logo_url, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right",
+    )
     .eq("id", user.center_id)
     .single();
 
@@ -69,6 +72,27 @@ export default async function SettingsPage() {
         <div className="border-t pt-4">
           <LogoUploadForm />
         </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-2">
+          <FileText className="text-primary size-5" />
+          <h2 className="text-lg font-semibold">{t("reportSection")}</h2>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          {t("reportSectionHelp")}
+        </p>
+
+        <ReportSettingsForm
+          defaults={{
+            intro: center?.report_intro_text ?? null,
+            footer: center?.report_footer_text ?? null,
+            show_summary: center?.report_show_summary ?? true,
+            show_signatures: center?.report_show_signatures ?? true,
+            sig_left: center?.report_signature_label_left ?? null,
+            sig_right: center?.report_signature_label_right ?? null,
+          }}
+        />
       </section>
     </div>
   );

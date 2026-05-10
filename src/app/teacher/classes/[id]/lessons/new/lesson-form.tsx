@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFormState } from "react-dom";
 import { useTranslations } from "next-intl";
@@ -27,6 +27,7 @@ export type LessonDefaults = {
   lesson_date: string;
   unit: string | null;
   lesson_number: string | null;
+  topic: string | null;
   vocabulary: string | null;
   grammar_point: string | null;
   speaking_activity: string | null;
@@ -95,10 +96,23 @@ export function LessonForm({
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
+  // Bulk-toggle the per-student homework checkboxes. The Checkbox primitive
+  // renders a button with a data-checked attribute when checked, so we click
+  // only the ones whose state doesn't already match.
+  function setAllHomework(done: boolean) {
+    document
+      .querySelectorAll<HTMLButtonElement>('button[id^="homework_"]')
+      .forEach((btn) => {
+        const isChecked = btn.hasAttribute("data-checked");
+        if (isChecked !== done) btn.click();
+      });
+  }
+
   // Populate defaults from edit-mode existing data, otherwise template, otherwise blank.
   const lessonDateDefault = defaults?.lesson_date ?? defaultDate;
   const unitDefault = defaults?.unit ?? "";
   const lessonNumberDefault = defaults?.lesson_number ?? "";
+  const topicDefault = defaults?.topic ?? "";
   const vocabDefault =
     defaults?.vocabulary ?? selectedTemplate?.vocabulary ?? "";
   const grammarDefault =
@@ -111,8 +125,29 @@ export function LessonForm({
     defaults?.general_note ?? selectedTemplate?.general_note ?? "";
   const worksheetDefault = defaults?.worksheet_id ?? "none";
 
+  // Live values for the lesson body. The previous implementation read
+  // document.getElementById(...).value at render time when building the
+  // "save as template" form, which always returned empty strings. With
+  // controlled inputs the template-save form gets the current text.
+  const [vocabValue, setVocabValue] = useState(vocabDefault);
+  const [grammarValue, setGrammarValue] = useState(grammarDefault);
+  const [speakingValue, setSpeakingValue] = useState(speakingDefault);
+  const [homeworkValue, setHomeworkValue] = useState(homeworkDefault);
+  const [generalValue, setGeneralValue] = useState(generalDefault);
+
   const formKey = `${mode}-${selectedTemplate?.id ?? lessonId ?? "blank"}`;
   const isEdit = mode === "edit";
+
+  // Reset live values when the picked template (or edit-mode lesson) changes —
+  // keyed by formKey since that already changes on template/lesson swap.
+  useEffect(() => {
+    setVocabValue(vocabDefault);
+    setGrammarValue(grammarDefault);
+    setSpeakingValue(speakingDefault);
+    setHomeworkValue(homeworkDefault);
+    setGeneralValue(generalDefault);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formKey]);
 
   return (
     <div className="space-y-6">
@@ -182,6 +217,19 @@ export function LessonForm({
               />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="topic">{t("topic")}</Label>
+            <Input
+              id="topic"
+              name="topic"
+              defaultValue={topicDefault}
+              placeholder={t("topicPlaceholder")}
+              maxLength={120}
+            />
+            <p className="text-muted-foreground text-xs">{t("topicHelp")}</p>
+          </div>
+
           <p className="text-muted-foreground text-xs">{t("unitHelp")}</p>
 
           <div className="space-y-2">
@@ -190,7 +238,8 @@ export function LessonForm({
               id="vocabulary"
               name="vocabulary"
               rows={2}
-              defaultValue={vocabDefault}
+              value={vocabValue}
+              onChange={(e) => setVocabValue(e.target.value)}
               placeholder={t("vocabularyPlaceholder")}
             />
           </div>
@@ -201,7 +250,8 @@ export function LessonForm({
               id="grammar_point"
               name="grammar_point"
               rows={2}
-              defaultValue={grammarDefault}
+              value={grammarValue}
+              onChange={(e) => setGrammarValue(e.target.value)}
               placeholder={t("grammarPlaceholder")}
             />
           </div>
@@ -212,7 +262,8 @@ export function LessonForm({
               id="speaking_activity"
               name="speaking_activity"
               rows={2}
-              defaultValue={speakingDefault}
+              value={speakingValue}
+              onChange={(e) => setSpeakingValue(e.target.value)}
               placeholder={t("speakingPlaceholder")}
             />
           </div>
@@ -223,7 +274,8 @@ export function LessonForm({
               id="homework"
               name="homework"
               rows={2}
-              defaultValue={homeworkDefault}
+              value={homeworkValue}
+              onChange={(e) => setHomeworkValue(e.target.value)}
               placeholder={t("homeworkPlaceholder")}
             />
           </div>
@@ -234,7 +286,8 @@ export function LessonForm({
               id="general_note"
               name="general_note"
               rows={3}
-              defaultValue={generalDefault}
+              value={generalValue}
+              onChange={(e) => setGeneralValue(e.target.value)}
               placeholder={t("generalNotePlaceholder")}
             />
           </div>
@@ -291,6 +344,58 @@ export function LessonForm({
               {t("perStudentSubtitle")}
             </p>
           </div>
+
+          {students.length > 1 ? (
+            <div className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-md border border-dashed p-3 text-sm">
+              <span className="text-muted-foreground">{t("bulkLabel")}</span>
+              <Label
+                htmlFor="bulk-behavior"
+                className="text-muted-foreground sr-only"
+              >
+                {t("bulkSetBehavior")}
+              </Label>
+              <select
+                id="bulk-behavior"
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "none") return;
+                  document
+                    .querySelectorAll<HTMLSelectElement>(
+                      'select[name^="behavior_"]',
+                    )
+                    .forEach((el) => {
+                      el.value = v;
+                    });
+                  e.target.value = "none";
+                }}
+                defaultValue="none"
+                className="border-input bg-background h-8 rounded-md border px-2 text-xs"
+              >
+                <option value="none">{t("bulkSetBehavior")}…</option>
+                {behaviorOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setAllHomework(true)}
+              >
+                {t("bulkAllHomeworkDone")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setAllHomework(false)}
+              >
+                {t("bulkAllHomeworkUndone")}
+              </Button>
+            </div>
+          ) : null}
 
           <div className="space-y-6">
             {students.map((s) => {
@@ -407,49 +512,15 @@ export function LessonForm({
                 placeholder={tTemplates("namePlaceholder")}
               />
             </div>
-            <input
-              type="hidden"
-              name="vocabulary"
-              value={
-                (document.getElementById("vocabulary") as HTMLTextAreaElement)
-                  ?.value ?? ""
-              }
-            />
-            <input
-              type="hidden"
-              name="grammar_point"
-              value={
-                (document.getElementById("grammar_point") as HTMLTextAreaElement)
-                  ?.value ?? ""
-              }
-            />
+            <input type="hidden" name="vocabulary" value={vocabValue} />
+            <input type="hidden" name="grammar_point" value={grammarValue} />
             <input
               type="hidden"
               name="speaking_activity"
-              value={
-                (
-                  document.getElementById(
-                    "speaking_activity",
-                  ) as HTMLTextAreaElement
-                )?.value ?? ""
-              }
+              value={speakingValue}
             />
-            <input
-              type="hidden"
-              name="homework"
-              value={
-                (document.getElementById("homework") as HTMLTextAreaElement)
-                  ?.value ?? ""
-              }
-            />
-            <input
-              type="hidden"
-              name="general_note"
-              value={
-                (document.getElementById("general_note") as HTMLTextAreaElement)
-                  ?.value ?? ""
-              }
-            />
+            <input type="hidden" name="homework" value={homeworkValue} />
+            <input type="hidden" name="general_note" value={generalValue} />
             <SubmitButton
               idleLabel={tTemplates("saveSubmit")}
               pendingLabel={tTemplates("saveSubmitting")}

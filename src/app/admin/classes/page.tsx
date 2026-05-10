@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -13,6 +14,7 @@ import { ChangeTeacherForm } from "./change-teacher-form";
 import { deleteClass } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
 import { SearchInput } from "@/components/search-input";
+import { ConfirmSubmitButton } from "@/components/confirm-submit";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +65,7 @@ export default async function ClassesPage({
               <TableHead>{t("className")}</TableHead>
               <TableHead>{t("schedule")}</TableHead>
               <TableHead className="w-64">{t("teacher")}</TableHead>
-              <TableHead className="w-32 text-right">{tc("actions")}</TableHead>
+              <TableHead className="w-48 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -82,18 +84,25 @@ export default async function ClassesPage({
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <form action={deleteClass}>
-                      <input type="hidden" name="id" value={c.id} />
-                      <button
-                        type="submit"
+                    <div className="inline-flex items-center gap-1.5">
+                      <Link
+                        href={`/teacher/classes/${c.id}`}
                         className={buttonVariants({
-                          variant: "destructive",
+                          variant: "outline",
                           size: "sm",
                         })}
                       >
-                        {tc("delete")}
-                      </button>
-                    </form>
+                        {t("openClass")}
+                      </Link>
+                      <form action={deleteClass}>
+                        <input type="hidden" name="id" value={c.id} />
+                        <ConfirmSubmitButton
+                          confirmMessage={t("deleteConfirm", { name: c.name })}
+                        >
+                          {tc("delete")}
+                        </ConfirmSubmitButton>
+                      </form>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

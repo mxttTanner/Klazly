@@ -31,7 +31,7 @@
     "audienceTeacherTitle": "Teacher",
     "audienceTeacherDesc": "After class, open your phone, write vocab + grammar once for the whole class, then quick-rate each student. No paper, no personal messages.",
     "audienceParentTitle": "Parent",
-    "audienceParentDesc": "Log in from your phone, see the 5 sections of every lesson your child took. One-tap PDF report to share with grandparents or keep on file.",
+    "audienceParentDesc": "Log in from your phone. See what your child learned each lesson (Unit / Lesson / Topic), their behavior rating, your teacher's note, and homework status. One-tap PDF report with the center's letterhead — share via Zalo with grandparents.",
     "featuresTitle": "Everything a center needs",
     "feature1": "Record 5 lesson sections each class: vocab, grammar, speaking, homework, note",
     "feature2": "Per-student behavior rating and homework tracking",
@@ -116,6 +116,7 @@
       "createUserError": "Could not create account: {message}",
       "saveProfileError": "Could not save teacher profile: {message}",
       "addedHint": "Added teacher {name}. Please pass the password to the teacher through a private channel.",
+      "deleteConfirm": "Remove teacher {name}? Their classes will become unassigned.",
       "empty": "No teachers yet."
     },
     "parents": {
@@ -125,6 +126,7 @@
       "submitting": "Adding...",
       "saveProfileError": "Could not save parent profile: {message}",
       "addedHint": "Added parent {name}. Please pass the password to the parent through a private channel.",
+      "deleteConfirm": "Remove parent {name}? Their children will be unlinked.",
       "empty": "No parents yet."
     },
     "classes": {
@@ -141,6 +143,8 @@
       "invalidTeacher": "Invalid teacher.",
       "createError": "Could not create class: {message}",
       "createdHint": "Created class {name}.",
+      "openClass": "Open",
+      "deleteConfirm": "Delete class {name}? All lessons recorded for this class will also be removed.",
       "empty": "No classes yet."
     },
     "students": {
@@ -159,6 +163,7 @@
       "invalidParent": "Invalid parent.",
       "createError": "Could not create student: {message}",
       "createdHint": "Added student {name}.",
+      "deleteConfirm": "Remove student {name}? All their lesson notes will also be deleted.",
       "empty": "No students yet."
     }
   },
@@ -168,14 +173,17 @@
       "title": "My classes",
       "subtitle": "Pick a class to see students and record a new lesson.",
       "noSchedule": "No schedule yet.",
+      "taughtBy": "Teacher: {name}",
       "empty": "You have not been assigned to any class yet. Contact the admin."
     },
     "class": {
       "back": "← My classes",
       "newLesson": "Record new lesson",
+      "startFromLast": "Start from last lesson",
       "studentsHeader": "Students ({count})",
       "noStudents": "This class has no students.",
       "recentLessonsHeader": "Recent lessons",
+      "recentTrend": "Recent",
       "vocabulary": "Vocabulary",
       "grammar": "Grammar",
       "noLessons": "No lessons recorded yet."
@@ -209,6 +217,9 @@
       "unitPlaceholder": "e.g. Unit 1",
       "lessonNumber": "Lesson",
       "lessonNumberPlaceholder": "e.g. Lesson 2",
+      "topic": "Topic",
+      "topicPlaceholder": "e.g. My Home",
+      "topicHelp": "Optional short title for this lesson. Shown to parents next to Unit and Lesson.",
       "unitHelp": "Unit and lesson are the short label parents see first. Optional.",
       "vocabulary": "Vocabulary",
       "vocabularyPlaceholder": "e.g. family, mother, father, sister, brother",
@@ -222,6 +233,10 @@
       "generalNotePlaceholder": "e.g. Class participated well; some students need pronunciation practice.",
       "perStudentHeader": "Per-student notes",
       "perStudentSubtitle": "Rate behavior, leave a note, and tick homework completion for each student.",
+      "bulkLabel": "Bulk apply to whole class:",
+      "bulkSetBehavior": "Set all behavior to",
+      "bulkAllHomeworkDone": "All did homework",
+      "bulkAllHomeworkUndone": "All didn't do homework",
       "behavior": "Behavior",
       "behaviorNone": "— Not rated —",
       "individualNote": "Individual note",
@@ -262,13 +277,36 @@
       "noLessons": "No lessons have been recorded for your child yet.",
       "print": "Print report",
       "printHeading": "Progress report",
-      "printedOn": "Printed on {date}"
+      "printedOn": "Printed on {date}",
+      "monthlyTitle": "Last 30 days",
+      "monthlySubtitle": "Summary across {count} recent lessons.",
+      "monthlyLessonsLabel": "Lessons",
+      "monthlyHomeworkLabel": "Homework done",
+      "monthlyHomeworkDetail": "{done} of {total} lessons",
+      "monthlyBehaviorLabel": "Behavior",
+      "reportPeriod": "Report period: {from} – {to}",
+      "infoStudent": "Student",
+      "infoAge": "Age",
+      "infoClass": "Class",
+      "infoTeacher": "Teacher",
+      "infoLessonsRecorded": "Lessons recorded",
+      "lessonLogHeading": "Lesson log",
+      "sigTeacher": "Teacher",
+      "sigParent": "Parent / Guardian",
+      "sigSignAndDate": "Signature & date"
     }
   },
   "behavior": {
     "great": "Excellent",
     "good": "Good",
-    "okay": "Fair",
+    "okay": "Okay",
+    "needs_attention": "Needs attention"
+  },
+  "level": {
+    "header": "Overall level",
+    "none": "Not rated",
+    "good": "Good",
+    "okay": "Okay",
     "needs_attention": "Needs attention"
   },
   "import": {
@@ -315,6 +353,7 @@
     "noFile": "Please pick a file.",
     "tooLarge": "File too large. Max 5MB.",
     "badType": "Unsupported format. Use PDF, PNG, JPG, or WebP.",
+    "deleteConfirm": "Delete worksheet '{name}'? Lessons that attached this file will lose the link.",
     "empty": "No worksheets yet.",
     "lessonAttach": "Lesson worksheet",
     "lessonAttachHelp": "Pick from the library or upload a new file (will be added to the library).",
@@ -338,7 +377,27 @@
     "uploadError": "Could not upload: {message}",
     "noFile": "Please pick a file.",
     "tooLarge": "File too large. Max 2MB.",
-    "badType": "Unsupported format. Use PNG, JPG, WebP, or SVG."
+    "badType": "Unsupported format. Use PNG, JPG, WebP, or SVG.",
+    "reportSection": "Printable report",
+    "reportSectionHelp": "Customise how your center's parent progress report looks when printed or saved as PDF.",
+    "reportIntroLabel": "Intro paragraph",
+    "reportIntroPlaceholder": "e.g. Dear parents, this report summarises your child's recent progress at our center.",
+    "reportIntroHelp": "Optional — appears below the report title. Up to 800 characters.",
+    "reportFooterLabel": "Footer note",
+    "reportFooterPlaceholder": "e.g. This report is confidential. For inquiries, contact the front desk.",
+    "reportFooterHelp": "Optional — appears below the signature lines. Up to 400 characters.",
+    "reportSectionsLabel": "Sections to include",
+    "reportShowSummary": "Include the 30-day summary card",
+    "reportShowSignatures": "Include teacher / parent signature lines",
+    "reportSigLeftLabel": "Left signature label",
+    "reportSigLeftPlaceholder": "e.g. Class teacher (default: Teacher)",
+    "reportSigRightLabel": "Right signature label",
+    "reportSigRightPlaceholder": "e.g. Parent / Guardian",
+    "reportSaveSubmit": "Save report settings",
+    "reportSaveSubmitting": "Saving...",
+    "reportSaveSuccess": "Report settings updated.",
+    "reportSaveError": "Could not save: {message}",
+    "reportValidation": "Please check the report fields."
   },
   "subscription": {
     "trialActive": "You are on a free trial.",
@@ -385,6 +444,9 @@
     "submit": "Create center",
     "submitting": "Creating...",
     "status": "Status",
+    "trialEnds": "Trial ends",
+    "trialDaysShort": "{n}d left",
+    "trialExpiredShort": "expired",
     "created": "Created",
     "statsCenters": "Centers",
     "statsActive": "Active",
@@ -402,6 +464,7 @@
     "createUserError": "Could not create admin account: {message}",
     "createProfileError": "Could not save admin profile: {message}",
     "createdHint": "Created center {center}. The admin can log in with {email}.",
+    "deleteConfirm": "Permanently delete center {name} and ALL its data (teachers, parents, classes, students, lessons)? This cannot be undone.",
     "empty": "No centers yet."
   }
 }

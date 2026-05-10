@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   CalendarClock,
   ClipboardList,
+  Copy,
   GraduationCap,
   Pencil,
   Plus,
@@ -13,6 +14,8 @@ import {
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
+import { LevelSelect } from "@/components/level-select";
+import { ConfirmSubmitButton } from "@/components/confirm-submit";
 import { deleteLesson } from "./lessons/new/actions";
 import {
   Table,
@@ -30,24 +33,34 @@ export default async function ClassDetailPage({
 }: {
   params: { id: string };
 }) {
-  const user = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const supabase = createClient();
   const t = await getTranslations("teacher.class");
   const tHome = await getTranslations("teacher.home");
   const tStudent = await getTranslations("admin.students");
   const tForm = await getTranslations("teacher.lessonForm");
+  const tLevel = await getTranslations("level");
+  const tBehavior = await getTranslations("behavior");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
   const { data: cls } = await supabase
     .from("classes")
-    .select("id, name, schedule_text, teacher_id")
+    .select("id, name, schedule_text, teacher_id, center_id")
     .eq("id", params.id)
     .single();
 
-  if (!cls || cls.teacher_id !== user.id) notFound();
+  if (!cls) notFound();
+  if (cls.center_id !== user.center_id) notFound();
+  if (user.role === "teacher" && cls.teacher_id !== user.id) notFound();
 
-  const [{ data: students }, { data: lessons }] = await Promise.all([
+  // Try with the `topic` column; fall back if the migration hasn't been run.
+  const lessonSelectWithTopic =
+    "id, lesson_date, unit, lesson_number, topic, vocabulary, grammar_point, general_note";
+  const lessonSelectNoTopic =
+    "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note";
+
+  const [{ data: students }, lessonsRes] = await Promise.all([
     supabase
       .from("students")
       .select("id, full_name, age, overall_level")
@@ -55,13 +68,85 @@ export default async function ClassDetailPage({
       .order("full_name", { ascending: true }),
     supabase
       .from("lessons")
-      .select(
-        "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note",
-      )
+      .select(lessonSelectWithTopic)
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
       .limit(10),
   ]);
+
+  type LessonListRow = {
+    id: string;
+    lesson_date: string;
+    unit: string | null;
+    lesson_number: string | null;
+    topic: string | null;
+    vocabulary: string | null;
+    grammar_point: string | null;
+    general_note: string | null;
+  };
+
+  let lessons: LessonListRow[];
+  if (lessonsRes.error) {
+    console.warn(
+      "[teacher/class] lessons select with topic failed, falling back:",
+      lessonsRes.error.message,
+    );
+    const fallback = await supabase
+      .from("lessons")
+      .select(lessonSelectNoTopic)
+      .eq("class_id", cls.id)
+      .order("lesson_date", { ascending: false })
+      .limit(10);
+    lessons = ((fallback.data ?? []) as Omit<LessonListRow, "topic">[]).map(
+      (l) => ({ ...l, topic: null }),
+    );
+  } else {
+    lessons = (lessonsRes.data ?? []) as LessonListRow[];
+  }
+
+  // Per-student behavior trend: ratings from the 5 most recent lessons,
+  // ordered newest-first, capped at 3 dots per student.
+  const recentLessonIds = (lessons ?? []).slice(0, 5).map((l) => l.id);
+  type UpdateRow = {
+    student_id: string;
+    lesson_id: string;
+    behavior_rating: string | null;
+  };
+  const recentUpdatesRes = recentLessonIds.length
+    ? await supabase
+        .from("student_lesson_updates")
+        .select("student_id, lesson_id, behavior_rating")
+        .in("lesson_id", recentLessonIds)
+    : { data: [] };
+  const recentUpdates = (recentUpdatesRes.data ?? []) as UpdateRow[];
+
+  const lessonOrder = new Map<string, number>();
+  (lessons ?? []).forEach((l, idx) => lessonOrder.set(l.id, idx));
+
+  const updatesByStudent: Record<string, UpdateRow[]> = {};
+  for (const u of recentUpdates) {
+    (updatesByStudent[u.student_id] ??= []).push(u);
+  }
+  const trendByStudent = new Map<string, Array<string | null>>();
+  for (const sid of Object.keys(updatesByStudent)) {
+    const updates = updatesByStudent[sid];
+    updates.sort(
+      (a, b) =>
+        (lessonOrder.get(a.lesson_id) ?? 99) -
+        (lessonOrder.get(b.lesson_id) ?? 99),
+    );
+    trendByStudent.set(
+      sid,
+      updates.slice(0, 3).map((u: UpdateRow) => u.behavior_rating),
+    );
+  }
+
+  const TREND_DOT_TONES: Record<string, string> = {
+    great: "bg-emerald-500",
+    good: "bg-sky-500",
+    okay: "bg-amber-500",
+    needs_attention: "bg-rose-500",
+  };
 
   return (
     <div className="space-y-8">
@@ -82,13 +167,24 @@ export default async function ClassDetailPage({
             {cls.schedule_text ?? tHome("noSchedule")}
           </p>
         </div>
-        <Link
-          href={`/teacher/classes/${cls.id}/lessons/new`}
-          className={`${buttonVariants()} inline-flex items-center gap-1.5`}
-        >
-          <Plus className="size-4" />
-          {t("newLesson")}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          {lessons && lessons.length > 0 ? (
+            <Link
+              href={`/teacher/classes/${cls.id}/lessons/new?from=${lessons[0].id}`}
+              className={`${buttonVariants({ variant: "outline" })} inline-flex items-center gap-1.5`}
+            >
+              <Copy className="size-4" />
+              {t("startFromLast")}
+            </Link>
+          ) : null}
+          <Link
+            href={`/teacher/classes/${cls.id}/lessons/new`}
+            className={`${buttonVariants()} inline-flex items-center gap-1.5`}
+          >
+            <Plus className="size-4" />
+            {t("newLesson")}
+          </Link>
+        </div>
       </div>
 
       <section className="space-y-3">
@@ -104,22 +200,62 @@ export default async function ClassDetailPage({
               <TableRow>
                 <TableHead>{tStudent("fullName")}</TableHead>
                 <TableHead className="w-20">{tStudent("age")}</TableHead>
+                <TableHead className="w-44">{tLevel("header")}</TableHead>
+                <TableHead className="w-32">{t("recentTrend")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {students && students.length > 0 ? (
-                students.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.full_name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {s.age ?? "—"}
-                    </TableCell>
-                  </TableRow>
-                ))
+                students.map((s) => {
+                  const trend = trendByStudent.get(s.id) ?? [];
+                  return (
+                    <TableRow key={s.id}>
+                      <TableCell className="font-medium">
+                        {s.full_name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {s.age ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <LevelSelect
+                          studentId={s.id}
+                          currentLevel={s.overall_level ?? null}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {trend.length > 0 ? (
+                          <span
+                            className="inline-flex items-center gap-1"
+                            title={trend
+                              .map((r) =>
+                                r ? tBehavior(r as "great") : "—",
+                              )
+                              .join(" • ")}
+                          >
+                            {trend.map((r, i) => (
+                              <span
+                                key={i}
+                                className={`size-2.5 rounded-full ${
+                                  r && TREND_DOT_TONES[r]
+                                    ? TREND_DOT_TONES[r]
+                                    : "bg-muted-foreground/30"
+                                }`}
+                              />
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">
+                            —
+                          </span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell
-                    colSpan={2}
+                    colSpan={4}
                     className="text-muted-foreground py-6 text-center text-sm"
                   >
                     {t("noStudents")}
@@ -148,21 +284,24 @@ export default async function ClassDetailPage({
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="font-medium">
-                      {l.unit && l.lesson_number
-                        ? `${l.unit} — ${l.lesson_number}`
-                        : (l.unit ??
-                          l.lesson_number ??
-                          new Date(l.lesson_date).toLocaleDateString(
-                            dateLocale,
-                            {
-                              weekday: "long",
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                            },
-                          ))}
+                      {(() => {
+                        const parts = [l.unit, l.lesson_number, l.topic].filter(
+                          Boolean,
+                        );
+                        return parts.length > 0
+                          ? parts.join(" — ")
+                          : new Date(l.lesson_date).toLocaleDateString(
+                              dateLocale,
+                              {
+                                weekday: "long",
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              },
+                            );
+                      })()}
                     </p>
-                    {(l.unit || l.lesson_number) ? (
+                    {l.unit || l.lesson_number || l.topic ? (
                       <p className="text-muted-foreground text-xs">
                         {new Date(l.lesson_date).toLocaleDateString(dateLocale, {
                           weekday: "long",
@@ -187,16 +326,12 @@ export default async function ClassDetailPage({
                     <form action={deleteLesson}>
                       <input type="hidden" name="lesson_id" value={l.id} />
                       <input type="hidden" name="class_id" value={cls.id} />
-                      <button
-                        type="submit"
-                        className={buttonVariants({
-                          variant: "destructive",
-                          size: "sm",
-                        })}
-                        aria-label={tForm("delete")}
+                      <ConfirmSubmitButton
+                        confirmMessage={tForm("deleteConfirm")}
+                        ariaLabel={tForm("delete")}
                       >
                         <Trash2 className="size-3.5" />
-                      </button>
+                      </ConfirmSubmitButton>
                     </form>
                   </div>
                 </div>

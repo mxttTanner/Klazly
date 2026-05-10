@@ -14,7 +14,7 @@ import {
 import { CenterForm } from "./center-form";
 import { deleteCenterCascade } from "./actions";
 import { StatusSelect } from "./status-select";
-import { buttonVariants } from "@/components/ui/button";
+import { ConfirmSubmitButton } from "@/components/confirm-submit";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +36,7 @@ export default async function SuperAdminHomePage() {
     supabase
       .from("centers")
       .select(
-        "id, name, contact_email, contact_phone, subscription_status, created_at",
+        "id, name, contact_email, contact_phone, subscription_status, trial_ends_at, created_at",
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -127,6 +127,7 @@ export default async function SuperAdminHomePage() {
                   <TableHead>{t("centerName")}</TableHead>
                   <TableHead>{t("adminEmail")}</TableHead>
                   <TableHead className="w-32">{t("status")}</TableHead>
+                  <TableHead className="w-36">{t("trialEnds")}</TableHead>
                   <TableHead className="w-32">{t("created")}</TableHead>
                   <TableHead className="w-24 text-right">
                     {tc("actions")}
@@ -135,6 +136,30 @@ export default async function SuperAdminHomePage() {
               </TableHeader>
               <TableBody>
                 {centers.map((c) => {
+                  // Trial expiry — color cells red within 7 days, amber within 14.
+                  let trialCell: React.ReactNode = "—";
+                  let trialClass = "text-muted-foreground";
+                  if (
+                    c.subscription_status === "trial" &&
+                    c.trial_ends_at
+                  ) {
+                    const ends = new Date(c.trial_ends_at);
+                    const days = Math.ceil(
+                      (ends.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+                    );
+                    trialCell = `${ends.toLocaleDateString(dateLocale, {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    })} (${
+                      days <= 0
+                        ? t("trialExpiredShort")
+                        : t("trialDaysShort", { n: days })
+                    })`;
+                    if (days <= 0) trialClass = "text-rose-700 font-medium";
+                    else if (days <= 7) trialClass = "text-rose-600";
+                    else if (days <= 14) trialClass = "text-amber-700";
+                  }
                   return (
                     <TableRow key={c.id}>
                       <TableCell>
@@ -152,6 +177,9 @@ export default async function SuperAdminHomePage() {
                           currentStatus={c.subscription_status}
                         />
                       </TableCell>
+                      <TableCell className={trialClass + " text-xs"}>
+                        {trialCell}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(c.created_at).toLocaleDateString(dateLocale, {
                           day: "2-digit",
@@ -162,16 +190,12 @@ export default async function SuperAdminHomePage() {
                       <TableCell className="text-right">
                         <form action={deleteCenterCascade}>
                           <input type="hidden" name="id" value={c.id} />
-                          <button
-                            type="submit"
-                            className={buttonVariants({
-                              variant: "destructive",
-                              size: "sm",
-                            })}
-                            aria-label={tc("delete")}
+                          <ConfirmSubmitButton
+                            confirmMessage={t("deleteConfirm", { name: c.name })}
+                            ariaLabel={tc("delete")}
                           >
                             <Trash2 className="size-3.5" />
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                       </TableCell>
                     </TableRow>

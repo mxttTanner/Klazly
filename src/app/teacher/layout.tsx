@@ -11,7 +11,7 @@ export default async function TeacherLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher");
 
   return (

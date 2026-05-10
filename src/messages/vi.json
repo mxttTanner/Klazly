@@ -31,7 +31,7 @@
     "audienceTeacherTitle": "Giáo viên",
     "audienceTeacherDesc": "Sau buổi học, mở điện thoại, ghi từ vựng + ngữ pháp một lần cho cả lớp, đánh giá nhanh từng học sinh. Không giấy tờ, không Zalo cá nhân.",
     "audienceParentTitle": "Phụ huynh",
-    "audienceParentDesc": "Đăng nhập từ điện thoại, thấy 5 phần học của con sau từng buổi. Có nút in báo cáo PDF để chia sẻ với ông bà hoặc lưu trữ.",
+    "audienceParentDesc": "Đăng nhập từ điện thoại. Thấy con học bài gì (Unit / Lesson / Chủ đề), đánh giá thái độ, nhận xét riêng cho con, tình trạng BTVN. Một nút in báo cáo PDF có letterhead của trung tâm — chia sẻ Zalo cho ông bà.",
     "featuresTitle": "Tất cả những gì trung tâm cần",
     "feature1": "Ghi nhận 5 phần học mỗi buổi: từ vựng, ngữ pháp, luyện nói, bài tập, ghi chú",
     "feature2": "Đánh giá thái độ và bài tập riêng từng học sinh",
@@ -116,6 +116,7 @@
       "createUserError": "Không thể tạo tài khoản: {message}",
       "saveProfileError": "Không thể lưu hồ sơ giáo viên: {message}",
       "addedHint": "Đã thêm giáo viên {name}. Vui lòng chuyển mật khẩu cho giáo viên qua kênh riêng.",
+      "deleteConfirm": "Xoá giáo viên {name}? Các lớp họ phụ trách sẽ trở thành chưa được phân công.",
       "empty": "Chưa có giáo viên nào."
     },
     "parents": {
@@ -125,6 +126,7 @@
       "submitting": "Đang thêm...",
       "saveProfileError": "Không thể lưu hồ sơ phụ huynh: {message}",
       "addedHint": "Đã thêm phụ huynh {name}. Vui lòng chuyển mật khẩu cho phụ huynh qua kênh riêng.",
+      "deleteConfirm": "Xoá phụ huynh {name}? Các con của họ sẽ bị huỷ liên kết.",
       "empty": "Chưa có phụ huynh nào."
     },
     "classes": {
@@ -141,6 +143,8 @@
       "invalidTeacher": "Giáo viên không hợp lệ.",
       "createError": "Không thể tạo lớp: {message}",
       "createdHint": "Đã tạo lớp {name}.",
+      "openClass": "Mở",
+      "deleteConfirm": "Xoá lớp {name}? Tất cả bài học đã ghi nhận của lớp cũng sẽ bị xoá.",
       "empty": "Chưa có lớp nào."
     },
     "students": {
@@ -159,6 +163,7 @@
       "invalidParent": "Phụ huynh không hợp lệ.",
       "createError": "Không thể tạo học sinh: {message}",
       "createdHint": "Đã thêm học sinh {name}.",
+      "deleteConfirm": "Xoá học sinh {name}? Tất cả ghi chú bài học của con cũng sẽ bị xoá.",
       "empty": "Chưa có học sinh nào."
     }
   },
@@ -168,14 +173,17 @@
       "title": "Lớp của tôi",
       "subtitle": "Chọn lớp để xem học sinh và ghi nhận bài học mới.",
       "noSchedule": "Chưa có lịch học.",
+      "taughtBy": "Giáo viên: {name}",
       "empty": "Bạn chưa được phân công lớp nào. Liên hệ quản trị viên để được phân lớp."
     },
     "class": {
       "back": "← Lớp của tôi",
       "newLesson": "Ghi nhận bài học mới",
+      "startFromLast": "Sao chép từ bài trước",
       "studentsHeader": "Học sinh ({count})",
       "noStudents": "Lớp chưa có học sinh.",
       "recentLessonsHeader": "Bài học gần đây",
+      "recentTrend": "Gần đây",
       "vocabulary": "Từ vựng",
       "grammar": "Ngữ pháp",
       "noLessons": "Chưa có bài học nào được ghi nhận."
@@ -209,6 +217,9 @@
       "unitPlaceholder": "VD: Bài 1",
       "lessonNumber": "Phần / Lesson",
       "lessonNumberPlaceholder": "VD: Phần 2",
+      "topic": "Chủ đề",
+      "topicPlaceholder": "VD: My Home",
+      "topicHelp": "Tên chủ đề ngắn cho buổi học (tuỳ chọn). Phụ huynh sẽ thấy bên cạnh Bài và Phần.",
       "unitHelp": "Bài và phần là tên ngắn phụ huynh nhìn thấy đầu tiên. Có thể bỏ trống.",
       "vocabulary": "Từ vựng",
       "vocabularyPlaceholder": "VD: family, mother, father, sister, brother",
@@ -222,6 +233,10 @@
       "generalNotePlaceholder": "VD: Lớp tham gia tích cực, một số bạn cần luyện thêm phát âm.",
       "perStudentHeader": "Nhận xét từng học sinh",
       "perStudentSubtitle": "Đánh giá thái độ, ghi chú và đánh dấu bài tập về nhà cho mỗi học sinh.",
+      "bulkLabel": "Áp dụng nhanh cho cả lớp:",
+      "bulkSetBehavior": "Đặt thái độ tất cả",
+      "bulkAllHomeworkDone": "Tất cả đã làm BTVN",
+      "bulkAllHomeworkUndone": "Tất cả chưa làm BTVN",
       "behavior": "Thái độ",
       "behaviorNone": "— Chưa đánh giá —",
       "individualNote": "Ghi chú riêng",
@@ -262,7 +277,23 @@
       "noLessons": "Chưa có bài học nào được ghi nhận cho con bạn.",
       "print": "In báo cáo",
       "printHeading": "Báo cáo tiến trình học tập",
-      "printedOn": "In ngày {date}"
+      "printedOn": "In ngày {date}",
+      "monthlyTitle": "30 ngày gần nhất",
+      "monthlySubtitle": "Tổng hợp từ {count} bài học gần đây.",
+      "monthlyLessonsLabel": "Số buổi học",
+      "monthlyHomeworkLabel": "Hoàn thành BTVN",
+      "monthlyHomeworkDetail": "{done} / {total} buổi",
+      "monthlyBehaviorLabel": "Thái độ",
+      "reportPeriod": "Kỳ báo cáo: {from} – {to}",
+      "infoStudent": "Học sinh",
+      "infoAge": "Tuổi",
+      "infoClass": "Lớp",
+      "infoTeacher": "Giáo viên",
+      "infoLessonsRecorded": "Số buổi đã ghi nhận",
+      "lessonLogHeading": "Nhật ký bài học",
+      "sigTeacher": "Giáo viên",
+      "sigParent": "Phụ huynh",
+      "sigSignAndDate": "Ký tên & ghi ngày"
     }
   },
   "behavior": {
@@ -322,6 +353,7 @@
     "noFile": "Vui lòng chọn một tệp.",
     "tooLarge": "Tệp quá lớn. Tối đa 5MB.",
     "badType": "Định dạng không được hỗ trợ. Dùng PDF, PNG, JPG, hoặc WebP.",
+    "deleteConfirm": "Xoá tài liệu '{name}'? Các bài học đã đính kèm tệp này sẽ mất liên kết.",
     "empty": "Chưa có tài liệu nào.",
     "lessonAttach": "Tài liệu cho buổi học",
     "lessonAttachHelp": "Chọn tài liệu có sẵn hoặc tải lên tệp mới (sẽ thêm vào thư viện).",
@@ -345,7 +377,27 @@
     "uploadError": "Không thể tải lên: {message}",
     "noFile": "Vui lòng chọn một tệp.",
     "tooLarge": "Tệp quá lớn. Tối đa 2MB.",
-    "badType": "Định dạng không được hỗ trợ. Dùng PNG, JPG, WebP hoặc SVG."
+    "badType": "Định dạng không được hỗ trợ. Dùng PNG, JPG, WebP hoặc SVG.",
+    "reportSection": "Báo cáo bản in",
+    "reportSectionHelp": "Tuỳ chỉnh hình thức báo cáo tiến độ học tập của trung tâm khi in hoặc lưu PDF.",
+    "reportIntroLabel": "Đoạn mở đầu",
+    "reportIntroPlaceholder": "VD: Kính gửi quý phụ huynh, báo cáo này tổng hợp tiến trình học tập gần đây của con tại trung tâm chúng tôi.",
+    "reportIntroHelp": "Tuỳ chọn — hiển thị bên dưới tiêu đề báo cáo. Tối đa 800 ký tự.",
+    "reportFooterLabel": "Lời ghi cuối báo cáo",
+    "reportFooterPlaceholder": "VD: Báo cáo này có tính bảo mật. Mọi thắc mắc xin liên hệ lễ tân.",
+    "reportFooterHelp": "Tuỳ chọn — hiển thị bên dưới phần chữ ký. Tối đa 400 ký tự.",
+    "reportSectionsLabel": "Các phần hiển thị",
+    "reportShowSummary": "Hiển thị bảng tổng hợp 30 ngày",
+    "reportShowSignatures": "Hiển thị phần chữ ký giáo viên / phụ huynh",
+    "reportSigLeftLabel": "Nhãn chữ ký bên trái",
+    "reportSigLeftPlaceholder": "VD: Giáo viên chủ nhiệm (mặc định: Giáo viên)",
+    "reportSigRightLabel": "Nhãn chữ ký bên phải",
+    "reportSigRightPlaceholder": "VD: Phụ huynh / Người giám hộ",
+    "reportSaveSubmit": "Lưu cài đặt báo cáo",
+    "reportSaveSubmitting": "Đang lưu...",
+    "reportSaveSuccess": "Đã cập nhật cài đặt báo cáo.",
+    "reportSaveError": "Không thể lưu: {message}",
+    "reportValidation": "Vui lòng kiểm tra các trường báo cáo."
   },
   "subscription": {
     "trialActive": "Bạn đang trong thời gian dùng thử.",
@@ -392,6 +444,9 @@
     "submit": "Tạo trung tâm",
     "submitting": "Đang tạo...",
     "status": "Trạng thái",
+    "trialEnds": "Hết hạn dùng thử",
+    "trialDaysShort": "còn {n}d",
+    "trialExpiredShort": "đã hết",
     "created": "Ngày tạo",
     "statsCenters": "Trung tâm",
     "statsActive": "Đang hoạt động",
@@ -409,6 +464,7 @@
     "createUserError": "Không thể tạo tài khoản quản trị: {message}",
     "createProfileError": "Không thể lưu hồ sơ quản trị: {message}",
     "createdHint": "Đã tạo trung tâm {center}. Quản trị có thể đăng nhập bằng {email}.",
+    "deleteConfirm": "Xoá vĩnh viễn trung tâm {name} và TẤT CẢ dữ liệu (giáo viên, phụ huynh, lớp, học sinh, bài học)? Hành động này không thể hoàn tác.",
     "empty": "Chưa có trung tâm nào."
   }
 }

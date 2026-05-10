@@ -11,9 +11,9 @@ import {
 import { StudentForm } from "./student-form";
 import { InlineSelect } from "./inline-select";
 import { deleteStudent } from "./actions";
-import { buttonVariants } from "@/components/ui/button";
 import { SearchInput } from "@/components/search-input";
 import { LevelSelect } from "@/components/level-select";
+import { ConfirmSubmitButton } from "@/components/confirm-submit";
 
 export const dynamic = "force-dynamic";
 
@@ -114,15 +114,13 @@ export default async function StudentsPage({
                   <TableCell className="text-right">
                     <form action={deleteStudent}>
                       <input type="hidden" name="id" value={s.id} />
-                      <button
-                        type="submit"
-                        className={buttonVariants({
-                          variant: "destructive",
-                          size: "sm",
+                      <ConfirmSubmitButton
+                        confirmMessage={t("deleteConfirm", {
+                          name: s.full_name,
                         })}
                       >
                         {tc("delete")}
-                      </button>
+                      </ConfirmSubmitButton>
                     </form>
                   </TableCell>
                 </TableRow>

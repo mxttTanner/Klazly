@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { WorksheetUploadForm } from "./worksheet-upload-form";
 import { deleteWorksheet } from "./actions";
-import { buttonVariants } from "@/components/ui/button";
+import { ConfirmSubmitButton } from "@/components/confirm-submit";
 
 export const dynamic = "force-dynamic";
 
@@ -113,15 +113,11 @@ export default async function WorksheetsPage() {
                       <TableCell className="text-right">
                         <form action={deleteWorksheet}>
                           <input type="hidden" name="id" value={w.id} />
-                          <button
-                            type="submit"
-                            className={buttonVariants({
-                              variant: "destructive",
-                              size: "sm",
-                            })}
+                          <ConfirmSubmitButton
+                            confirmMessage={t("deleteConfirm", { name: w.name })}
                           >
                             {tc("delete")}
-                          </button>
+                          </ConfirmSubmitButton>
                         </form>
                       </TableCell>
                     </TableRow>

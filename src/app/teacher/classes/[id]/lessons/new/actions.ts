@@ -91,7 +91,7 @@ function nullableString(v: FormDataEntryValue | null): string | null {
 }
 
 export async function saveLessonTemplate(_prev: unknown, formData: FormData) {
-  const teacher = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher.templates");
 
   const parsed = templateSchema.safeParse({
@@ -106,8 +106,8 @@ export async function saveLessonTemplate(_prev: unknown, formData: FormData) {
 
   const supabase = createClient();
   const { error } = await supabase.from("lesson_templates").insert({
-    center_id: teacher.center_id,
-    created_by: teacher.id,
+    center_id: user.center_id,
+    created_by: user.id,
     name: parsed.data.name,
     vocabulary: parsed.data.vocabulary,
     grammar_point: parsed.data.grammar_point,
@@ -136,6 +136,7 @@ const lessonSchema = z.object({
   lesson_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   unit: z.string().max(80).optional().nullable(),
   lesson_number: z.string().max(80).optional().nullable(),
+  topic: z.string().max(120).optional().nullable(),
   vocabulary: z.string().max(1000).optional().nullable(),
   grammar_point: z.string().max(1000).optional().nullable(),
   speaking_activity: z.string().max(1000).optional().nullable(),
@@ -163,7 +164,7 @@ function buildUpdates(formData: FormData) {
 }
 
 export async function createLesson(_prev: unknown, formData: FormData) {
-  const teacher = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher.lessonForm");
 
   const class_id = String(formData.get("class_id") ?? "");
@@ -174,6 +175,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     lesson_date: formData.get("lesson_date"),
     unit: nullableString(formData.get("unit")),
     lesson_number: nullableString(formData.get("lesson_number")),
+    topic: nullableString(formData.get("topic")),
     vocabulary: nullableString(formData.get("vocabulary")),
     grammar_point: nullableString(formData.get("grammar_point")),
     speaking_activity: nullableString(formData.get("speaking_activity")),
@@ -191,7 +193,10 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     .select("id, teacher_id, center_id")
     .eq("id", parsed.data.class_id)
     .single();
-  if (!cls || cls.teacher_id !== teacher.id) {
+  if (!cls || cls.center_id !== user.center_id) {
+    return { error: t("noPermission") };
+  }
+  if (user.role === "teacher" && cls.teacher_id !== user.id) {
     return { error: t("noPermission") };
   }
 
@@ -202,8 +207,8 @@ export async function createLesson(_prev: unknown, formData: FormData) {
   } else {
     const uploaded = await maybeUploadInlineWorksheet(
       formData,
-      teacher.center_id,
-      teacher.id,
+      user.center_id,
+      user.id,
     );
     if (uploaded.error) {
       return { error: t("saveLessonError", { message: uploaded.error }) };
@@ -211,23 +216,41 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     worksheetId = uploaded.id;
   }
 
-  const { data: lesson, error: lErr } = await supabase
+  // When admin records the lesson on behalf of a teacher, attribute it to
+  // the class's assigned teacher; fall back to the admin's own id only if
+  // the class has no teacher yet.
+  const lessonTeacherId =
+    user.role === "admin" ? cls.teacher_id ?? user.id : user.id;
+
+  // Try insert with topic; if the column doesn't exist (migration not run),
+  // retry without topic so the rest of the lesson still saves.
+  const baseInsert = {
+    class_id: parsed.data.class_id,
+    teacher_id: lessonTeacherId,
+    lesson_date: parsed.data.lesson_date,
+    unit: parsed.data.unit,
+    lesson_number: parsed.data.lesson_number,
+    vocabulary: parsed.data.vocabulary,
+    grammar_point: parsed.data.grammar_point,
+    speaking_activity: parsed.data.speaking_activity,
+    homework: parsed.data.homework,
+    general_note: parsed.data.general_note,
+    worksheet_id: worksheetId,
+  };
+  let { data: lesson, error: lErr } = await supabase
     .from("lessons")
-    .insert({
-      class_id: parsed.data.class_id,
-      teacher_id: teacher.id,
-      lesson_date: parsed.data.lesson_date,
-      unit: parsed.data.unit,
-      lesson_number: parsed.data.lesson_number,
-      vocabulary: parsed.data.vocabulary,
-      grammar_point: parsed.data.grammar_point,
-      speaking_activity: parsed.data.speaking_activity,
-      homework: parsed.data.homework,
-      general_note: parsed.data.general_note,
-      worksheet_id: worksheetId,
-    })
+    .insert({ ...baseInsert, topic: parsed.data.topic })
     .select()
     .single();
+  if (lErr && /topic/i.test(lErr.message)) {
+    const retry = await supabase
+      .from("lessons")
+      .insert(baseInsert)
+      .select()
+      .single();
+    lesson = retry.data;
+    lErr = retry.error;
+  }
   if (lErr || !lesson) {
     return { error: t("saveLessonError", { message: lErr?.message ?? "" }) };
   }
@@ -253,7 +276,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
 }
 
 export async function updateLesson(_prev: unknown, formData: FormData) {
-  const teacher = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher.lessonForm");
 
   const lessonId = String(formData.get("lesson_id") ?? "");
@@ -266,6 +289,7 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     lesson_date: formData.get("lesson_date"),
     unit: nullableString(formData.get("unit")),
     lesson_number: nullableString(formData.get("lesson_number")),
+    topic: nullableString(formData.get("topic")),
     vocabulary: nullableString(formData.get("vocabulary")),
     grammar_point: nullableString(formData.get("grammar_point")),
     speaking_activity: nullableString(formData.get("speaking_activity")),
@@ -277,7 +301,8 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
 
   const supabase = createClient();
 
-  // Verify the lesson belongs to a class this teacher teaches.
+  // Verify the lesson belongs to a class in the user's center, and that a
+  // teacher caller teaches that class. Admin can edit anyone in their center.
   const { data: existing } = await supabase
     .from("lessons")
     .select("id, class_id, class:classes!inner(teacher_id, center_id)")
@@ -289,7 +314,10 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
         | ClassRow
         | undefined
     : undefined;
-  if (!existing || !cls || cls.teacher_id !== teacher.id) {
+  if (!existing || !cls || cls.center_id !== user.center_id) {
+    return { error: t("noPermission") };
+  }
+  if (user.role === "teacher" && cls.teacher_id !== user.id) {
     return { error: t("noPermission") };
   }
 
@@ -302,8 +330,8 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   } else {
     const uploaded = await maybeUploadInlineWorksheet(
       formData,
-      teacher.center_id,
-      teacher.id,
+      user.center_id,
+      user.id,
     );
     if (uploaded.error) {
       return { error: t("saveLessonError", { message: uploaded.error }) };
@@ -311,20 +339,29 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     worksheetId = uploaded.id;
   }
 
-  const { error: lErr } = await supabase
+  // Same topic-column resilience as createLesson.
+  const baseUpdate = {
+    lesson_date: parsed.data.lesson_date,
+    unit: parsed.data.unit,
+    lesson_number: parsed.data.lesson_number,
+    vocabulary: parsed.data.vocabulary,
+    grammar_point: parsed.data.grammar_point,
+    speaking_activity: parsed.data.speaking_activity,
+    homework: parsed.data.homework,
+    general_note: parsed.data.general_note,
+    worksheet_id: worksheetId,
+  };
+  let { error: lErr } = await supabase
     .from("lessons")
-    .update({
-      lesson_date: parsed.data.lesson_date,
-      unit: parsed.data.unit,
-      lesson_number: parsed.data.lesson_number,
-      vocabulary: parsed.data.vocabulary,
-      grammar_point: parsed.data.grammar_point,
-      speaking_activity: parsed.data.speaking_activity,
-      homework: parsed.data.homework,
-      general_note: parsed.data.general_note,
-      worksheet_id: worksheetId,
-    })
+    .update({ ...baseUpdate, topic: parsed.data.topic })
     .eq("id", lessonId);
+  if (lErr && /topic/i.test(lErr.message)) {
+    const retry = await supabase
+      .from("lessons")
+      .update(baseUpdate)
+      .eq("id", lessonId);
+    lErr = retry.error;
+  }
   if (lErr) {
     return { error: t("saveLessonError", { message: lErr.message }) };
   }
@@ -354,7 +391,7 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
 }
 
 export async function deleteLesson(formData: FormData) {
-  const teacher = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const lessonId = String(formData.get("lesson_id") ?? "");
   const classId = String(formData.get("class_id") ?? "");
   if (!lessonId) return;
@@ -363,16 +400,17 @@ export async function deleteLesson(formData: FormData) {
 
   const { data: existing } = await supabase
     .from("lessons")
-    .select("id, class_id, class:classes!inner(teacher_id)")
+    .select("id, class_id, class:classes!inner(teacher_id, center_id)")
     .eq("id", lessonId)
     .single();
-  type ClassRow = { teacher_id: string };
+  type ClassRow = { teacher_id: string; center_id: string };
   const cls = existing
     ? (Array.isArray(existing.class) ? existing.class[0] : existing.class) as
         | ClassRow
         | undefined
     : undefined;
-  if (!existing || !cls || cls.teacher_id !== teacher.id) return;
+  if (!existing || !cls || cls.center_id !== user.center_id) return;
+  if (user.role === "teacher" && cls.teacher_id !== user.id) return;
 
   await supabase.from("lessons").delete().eq("id", lessonId);
   if (classId) revalidatePath(`/teacher/classes/${classId}`);

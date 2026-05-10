@@ -127,11 +127,13 @@
 @media print {
   @page {
     size: A4;
-    margin: 1.2cm;
+    margin: 1.6cm 1.4cm;
   }
   body {
     background: #fff !important;
     color: #000 !important;
+    font-size: 10.5pt;
+    line-height: 1.45;
   }
   /* Anything explicitly marked with print:hidden disappears. */
   .print\:hidden {
@@ -142,6 +144,9 @@
   }
   .print-only {
     display: block !important;
+  }
+  .print-only-inline {
+    display: inline !important;
   }
   /* Page wrappers shouldn't fight the printer's own margins. */
   .print\:p-0 {
@@ -160,11 +165,122 @@
   .print\:break-inside-avoid {
     break-inside: avoid;
   }
+  .print-break-before {
+    break-before: page;
+  }
   a[href]::after {
     content: "" !important;
   }
+
+  /* ---------- Printable progress report ---------- */
+  .report-letterhead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.2rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid #000;
+  }
+  .report-letterhead .report-center-name {
+    font-size: 16pt;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .report-letterhead .report-contact {
+    font-size: 9pt;
+    text-align: right;
+    line-height: 1.4;
+  }
+  .report-title {
+    margin-top: 0.9rem;
+    text-align: center;
+    font-size: 15pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .report-period {
+    text-align: center;
+    font-size: 10pt;
+    margin-top: 0.15rem;
+  }
+  .report-info {
+    margin-top: 1rem;
+    border: 1px solid #000;
+  }
+  .report-info dl {
+    display: grid;
+    grid-template-columns: max-content 1fr max-content 1fr;
+    gap: 0;
+  }
+  .report-info dt {
+    background: #f1f1f1;
+    padding: 4pt 8pt;
+    font-weight: 600;
+    font-size: 9.5pt;
+    border-bottom: 1px solid #000;
+    border-right: 1px solid #000;
+  }
+  .report-info dd {
+    padding: 4pt 8pt;
+    font-size: 10pt;
+    border-bottom: 1px solid #000;
+    border-right: 1px solid #000;
+    margin: 0;
+  }
+  .report-info dd:nth-of-type(2n) {
+    border-right: 0;
+  }
+  .report-info > dl > :nth-last-child(-n+4) {
+    border-bottom: 0;
+  }
+  .report-section-heading {
+    margin-top: 1.1rem;
+    margin-bottom: 0.4rem;
+    font-size: 11pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #000;
+    padding-bottom: 2pt;
+  }
+  .report-signatures {
+    margin-top: 1.6rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    page-break-inside: avoid;
+  }
+  .report-sig-block {
+    text-align: center;
+  }
+  .report-sig-label {
+    font-size: 9.5pt;
+    font-weight: 600;
+  }
+  .report-sig-hint {
+    font-size: 8.5pt;
+    font-style: italic;
+    color: #444;
+  }
+  .report-sig-line {
+    margin-top: 3.6rem;
+    border-top: 1px solid #000;
+    padding-top: 3pt;
+    font-size: 9pt;
+  }
+  .report-footer {
+    margin-top: 1.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid #888;
+    font-size: 8.5pt;
+    color: #555;
+    display: flex;
+    justify-content: space-between;
+  }
 }
 
-.print-only {
+.print-only,
+.print-only-inline {
   display: none;
 }

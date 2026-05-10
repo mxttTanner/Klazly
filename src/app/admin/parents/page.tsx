@@ -10,8 +10,8 @@ import {
 } from "@/components/ui/table";
 import { ParentForm } from "./parent-form";
 import { removeParent } from "./actions";
-import { buttonVariants } from "@/components/ui/button";
 import { SearchInput } from "@/components/search-input";
+import { ConfirmSubmitButton } from "@/components/confirm-submit";
 
 export const dynamic = "force-dynamic";
 
@@ -68,15 +68,13 @@ export default async function ParentsPage({
                   <TableCell className="text-right">
                     <form action={removeParent}>
                       <input type="hidden" name="id" value={p.id} />
-                      <button
-                        type="submit"
-                        className={buttonVariants({
-                          variant: "destructive",
-                          size: "sm",
+                      <ConfirmSubmitButton
+                        confirmMessage={t("deleteConfirm", {
+                          name: p.full_name,
                         })}
                       >
                         {tc("delete")}
-                      </button>
+                      </ConfirmSubmitButton>
                     </form>
                   </TableCell>
                 </TableRow>

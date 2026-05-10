@@ -16,24 +16,42 @@ export default async function EditLessonPage({
 }: {
   params: { id: string; lessonId: string };
 }) {
-  const user = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const supabase = createClient();
   const t = await getTranslations("teacher.lessonForm");
 
   const { data: cls } = await supabase
     .from("classes")
-    .select("id, name, teacher_id")
+    .select("id, name, teacher_id, center_id")
     .eq("id", params.id)
     .single();
-  if (!cls || cls.teacher_id !== user.id) notFound();
+  if (!cls) notFound();
+  if (cls.center_id !== user.center_id) notFound();
+  if (user.role === "teacher" && cls.teacher_id !== user.id) notFound();
 
-  const { data: lesson } = await supabase
+  let lessonRes = await supabase
     .from("lessons")
     .select(
-      "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet_id, class_id",
+      "id, lesson_date, unit, lesson_number, topic, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet_id, class_id",
     )
     .eq("id", params.lessonId)
     .single();
+  if (lessonRes.error) {
+    console.warn(
+      "[teacher/lessons/edit] lesson select with topic failed, falling back:",
+      lessonRes.error.message,
+    );
+    lessonRes = await supabase
+      .from("lessons")
+      .select(
+        "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet_id, class_id",
+      )
+      .eq("id", params.lessonId)
+      .single();
+  }
+  const lesson = lessonRes.data as
+    | (typeof lessonRes.data & { topic?: string | null })
+    | null;
   if (!lesson || lesson.class_id !== cls.id) notFound();
 
   const [{ data: students }, { data: updates }, { data: worksheets }] =
@@ -66,6 +84,7 @@ export default async function EditLessonPage({
     lesson_date: lesson.lesson_date,
     unit: lesson.unit ?? null,
     lesson_number: lesson.lesson_number ?? null,
+    topic: lesson.topic ?? null,
     vocabulary: lesson.vocabulary,
     grammar_point: lesson.grammar_point,
     speaking_activity: lesson.speaking_activity,

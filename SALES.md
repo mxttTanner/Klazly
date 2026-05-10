@@ -33,23 +33,30 @@ Hầu hết các trung tâm tiếng Anh tại Việt Nam vẫn quản lý liên 
 ### 👨‍💼 Cho chủ trung tâm
 - Bảng điều khiển 7 ngày: ai dạy bao nhiêu buổi, tỉ lệ bài tập, phân bố thái độ học sinh
 - Quản lý lớp / giáo viên / học sinh / phụ huynh trong một nơi
+- **Mở bất kỳ lớp nào của giáo viên** — admin có thể ghi nhận / sửa bài thay khi giáo viên vắng
 - Tải lên logo riêng — nền tảng mang thương hiệu của bạn
+- **Tuỳ chỉnh báo cáo PDF**: lời mở đầu, lời cuối, ẩn/hiện các phần, đổi nhãn chữ ký
 - Thư viện tài liệu của trung tâm (PDF, hình ảnh)
 - Nhập danh sách học sinh hàng loạt qua CSV — không phải gõ từng người
 
 ### 🎓 Cho giáo viên
 - Sau mỗi buổi học, mở điện thoại, ghi nhận trong 60 giây:
-  - Từ vựng + ngữ pháp + hoạt động luyện nói (chung cho cả lớp)
+  - Bài / Phần / Chủ đề + từ vựng + ngữ pháp + hoạt động luyện nói (chung cho cả lớp)
   - Đánh giá thái độ + ghi chú riêng + bài tập về nhà cho từng học sinh
+- **"Sao chép từ bài trước"** — bắt đầu bài mới với toàn bộ nội dung của buổi vừa rồi (ngày tự đổi)
+- **Áp dụng nhanh cho cả lớp:** "Tất cả đã làm BTVN", "Đặt thái độ tất cả là Tốt" — chỉ điều chỉnh các trường hợp ngoại lệ
 - Lưu mẫu (template) bài học để dùng lại tuần sau
 - Đính kèm tài liệu PDF cho từng buổi học — phụ huynh tải về được
 - Sửa hoặc xoá bài học khi cần — không sợ sai
+- Cập nhật **đánh giá chung** cho từng học sinh (Tốt / Khá / Cần lưu ý)
 
 ### 👨‍👩‍👧 Cho phụ huynh
 - Đăng nhập từ điện thoại, thấy ngay tất cả buổi học của con
-- 5 phần thông tin mỗi buổi: từ vựng, ngữ pháp, luyện nói/nghe, bài tập, ghi chú lớp
+- Mỗi buổi hiển thị: **Bài / Phần / Chủ đề** (VD: "Unit 2 — Lesson 3 — My Home"), thái độ, nhận xét riêng cho con, tình trạng bài tập, tài liệu lớp
+- Bảng tổng hợp **30 ngày gần nhất**: số buổi, % hoàn thành BTVN, phân bố thái độ
 - Đánh giá thái độ con bằng nhãn màu (Xuất sắc / Tốt / Khá / Cần lưu ý)
-- Một nút **In báo cáo** → xuất PDF có logo trung tâm — chia sẻ Zalo cho ông bà, lưu hồ sơ
+- Đánh giá chung của con (Tốt / Khá / Cần lưu ý) hiển thị ngay đầu trang
+- Một nút **In báo cáo** → xuất PDF có logo trung tâm, lời mở đầu, chữ ký giáo viên/phụ huynh — tuỳ chỉnh theo trung tâm
 
 ---
 
@@ -59,12 +66,17 @@ Hầu hết các trung tâm tiếng Anh tại Việt Nam vẫn quản lý liên 
 |---|---|
 | Hệ thống đa ngôn ngữ (Việt / Anh) cho giáo viên nước ngoài | ✅ |
 | Bảo mật từng trung tâm — dữ liệu hoàn toàn cách ly | ✅ |
-| Báo cáo PDF không giới hạn | ✅ |
+| Báo cáo PDF không giới hạn — letterhead, chữ ký, lời mở đầu tuỳ chỉnh | ✅ |
 | Thư viện tài liệu của trung tâm | ✅ |
 | Mẫu bài học có thể tái sử dụng | ✅ |
+| Sao chép từ buổi học trước trong 1 cú click | ✅ |
+| Áp dụng nhanh cho cả lớp (BTVN + thái độ) | ✅ |
+| Đánh giá chung cho từng học sinh | ✅ |
+| Bảng tổng hợp 30 ngày trên trang phụ huynh | ✅ |
 | Nhập học sinh hàng loạt từ file CSV | ✅ |
 | Logo trung tâm trên trang phụ huynh và báo cáo PDF | ✅ |
 | Bảng phân tích cho chủ trung tâm | ✅ |
+| Quản trị có thể mở lớp + ghi bài thay giáo viên khi vắng | ✅ |
 | Hỗ trợ qua Zalo / email | ✅ |
 
 ---

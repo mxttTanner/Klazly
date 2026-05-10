@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { LessonForm } from "./lesson-form";
+import { LessonForm, type LessonDefaults } from "./lesson-form";
 
 export const dynamic = "force-dynamic";
 
@@ -21,18 +21,20 @@ export default async function NewLessonPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { template?: string };
+  searchParams: { template?: string; from?: string };
 }) {
-  const user = await requireRole("teacher");
+  const user = await requireRole(["teacher", "admin"]);
   const supabase = createClient();
   const t = await getTranslations("teacher.lessonForm");
 
   const { data: cls } = await supabase
     .from("classes")
-    .select("id, name, teacher_id")
+    .select("id, name, teacher_id, center_id")
     .eq("id", params.id)
     .single();
-  if (!cls || cls.teacher_id !== user.id) notFound();
+  if (!cls) notFound();
+  if (cls.center_id !== user.center_id) notFound();
+  if (user.role === "teacher" && cls.teacher_id !== user.id) notFound();
 
   const [{ data: students }, { data: templates }, { data: worksheets }] =
     await Promise.all([
@@ -70,6 +72,51 @@ export default async function NewLessonPage({
   const dd = String(today.getDate()).padStart(2, "0");
   const defaultDate = `${yyyy}-${mm}-${dd}`;
 
+  // "Start from last lesson": copy lesson body (vocabulary, grammar, etc.)
+  // and worksheet from a previous lesson, but reset date to today and DON'T
+  // carry over per-student updates — each lesson is its own evaluation.
+  let duplicateDefaults: LessonDefaults | undefined;
+  if (searchParams.from) {
+    let srcRes = await supabase
+      .from("lessons")
+      .select(
+        "id, class_id, unit, lesson_number, topic, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet_id",
+      )
+      .eq("id", searchParams.from)
+      .single();
+    if (srcRes.error) {
+      console.warn(
+        "[teacher/lessons/new] lesson select with topic failed, falling back:",
+        srcRes.error.message,
+      );
+      srcRes = await supabase
+        .from("lessons")
+        .select(
+          "id, class_id, unit, lesson_number, vocabulary, grammar_point, speaking_activity, homework, general_note, worksheet_id",
+        )
+        .eq("id", searchParams.from)
+        .single();
+    }
+    const src = srcRes.data as
+      | (typeof srcRes.data & { topic?: string | null })
+      | null;
+    if (src && src.class_id === cls.id) {
+      duplicateDefaults = {
+        lesson_date: defaultDate,
+        unit: src.unit ?? null,
+        lesson_number: src.lesson_number ?? null,
+        topic: src.topic ?? null,
+        vocabulary: src.vocabulary,
+        grammar_point: src.grammar_point,
+        speaking_activity: src.speaking_activity,
+        homework: src.homework,
+        general_note: src.general_note,
+        worksheet_id: src.worksheet_id ?? null,
+        studentUpdates: {},
+      };
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -91,6 +138,7 @@ export default async function NewLessonPage({
           templates={allTemplates}
           selectedTemplate={selectedTemplate}
           worksheets={worksheetOptions}
+          defaults={duplicateDefaults}
         />
       ) : (
         <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">

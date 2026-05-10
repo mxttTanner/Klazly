@@ -1,4 +1,4 @@
-import { AlertTriangle, Clock, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Clock, XCircle } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
 
@@ -67,7 +67,7 @@ export async function SubscriptionBanner({ centerId }: { centerId: string }) {
     return (
       <div className="bg-slate-100 text-slate-800 border-b text-sm print:hidden">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6">
-          <CheckCircle2 className="size-4 shrink-0" />
+          <XCircle className="size-4 shrink-0" />
           <p>{t("canceled")}</p>
         </div>
       </div>

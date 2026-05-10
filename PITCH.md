@@ -6,7 +6,7 @@
 >
 > Em là Matthew, giáo viên tiếng Anh tại Việt Nam. Em vừa hoàn thiện một công cụ giúp các trung tâm tiếng Anh quản lý liên lạc với phụ huynh — gọi là **Cổng Phụ Huynh**.
 >
-> Sau mỗi buổi học, giáo viên ghi nhận trong 60 giây: từ vựng, ngữ pháp, luyện nói, bài tập, đánh giá từng học sinh. Phụ huynh đăng nhập trên điện thoại thấy ngay tiến trình con — không còn mất thời gian trả lời tin nhắn riêng. Báo cáo PDF có thể in ra hoặc chia sẻ Zalo cho ông bà.
+> Sau mỗi buổi học, giáo viên ghi nhận trong 60 giây: bài/phần/chủ đề, từ vựng, ngữ pháp, đánh giá từng học sinh. Phụ huynh đăng nhập trên điện thoại thấy ngay tiến trình con: con học bài gì, thái độ ra sao, đã làm BTVN chưa, bảng tổng hợp 30 ngày — không còn mất thời gian trả lời tin nhắn riêng. Báo cáo PDF có letterhead trung tâm + chữ ký, có thể in hoặc chia sẻ Zalo cho ông bà.
 >
 > Em đang tìm 2-3 trung tâm để dùng thử miễn phí 14 ngày. Anh/chị có thể xem demo tại đây (không cần đăng nhập):
 >
@@ -26,9 +26,9 @@
 >
 > **Cổng Phụ Huynh** là nền tảng web dành riêng cho trung tâm tiếng Anh tại Việt Nam:
 >
-> - **Giáo viên:** sau mỗi buổi học, ghi nhận 5 mục (từ vựng, ngữ pháp, luyện nói, bài tập, ghi chú) — chung cho cả lớp. Sau đó đánh giá thái độ + viết nhận xét riêng + tích bài tập đã làm cho từng học sinh. Tổng cộng 60 giây.
+> - **Giáo viên:** sau mỗi buổi học, ghi nhận trong 60 giây: bài/phần/chủ đề, từ vựng, ngữ pháp, hoạt động luyện nói, bài tập (chung cho cả lớp); rồi đánh giá thái độ + viết nhận xét riêng + tích BTVN cho từng học sinh. Có sẵn nút "Sao chép từ bài trước" để bắt đầu nhanh, và áp dụng nhanh "Tất cả đã làm BTVN" cho cả lớp — chỉ điều chỉnh các trường hợp ngoại lệ.
 >
-> - **Phụ huynh:** đăng nhập trên điện thoại, thấy ngay tiến trình con qua nhiều tuần. Một nút *In báo cáo* tạo PDF có logo trung tâm — phụ huynh chia sẻ qua Zalo cho ông bà, hoặc lưu lại.
+> - **Phụ huynh:** đăng nhập trên điện thoại, thấy ngay con học bài gì (Unit / Lesson / Topic), thái độ, nhận xét riêng cho con, tình trạng BTVN, và bảng tổng hợp 30 ngày. Một nút *In báo cáo* tạo PDF có logo trung tâm + chữ ký giáo viên/phụ huynh — phụ huynh chia sẻ qua Zalo cho ông bà, hoặc lưu lại. Trung tâm tuỳ chỉnh được lời mở đầu, lời cuối, các phần hiển thị.
 >
 > - **Chủ trung tâm:** bảng điều khiển hiển thị tuần này có giáo viên nào chưa ghi bài, tỉ lệ bài tập của các lớp, phân bố thái độ học sinh. Tải lên logo riêng — nền tảng mang thương hiệu của trung tâm.
 >

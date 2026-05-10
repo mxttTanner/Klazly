@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import { z } from "zod";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -53,6 +54,57 @@ export async function uploadCenterLogo(_prev: unknown, formData: FormData) {
   revalidatePath("/admin/settings");
   revalidatePath("/parent", "layout");
   return { success: t("uploadSuccess") };
+}
+
+const reportSettingsSchema = z.object({
+  intro: z.string().max(800).optional().nullable(),
+  footer: z.string().max(400).optional().nullable(),
+  show_summary: z.boolean(),
+  show_signatures: z.boolean(),
+  sig_left: z.string().max(60).optional().nullable(),
+  sig_right: z.string().max(60).optional().nullable(),
+});
+
+function nullableTrim(v: FormDataEntryValue | null): string | null {
+  const s = String(v ?? "").trim();
+  return s.length > 0 ? s : null;
+}
+
+export async function updateReportSettings(
+  _prev: unknown,
+  formData: FormData,
+) {
+  const user = await requireRole(["admin", "teacher"]);
+  const t = await getTranslations("settings");
+
+  const parsed = reportSettingsSchema.safeParse({
+    intro: nullableTrim(formData.get("intro")),
+    footer: nullableTrim(formData.get("footer")),
+    show_summary: formData.get("show_summary") === "on",
+    show_signatures: formData.get("show_signatures") === "on",
+    sig_left: nullableTrim(formData.get("sig_left")),
+    sig_right: nullableTrim(formData.get("sig_right")),
+  });
+  if (!parsed.success) return { error: t("reportValidation") };
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("centers")
+    .update({
+      report_intro_text: parsed.data.intro,
+      report_footer_text: parsed.data.footer,
+      report_show_summary: parsed.data.show_summary,
+      report_show_signatures: parsed.data.show_signatures,
+      report_signature_label_left: parsed.data.sig_left,
+      report_signature_label_right: parsed.data.sig_right,
+    })
+    .eq("id", user.center_id);
+  if (error) return { error: t("reportSaveError", { message: error.message }) };
+
+  revalidatePath("/admin/settings");
+  revalidatePath("/teacher/report-settings");
+  revalidatePath("/parent", "layout");
+  return { success: t("reportSaveSuccess") };
 }
 
 export async function removeCenterLogo() {
