@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/table";
 import { ClassForm } from "./class-form";
 import { ChangeTeacherForm } from "./change-teacher-form";
+import { InlineBook } from "./inline-book";
+import { InlineProgram } from "./inline-program";
 import { deleteClass } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
 import { SearchInput } from "@/components/search-input";
@@ -30,22 +32,69 @@ export default async function ClassesPage({
 
   const q = searchParams.q?.trim() ?? "";
 
-  let query = supabase
-    .from("classes")
-    .select(
-      "id, name, schedule_text, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)",
-    )
-    .order("name", { ascending: true });
-  if (q) query = query.ilike("name", `%${q}%`);
+  // Optional columns (book, program) — fall back if migrations not run.
+  const selectFull =
+    "id, name, schedule_text, teacher_id, book, program, teacher:users!classes_teacher_id_fkey(full_name)";
+  const selectMid =
+    "id, name, schedule_text, teacher_id, book, teacher:users!classes_teacher_id_fkey(full_name)";
+  const selectBasic =
+    "id, name, schedule_text, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)";
 
-  const [{ data: classes }, { data: teachers }] = await Promise.all([
-    query,
-    supabase
-      .from("users")
-      .select("id, full_name")
-      .eq("role", "teacher")
-      .order("full_name", { ascending: true }),
-  ]);
+  type ClassRow = {
+    id: string;
+    name: string;
+    schedule_text: string | null;
+    teacher_id: string | null;
+    book?: string | null;
+    program?: string | null;
+    teacher: { full_name: string } | { full_name: string }[] | null;
+  };
+  let classes: ClassRow[] = [];
+  {
+    let q1 = supabase
+      .from("classes")
+      .select(selectFull)
+      .order("name", { ascending: true });
+    if (q) q1 = q1.ilike("name", `%${q}%`);
+    const r1 = await q1;
+    if (r1.error) {
+      let q2 = supabase
+        .from("classes")
+        .select(selectMid)
+        .order("name", { ascending: true });
+      if (q) q2 = q2.ilike("name", `%${q}%`);
+      const r2 = await q2;
+      if (r2.error) {
+        let q3 = supabase
+          .from("classes")
+          .select(selectBasic)
+          .order("name", { ascending: true });
+        if (q) q3 = q3.ilike("name", `%${q}%`);
+        const r3 = await q3;
+        classes = (r3.data ?? []) as ClassRow[];
+      } else {
+        classes = (r2.data ?? []) as ClassRow[];
+      }
+    } else {
+      classes = (r1.data ?? []) as ClassRow[];
+    }
+  }
+
+  const { data: teachers } = await supabase
+    .from("users")
+    .select("id, full_name")
+    .eq("role", "teacher")
+    .order("full_name", { ascending: true });
+
+  // Center's program catalog (admin-managed in /admin/settings).
+  const programsRes = await supabase
+    .from("center_programs")
+    .select("id, label")
+    .order("sort_order", { ascending: true });
+  const programs =
+    programsRes.error || !programsRes.data
+      ? []
+      : (programsRes.data as Array<{ id: string; label: string }>);
 
   return (
     <div className="space-y-6">
@@ -54,7 +103,7 @@ export default async function ClassesPage({
         <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
       </div>
 
-      <ClassForm teachers={teachers ?? []} />
+      <ClassForm teachers={teachers ?? []} programs={programs} />
 
       <SearchInput placeholder={tAdmin("search")} />
 
@@ -63,8 +112,10 @@ export default async function ClassesPage({
           <TableHeader>
             <TableRow>
               <TableHead>{t("className")}</TableHead>
+              <TableHead className="w-44">{t("program")}</TableHead>
+              <TableHead className="w-56">{t("book")}</TableHead>
               <TableHead>{t("schedule")}</TableHead>
-              <TableHead className="w-64">{t("teacher")}</TableHead>
+              <TableHead className="w-56">{t("teacher")}</TableHead>
               <TableHead className="w-48 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -73,6 +124,25 @@ export default async function ClassesPage({
               classes.map((c) => (
                 <TableRow key={c.id}>
                   <TableCell className="font-medium">{c.name}</TableCell>
+                  <TableCell>
+                    <InlineProgram
+                      classId={c.id}
+                      currentProgram={c.program ?? null}
+                      programs={programs}
+                      noneLabel={t("programNone")}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <InlineBook
+                      classId={c.id}
+                      currentBook={c.book ?? null}
+                      placeholder={t("bookPlaceholder")}
+                      emptyLabel={t("bookEmpty")}
+                      saveLabel={tc("save")}
+                      cancelLabel={tc("cancel")}
+                      editLabel={t("bookEdit")}
+                    />
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {c.schedule_text ?? "—"}
                   </TableCell>
@@ -109,7 +179,7 @@ export default async function ClassesPage({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={4}
+                  colSpan={6}
                   className="text-muted-foreground py-6 text-center text-sm"
                 >
                   {q ? tAdmin("searchEmpty") : t("empty")}

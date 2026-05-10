@@ -1,9 +1,10 @@
 import { getTranslations } from "next-intl/server";
-import { FileText, ImageIcon } from "lucide-react";
+import { BookMarked, FileText, ImageIcon } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { LogoUploadForm } from "./logo-upload-form";
 import { ReportSettingsForm } from "./report-settings-form";
+import { ProgramsForm } from "./programs-form";
 import { removeCenterLogo } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -21,6 +22,21 @@ export default async function SettingsPage() {
     )
     .eq("id", user.center_id)
     .single();
+
+  // Programs catalog. Fall back to empty if migration hasn't been run.
+  const programsRes = await supabase
+    .from("center_programs")
+    .select("id, label, sort_order")
+    .eq("center_id", user.center_id)
+    .order("sort_order", { ascending: true });
+  const programs =
+    programsRes.error || !programsRes.data
+      ? []
+      : (programsRes.data as Array<{
+          id: string;
+          label: string;
+          sort_order: number;
+        }>);
 
   return (
     <div className="space-y-8">
@@ -72,6 +88,18 @@ export default async function SettingsPage() {
         <div className="border-t pt-4">
           <LogoUploadForm />
         </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
+        <div className="flex items-center gap-2">
+          <BookMarked className="text-primary size-5" />
+          <h2 className="text-lg font-semibold">{t("programsSection")}</h2>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          {t("programsSectionHelp")}
+        </p>
+
+        <ProgramsForm programs={programs} />
       </section>
 
       <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
