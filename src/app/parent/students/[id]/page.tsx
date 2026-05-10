@@ -360,11 +360,12 @@ export default async function StudentProgressPage({
         </div>
       </div>
 
-      {monthlyLessons.length > 0 ? (
+      {/* 30-day summary: hidden on screen (parents found it noisy) but
+          still rendered in the printed report when report_show_summary
+          is on, so the formal PDF keeps the stats block. */}
+      {monthlyLessons.length > 0 && center?.report_show_summary !== false ? (
         <section
-          className={`rounded-lg border bg-card p-4 shadow-sm print:break-inside-avoid print:border-black print:bg-transparent ${
-            center?.report_show_summary === false ? "print:hidden" : ""
-          }`}
+          className="hidden rounded-lg border bg-card p-4 shadow-sm print:block print:break-inside-avoid print:border-black print:bg-transparent"
         >
           <h2 className="text-sm font-semibold tracking-tight">
             {t("monthlyTitle")}
