@@ -1,20 +1,33 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { type LucideIcon } from "lucide-react";
+import {
+  BookMarked,
+  FileText,
+  ImageIcon,
+  type LucideIcon,
+} from "lucide-react";
+
+export type SettingsTabIconKey = "center" | "programs" | "report";
+
+const ICONS: Record<SettingsTabIconKey, LucideIcon> = {
+  center: ImageIcon,
+  programs: BookMarked,
+  report: FileText,
+};
 
 export type SettingsTab = {
   id: string;
   label: string;
-  icon: LucideIcon;
+  iconKey: SettingsTabIconKey;
   content: ReactNode;
 };
 
 /**
  * Simple tab switcher for the settings page. Only the active tab's content
- * mounts in the DOM, so it feels like distinct pages instead of a long
- * scroll. We keep state on the client (no URL query) since the choice is
- * cosmetic and we don't want a server roundtrip per click.
+ * mounts, so it feels like distinct pages instead of a long scroll. We map
+ * an `iconKey` string to a Lucide icon here on the client because Server
+ * Components can't pass function components across the boundary.
  */
 export function SettingsTabs({
   tabs,
@@ -37,7 +50,7 @@ export function SettingsTabs({
           className="flex flex-wrap gap-1 lg:flex-col"
         >
           {tabs.map((tab) => {
-            const Icon = tab.icon;
+            const Icon = ICONS[tab.iconKey];
             const isActive = tab.id === active?.id;
             return (
               <button

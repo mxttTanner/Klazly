@@ -43,7 +43,7 @@ export default async function SettingsPage() {
     {
       id: "center",
       label: t("navCenter"),
-      icon: ImageIcon,
+      iconKey: "center" as const,
       content: (
         <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
           <SectionHeader
@@ -92,7 +92,7 @@ export default async function SettingsPage() {
     {
       id: "programs",
       label: t("navPrograms"),
-      icon: BookMarked,
+      iconKey: "programs" as const,
       content: (
         <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
           <SectionHeader
@@ -107,7 +107,7 @@ export default async function SettingsPage() {
     {
       id: "report",
       label: t("navReport"),
-      icon: FileText,
+      iconKey: "report" as const,
       content: (
         <section className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
           <SectionHeader
