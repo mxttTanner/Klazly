@@ -615,20 +615,9 @@ function ProgramsSection({
       ),
     });
   });
-  // Unassigned bucket.
-  const unsetClasses = classes.filter((c) => !c.program);
-  if (unsetClasses.length > 0) {
-    tiles.push({
-      value: "unset",
-      label: labels.unsetProgramTileTitle,
-      tone: "bg-muted text-muted-foreground",
-      classCount: unsetClasses.length,
-      studentCount: unsetClasses.reduce(
-        (sum, c) => sum + (studentsPerClass.get(c.id) ?? 0),
-        0,
-      ),
-    });
-  }
+  // (Untagged classes are intentionally not surfaced as a tile — admin can
+  // see them on /admin/classes. Showing an "Unassigned" tile cluttered the
+  // dashboard for centers who don't care about tagging every class.)
 
   return (
     <section className="space-y-4">
