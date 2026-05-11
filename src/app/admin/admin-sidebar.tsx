@@ -8,6 +8,7 @@ import {
   FileText,
   GraduationCap,
   Heart,
+  MessageSquareText,
   Settings,
   UserSquare2,
   type LucideIcon,
@@ -20,6 +21,7 @@ const ICONS: Record<NavKey, LucideIcon> = {
   parents: Heart,
   classes: BookOpen,
   students: GraduationCap,
+  messages: MessageSquareText,
   worksheets: FileText,
   settings: Settings,
 };

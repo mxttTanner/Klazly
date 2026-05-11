@@ -11,6 +11,7 @@ export type NavKey =
   | "parents"
   | "classes"
   | "students"
+  | "messages"
   | "worksheets"
   | "settings";
 
@@ -30,6 +31,7 @@ export function buildAdminNavItems(t: (k: string) => string): NavItem[] {
     { key: "parents", href: "/admin/parents", label: t("navParents") },
     { key: "classes", href: "/admin/classes", label: t("navClasses") },
     { key: "students", href: "/admin/students", label: t("navStudents") },
+    { key: "messages", href: "/admin/messages", label: t("navMessages") },
     { key: "worksheets", href: "/admin/worksheets", label: t("navWorksheets") },
     { key: "settings", href: "/admin/settings", label: t("navSettings") },
   ];

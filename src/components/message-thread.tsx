@@ -1,13 +1,13 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { MessageSquareText } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { MessageComposer } from "@/components/message-composer";
+import { MessageThreadView } from "@/components/message-thread-view";
 
 /**
- * Server-rendered message thread between a parent and the class teacher for
- * a given student. Reads from `parent_teacher_messages`; RLS guarantees
- * the caller only sees their own conversation. Falls back gracefully if
- * the migration hasn't been run.
+ * Server-rendered message thread wrapper. Pulls messages via the user's
+ * RLS-scoped supabase client, then hands them to a client view that does
+ * auto-scroll, sticky composer, date dividers, and read receipts. Falls
+ * back gracefully if the `parent_teacher_messages` table doesn't exist
+ * yet (migration not run).
  */
 export async function MessageThread({
   studentId,
@@ -21,105 +21,65 @@ export async function MessageThread({
   const supabase = createClient();
   const t = await getTranslations("messages");
   const locale = await getLocale();
-  const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
   type MessageRow = {
     id: string;
     sender_user_id: string;
     body: string;
     created_at: string;
-    sender: { full_name: string; role: string } | { full_name: string; role: string }[] | null;
+    read_at: string | null;
+    sender:
+      | { full_name: string; role: string }
+      | { full_name: string; role: string }[]
+      | null;
   };
 
   const res = await supabase
     .from("parent_teacher_messages")
     .select(
-      "id, sender_user_id, body, created_at, sender:users!parent_teacher_messages_sender_user_id_fkey(full_name, role)",
+      "id, sender_user_id, body, created_at, read_at, sender:users!parent_teacher_messages_sender_user_id_fkey(full_name, role)",
     )
     .eq("student_id", studentId)
     .order("created_at", { ascending: true })
     .limit(200);
 
-  if (res.error) {
-    // Migration not run, or RLS issue — show the composer anyway so the
-    // user can try (and see a friendlier error from the action if it fails).
-    return (
-      <div className="space-y-3">
-        <p className="text-muted-foreground text-sm">{emptyHint}</p>
-        <MessageComposer
-          studentId={studentId}
-          placeholder={t("composerPlaceholder")}
-          sendLabel={t("send")}
-          sendingLabel={t("sending")}
-        />
-      </div>
-    );
-  }
-
-  const messages = (res.data ?? []) as MessageRow[];
+  const fetchFailed = !!res.error;
+  const rows = (res.data ?? []) as MessageRow[];
+  const messages = rows.map((m) => {
+    const sender = Array.isArray(m.sender) ? m.sender[0] : m.sender;
+    return {
+      id: m.id,
+      sender_user_id: m.sender_user_id,
+      body: m.body,
+      created_at: m.created_at,
+      read_at: m.read_at,
+      senderName: sender?.full_name ?? "",
+      senderRole: sender?.role ?? "",
+    };
+  });
 
   return (
-    <div className="space-y-4">
-      {messages.length === 0 ? (
-        <div className="text-muted-foreground flex flex-col items-center gap-2 rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm">
-          <MessageSquareText className="size-6 opacity-50" />
-          <p>{emptyHint}</p>
-        </div>
-      ) : (
-        <ul className="space-y-3">
-          {messages.map((m) => {
-            const sender = Array.isArray(m.sender) ? m.sender[0] : m.sender;
-            const mine = m.sender_user_id === currentUserId;
-            const when = new Date(m.created_at).toLocaleString(dateLocale, {
-              day: "2-digit",
-              month: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-            return (
-              <li
-                key={m.id}
-                className={`flex ${mine ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
-                    mine
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted text-foreground rounded-bl-md"
-                  }`}
-                >
-                  {!mine ? (
-                    <p className="mb-0.5 text-xs font-medium opacity-80">
-                      {sender?.full_name ?? ""}
-                      {sender?.role === "teacher"
-                        ? ` · ${t("teacherTag")}`
-                        : sender?.role === "admin"
-                          ? ` · ${t("adminTag")}`
-                          : ""}
-                    </p>
-                  ) : null}
-                  <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p
-                    className={`mt-1 text-right text-[10px] ${
-                      mine ? "opacity-80" : "opacity-60"
-                    }`}
-                  >
-                    {when}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <MessageComposer
-        studentId={studentId}
-        placeholder={t("composerPlaceholder")}
-        sendLabel={t("send")}
-        sendingLabel={t("sending")}
-      />
-    </div>
+    <MessageThreadView
+      studentId={studentId}
+      currentUserId={currentUserId}
+      messages={messages}
+      locale={locale}
+      fetchFailed={fetchFailed}
+      labels={{
+        empty: emptyHint,
+        send: t("send"),
+        sending: t("sending"),
+        composerPlaceholder: t("composerPlaceholder"),
+        teacherTag: t("teacherTag"),
+        adminTag: t("adminTag"),
+        readReceiptRead: t("readReceiptRead"),
+        readReceiptSent: t("readReceiptSent"),
+        dayToday: t("dayToday"),
+        dayYesterday: t("dayYesterday"),
+        fetchFailedHint: t("fetchFailedHint"),
+        enterHint: t("enterHint"),
+      }}
+    />
   );
 }
 
