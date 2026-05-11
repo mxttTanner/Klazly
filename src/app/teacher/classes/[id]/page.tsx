@@ -233,9 +233,11 @@ export default async function ClassDetailPage({
         </div>
       </div>
 
+      <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
       {/* Messages section — first thing below the header so teacher sees
-          new parent activity without scrolling. Capped height with internal
-          scroll so a class with 30+ parents doesn't push everything down. */}
+          new parent activity without scrolling. On PC, sits as a sticky
+          sidebar on the right so it's always visible while reviewing the
+          roster or lessons. On mobile, appears first (order-1). */}
       {(() => {
         const messageableStudents = (students ?? []).filter(
           (s) => s.parent_user_id,
@@ -260,7 +262,7 @@ export default async function ClassDetailPage({
         );
 
         return (
-          <section className="space-y-3">
+          <aside className="order-1 space-y-3 lg:order-2 lg:sticky lg:top-20 lg:self-start">
             <div className="flex items-center gap-2">
               <MessageSquareText className="text-primary size-5" />
               <h2 className="text-xl font-semibold tracking-tight">
@@ -337,10 +339,11 @@ export default async function ClassDetailPage({
                 );
               })}
             </ul>
-          </section>
+          </aside>
         );
       })()}
 
+      <div className="order-2 space-y-8 lg:order-1 lg:min-w-0">
       <section className="space-y-3">
         <div className="flex items-center gap-2">
           <GraduationCap className="text-primary size-5" />
@@ -518,6 +521,8 @@ export default async function ClassDetailPage({
           </div>
         )}
       </section>
+      </div>{/* end main column */}
+      </div>{/* end 2-col grid */}
 
     </div>
   );

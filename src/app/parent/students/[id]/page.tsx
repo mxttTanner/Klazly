@@ -353,9 +353,11 @@ export default async function StudentProgressPage({
             </div>
           </div>
 
-          {/* Quick stats row */}
+          {/* Quick stats row — kept compact so the hero stays focused on
+              the child's identity, not numbers. Hidden if there are no
+              lessons yet. */}
           {lessons.length > 0 ? (
-            <dl className="grid grid-cols-3 gap-2 rounded-xl bg-background/70 p-3 backdrop-blur-sm sm:gap-3 sm:p-4">
+            <dl className="grid grid-cols-2 gap-2 rounded-xl bg-background/70 p-3 backdrop-blur-sm sm:grid-cols-3 sm:gap-3 sm:p-4">
               <div>
                 <dt className="text-muted-foreground text-xs uppercase tracking-wide">
                   {t("heroLessonsLabel")}
@@ -372,7 +374,7 @@ export default async function StudentProgressPage({
                   {monthHomeworkPct === null ? "—" : `${monthHomeworkPct}%`}
                 </dd>
               </div>
-              <div>
+              <div className="col-span-2 sm:col-span-1">
                 <dt className="text-muted-foreground text-xs uppercase tracking-wide">
                   {t("heroBehaviorLabel")}
                 </dt>
@@ -579,6 +581,22 @@ export default async function StudentProgressPage({
         </div>
       ) : null}
 
+      {/* On-screen "Recent lessons" heading — friendly intro so parent
+          immediately knows what's below. */}
+      {lessons.length > 0 ? (
+        <div className="space-y-1 print:hidden">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="text-primary size-5" />
+            <h2 className="text-xl font-semibold tracking-tight">
+              {t("lessonsHeading")}
+            </h2>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {t("lessonsSubtitle")}
+          </p>
+        </div>
+      ) : null}
+
       {lessons.length > 0 ? (
         <ul className="space-y-3">
           {lessons.map((l) => {
@@ -595,29 +613,25 @@ export default async function StudentProgressPage({
                 day: "2-digit",
                 month: "2-digit",
               }) ?? "";
+            const titleParts = [l.unit, l.lesson_number, l.topic].filter(
+              Boolean,
+            );
+            const titleText =
+              titleParts.length > 0 ? titleParts.join(" — ") : null;
             return (
               <li
                 key={l.id}
-                className="rounded-lg border bg-card p-4 shadow-sm print:break-inside-avoid print:bg-transparent print:border-black print:p-3"
+                className="rounded-xl border bg-card p-4 shadow-sm sm:p-5 print:break-inside-avoid print:bg-transparent print:border-black print:p-3"
               >
-                {/* Header line: unit/lesson identifier + behavior badge */}
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <div>
-                    <h2 className="text-base font-semibold">
-                      {(() => {
-                        const parts = [l.unit, l.lesson_number, l.topic].filter(
-                          Boolean,
-                        );
-                        return parts.length > 0
-                          ? parts.join(" — ")
-                          : dateText;
-                      })()}
-                    </h2>
-                    {l.unit || l.lesson_number || l.topic ? (
-                      <p className="text-muted-foreground text-xs">
-                        {dateText}
-                      </p>
-                    ) : null}
+                {/* Header: date chip + topic title, with badges right-aligned. */}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <span className="bg-primary/10 text-primary inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide print:bg-transparent print:border print:border-black">
+                      {dateText}
+                    </span>
+                    <h3 className="text-lg font-semibold leading-tight sm:text-xl">
+                      {titleText ?? dateText}
+                    </h3>
                   </div>
                   <div className="flex flex-wrap items-center gap-1.5">
                     {u?.attendance && ATTENDANCE_TONES[u.attendance] ? (
@@ -641,12 +655,17 @@ export default async function StudentProgressPage({
                     label above plus their own child's feedback below — the
                     vocab/grammar/etc. is for teachers, not parents). */}
                 {u ? (
-                  <div className="mt-3 space-y-2 text-sm">
+                  <div className="mt-4 space-y-3 text-sm">
                     {u.individual_note ? (
-                      <p className="flex gap-2">
-                        <MessageSquareText className="text-muted-foreground mt-0.5 size-3.5 shrink-0" />
-                        <span>{u.individual_note}</span>
-                      </p>
+                      <div className="bg-muted/40 border-l-4 border-primary/40 rounded-r-md p-3 print:bg-transparent print:border-black">
+                        <p className="text-muted-foreground mb-0.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+                          <MessageSquareText className="size-3" />
+                          {t("teacherNoteLabel")}
+                        </p>
+                        <p className="text-foreground leading-relaxed">
+                          {u.individual_note}
+                        </p>
+                      </div>
                     ) : null}
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge
@@ -662,7 +681,7 @@ export default async function StudentProgressPage({
                           href={ws.public_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-0.5 text-xs font-medium hover:bg-muted/40 print:hidden"
+                          className="text-primary inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-xs font-medium hover:bg-muted/40 print:hidden"
                         >
                           <FileText className="size-3.5" />
                           {tWorksheets("viewAttachment")}
