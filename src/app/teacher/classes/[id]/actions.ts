@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const VALID_LEVELS = ["good", "okay", "needs_attention", "none"] as const;
 
@@ -11,6 +12,7 @@ export async function setStudentLevel(formData: FormData) {
   const studentId = String(formData.get("student_id") ?? "");
   const levelRaw = String(formData.get("level") ?? "");
   if (!studentId || !VALID_LEVELS.includes(levelRaw as never)) return;
+  if (isDemoUser(user)) return;
   const level = levelRaw === "none" ? null : levelRaw;
 
   const supabase = createAdminClient();

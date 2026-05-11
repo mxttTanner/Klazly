@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const inviteSchema = z.object({
   // Lowercase so a teacher invited as "Jean@x.com" can be looked up later
@@ -18,6 +19,8 @@ const inviteSchema = z.object({
 export async function inviteTeacher(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
   const t = await getTranslations("admin.teachers");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const parsed = inviteSchema.safeParse({
     email: formData.get("email"),
@@ -60,6 +63,7 @@ export async function removeTeacher(formData: FormData) {
   const admin = await requireRole("admin");
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  if (isDemoUser(admin)) return; // demo: silently no-op
 
   const supabase = createAdminClient();
 

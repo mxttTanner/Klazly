@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -12,6 +13,8 @@ const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 export async function uploadCenterLogo(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
   const t = await getTranslations("settings");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
@@ -76,6 +79,8 @@ export async function updateReportSettings(
 ) {
   const user = await requireRole(["admin", "teacher"]);
   const t = await getTranslations("settings");
+  const tc = await getTranslations("common");
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const parsed = reportSettingsSchema.safeParse({
     intro: nullableTrim(formData.get("intro")),
@@ -109,6 +114,7 @@ export async function updateReportSettings(
 
 export async function removeCenterLogo() {
   const admin = await requireRole("admin");
+  if (isDemoUser(admin)) return;
   const supabase = createAdminClient();
 
   // Best-effort delete every plausible extension; we don't know what was uploaded.

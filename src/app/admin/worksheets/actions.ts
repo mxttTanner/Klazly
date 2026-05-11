@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const ALLOWED_TYPES = [
   "application/pdf",
@@ -16,6 +17,8 @@ const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 export async function uploadWorksheet(_prev: unknown, formData: FormData) {
   const admin = await requireRole(["admin", "teacher"]);
   const t = await getTranslations("worksheets");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const file = formData.get("file");
   const nameRaw = String(formData.get("name") ?? "").trim();
@@ -80,6 +83,7 @@ export async function deleteWorksheet(formData: FormData) {
   const admin = await requireRole(["admin", "teacher"]);
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  if (isDemoUser(admin)) return;
 
   const supabase = createAdminClient();
 

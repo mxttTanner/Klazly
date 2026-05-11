@@ -69,6 +69,7 @@ export default async function StudentProgressPage({
   const tLevel = await getTranslations("level");
   const tWorksheets = await getTranslations("worksheets");
   const tAttendance = await getTranslations("attendance");
+  const tMessages = await getTranslations("messages");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -561,16 +562,16 @@ export default async function StudentProgressPage({
         <div className="flex items-center gap-2">
           <MessageSquareText className="text-primary size-5" />
           <h2 className="text-xl font-semibold tracking-tight">
-            {t("messagesHeading")}
+            {tMessages("messagesHeading")}
           </h2>
         </div>
         <p className="text-muted-foreground text-sm">
-          {t("messagesHelp")}
+          {tMessages("messagesHelp")}
         </p>
         <MessageThread
           studentId={student.id}
           currentUserId={user.id}
-          emptyHint={t("messagesEmpty")}
+          emptyHint={tMessages("messagesEmpty")}
         />
       </section>
 

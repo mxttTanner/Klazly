@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const createSchema = z.object({
   name: z.string().min(1).max(120),
@@ -22,6 +23,8 @@ function nullableTrim(v: FormDataEntryValue | null): string | null {
 export async function createClass(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
   const t = await getTranslations("admin.classes");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const teacherIdRaw = String(formData.get("teacher_id") ?? "");
   const programRaw = String(formData.get("program") ?? "");
@@ -106,6 +109,7 @@ export async function updateClassBook(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const book = nullableTrim(formData.get("book"));
   if (!id) return;
+  if (isDemoUser(admin)) return;
 
   const supabase = createAdminClient();
 
@@ -128,6 +132,7 @@ export async function updateClassProgram(formData: FormData) {
   const program =
     programRaw && programRaw !== "none" ? programRaw.trim() || null : null;
   if (!id) return;
+  if (isDemoUser(admin)) return;
 
   const supabase = createAdminClient();
 
@@ -145,6 +150,7 @@ export async function updateClassProgram(formData: FormData) {
 
 export async function updateClassTeacher(formData: FormData) {
   const admin = await requireRole("admin");
+  if (isDemoUser(admin)) return;
   const id = String(formData.get("id") ?? "");
   const teacherIdRaw = String(formData.get("teacher_id") ?? "");
   const teacher_id =
@@ -178,6 +184,7 @@ export async function deleteClass(formData: FormData) {
   const admin = await requireRole("admin");
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  if (isDemoUser(admin)) return;
 
   const supabase = createAdminClient();
 

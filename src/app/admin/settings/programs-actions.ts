@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 import { SUGGESTED_PROGRAMS } from "@/lib/programs";
 
 const labelSchema = z.string().trim().min(1).max(80);
@@ -20,6 +21,8 @@ function nullableTrim(v: FormDataEntryValue | null): string | null {
 export async function createProgram(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
   const t = await getTranslations("settings");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const label = nullableTrim(formData.get("label"));
   const parsed = labelSchema.safeParse(label);
@@ -60,6 +63,7 @@ export async function createProgram(_prev: unknown, formData: FormData) {
  */
 export async function seedSuggestedPrograms() {
   const admin = await requireRole("admin");
+  if (isDemoUser(admin)) return;
   const supabase = createAdminClient();
 
   const { data: existing } = await supabase
@@ -97,6 +101,8 @@ export async function seedSuggestedPrograms() {
 export async function renameProgram(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
   const t = await getTranslations("settings");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const id = String(formData.get("id") ?? "");
   const label = nullableTrim(formData.get("label"));
@@ -147,6 +153,7 @@ export async function renameProgram(_prev: unknown, formData: FormData) {
  */
 export async function deleteProgram(formData: FormData) {
   const admin = await requireRole("admin");
+  if (isDemoUser(admin)) return;
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 

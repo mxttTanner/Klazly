@@ -13,7 +13,8 @@
     "language": "Ngôn ngữ",
     "languageVi": "Tiếng Việt",
     "languageEn": "English",
-    "appName": "Cổng Phụ Huynh"
+    "appName": "Cổng Phụ Huynh",
+    "demoReadOnly": "Chế độ demo — thay đổi không được lưu. Đăng ký trung tâm của bạn để dùng thật."
   },
   "landing": {
     "title": "Cổng Phụ Huynh",
@@ -606,7 +607,7 @@
   "demo": {
     "loading": "Đang chuẩn bị bản demo...",
     "loadError": "Không thể tải bản demo. Vui lòng thử lại sau.",
-    "banner": "BẢN DEMO • Dữ liệu có thể được khôi phục bất kỳ lúc nào.",
+    "banner": "BẢN DEMO • Chỉ xem — các thay đổi của bạn sẽ không được lưu.",
     "exit": "Thoát demo",
     "chooserTitle": "Xem demo theo từng góc nhìn",
     "chooserSubtitle": "Chọn vai trò bạn muốn trải nghiệm. Bạn có thể chuyển đổi giữa ba vai trò bất kỳ lúc nào ngay trên thanh demo.",

@@ -13,7 +13,8 @@
     "language": "Language",
     "languageVi": "Tiếng Việt",
     "languageEn": "English",
-    "appName": "Parent Portal"
+    "appName": "Parent Portal",
+    "demoReadOnly": "Demo mode — changes aren't saved. Sign up your center to use this for real."
   },
   "landing": {
     "title": "Parent Portal",
@@ -606,7 +607,7 @@
   "demo": {
     "loading": "Preparing demo...",
     "loadError": "Could not load the demo. Please try again later.",
-    "banner": "DEMO • Data may be reset at any time.",
+    "banner": "DEMO • Read-only — changes you make are not saved.",
     "exit": "Exit demo",
     "chooserTitle": "View the demo by role",
     "chooserSubtitle": "Pick the role you want to experience. You can switch between all three at any time from the demo banner.",

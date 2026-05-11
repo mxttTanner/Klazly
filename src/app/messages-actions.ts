@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const sendSchema = z.object({
   student_id: z.string().uuid(),
@@ -22,6 +23,8 @@ export async function sendParentTeacherMessage(
 ) {
   const user = await requireRole(["parent", "teacher", "admin"]);
   const t = await getTranslations("messages");
+  const tc = await getTranslations("common");
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const parsed = sendSchema.safeParse({
     student_id: formData.get("student_id"),
@@ -86,6 +89,7 @@ export async function markThreadRead(formData: FormData) {
   const user = await requireRole(["parent", "teacher", "admin"]);
   const studentId = String(formData.get("student_id") ?? "");
   if (!studentId) return;
+  if (isDemoUser(user)) return; // don't pollute demo read-state either
 
   const supabase = createClient();
   await supabase

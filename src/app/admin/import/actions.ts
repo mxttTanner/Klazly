@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 import { csvToRecords } from "@/lib/csv";
 
 const parentRowSchema = z.object({
@@ -39,6 +40,8 @@ export async function importParentsCsv(
 ): Promise<{ result?: ImportResult; error?: string }> {
   const admin = await requireRole("admin");
   const t = await getTranslations("import");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0)
@@ -125,6 +128,8 @@ export async function importStudentsCsv(
 ): Promise<{ result?: ImportResult; error?: string }> {
   const admin = await requireRole("admin");
   const t = await getTranslations("import");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0)

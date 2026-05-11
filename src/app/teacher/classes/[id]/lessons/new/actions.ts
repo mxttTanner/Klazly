@@ -7,6 +7,7 @@ import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const ALLOWED_WORKSHEET_TYPES = [
   "application/pdf",
@@ -93,6 +94,8 @@ function nullableString(v: FormDataEntryValue | null): string | null {
 export async function saveLessonTemplate(_prev: unknown, formData: FormData) {
   const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher.templates");
+  const tc = await getTranslations("common");
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const parsed = templateSchema.safeParse({
     name: formData.get("template_name"),
@@ -172,6 +175,8 @@ function buildUpdates(formData: FormData) {
 export async function createLesson(_prev: unknown, formData: FormData) {
   const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher.lessonForm");
+  const tc = await getTranslations("common");
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const class_id = String(formData.get("class_id") ?? "");
   const updates = buildUpdates(formData);
@@ -298,6 +303,8 @@ export async function createLesson(_prev: unknown, formData: FormData) {
 export async function updateLesson(_prev: unknown, formData: FormData) {
   const user = await requireRole(["teacher", "admin"]);
   const t = await getTranslations("teacher.lessonForm");
+  const tc = await getTranslations("common");
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const lessonId = String(formData.get("lesson_id") ?? "");
   const class_id = String(formData.get("class_id") ?? "");
@@ -428,6 +435,7 @@ export async function deleteLesson(formData: FormData) {
   const lessonId = String(formData.get("lesson_id") ?? "");
   const classId = String(formData.get("class_id") ?? "");
   if (!lessonId) return;
+  if (isDemoUser(user)) return;
 
   const supabase = createClient();
 

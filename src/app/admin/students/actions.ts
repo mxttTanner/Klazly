@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser } from "@/lib/demo-guard";
 
 const createSchema = z.object({
   full_name: z.string().min(1).max(120),
@@ -24,6 +25,8 @@ function nullable(v: FormDataEntryValue | null): string | null {
 export async function createStudent(_prev: unknown, formData: FormData) {
   const admin = await requireRole("admin");
   const t = await getTranslations("admin.students");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const parsed = createSchema.safeParse({
     full_name: formData.get("full_name"),
@@ -76,6 +79,7 @@ export async function updateStudent(formData: FormData) {
   const field = String(formData.get("field") ?? "");
   const valueRaw = formData.get("value");
   if (!id || !["class_id", "parent_user_id"].includes(field)) return;
+  if (isDemoUser(admin)) return;
 
   const supabase = createAdminClient();
 
@@ -113,6 +117,7 @@ export async function deleteStudent(formData: FormData) {
   const admin = await requireRole("admin");
   const id = String(formData.get("id") ?? "");
   if (!id) return;
+  if (isDemoUser(admin)) return;
 
   const supabase = createAdminClient();
 
