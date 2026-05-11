@@ -54,22 +54,37 @@ export default async function EditLessonPage({
     | null;
   if (!lesson || lesson.class_id !== cls.id) notFound();
 
-  const [{ data: students }, { data: updates }, { data: worksheets }] =
+  const [{ data: students }, updatesRes, { data: worksheets }] =
     await Promise.all([
       supabase
         .from("students")
         .select("id, full_name")
         .eq("class_id", cls.id)
         .order("full_name", { ascending: true }),
-      supabase
-        .from("student_lesson_updates")
-        .select("student_id, behavior_rating, individual_note, homework_completed")
-        .eq("lesson_id", lesson.id),
+      // Try with attendance column; fall back if migration not run.
+      (async () => {
+        const r1 = await supabase
+          .from("student_lesson_updates")
+          .select(
+            "student_id, behavior_rating, individual_note, homework_completed, attendance",
+          )
+          .eq("lesson_id", lesson.id);
+        if (r1.error) {
+          return await supabase
+            .from("student_lesson_updates")
+            .select(
+              "student_id, behavior_rating, individual_note, homework_completed",
+            )
+            .eq("lesson_id", lesson.id);
+        }
+        return r1;
+      })(),
       supabase
         .from("worksheets")
         .select("id, name, file_type")
         .order("created_at", { ascending: false }),
     ]);
+  const updates = updatesRes.data;
 
   const studentUpdates: Record<string, StudentDefault> = {};
   for (const u of updates ?? []) {
@@ -77,6 +92,9 @@ export default async function EditLessonPage({
       behavior_rating: (u.behavior_rating as string | null) ?? null,
       individual_note: (u.individual_note as string | null) ?? null,
       homework_completed: !!u.homework_completed,
+      attendance:
+        ((u as { attendance?: string | null }).attendance as string | null) ??
+        null,
     };
   }
 

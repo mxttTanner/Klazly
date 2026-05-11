@@ -46,6 +46,13 @@ type UpdateRow = {
   behavior_rating: keyof typeof BEHAVIOR_TONES | null;
   individual_note: string | null;
   homework_completed: boolean;
+  attendance?: "present" | "absent" | "late" | null;
+};
+
+const ATTENDANCE_TONES: Record<string, string> = {
+  present: "bg-emerald-100 text-emerald-800",
+  late: "bg-amber-100 text-amber-800",
+  absent: "bg-rose-100 text-rose-800",
 };
 
 export default async function StudentProgressPage({
@@ -59,6 +66,7 @@ export default async function StudentProgressPage({
   const tBehavior = await getTranslations("behavior");
   const tLevel = await getTranslations("level");
   const tWorksheets = await getTranslations("worksheets");
+  const tAttendance = await getTranslations("attendance");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -174,14 +182,30 @@ export default async function StudentProgressPage({
     }
   }
 
-  const updatesRes = await supabase
+  // Try with attendance column; fall back if migration not run.
+  const updatesWithAttendance = await supabase
     .from("student_lesson_updates")
-    .select("lesson_id, behavior_rating, individual_note, homework_completed")
+    .select(
+      "lesson_id, behavior_rating, individual_note, homework_completed, attendance",
+    )
     .eq("student_id", student.id)
     .in(
       "lesson_id",
       lessons.map((l) => l.id),
     );
+  let updatesData = updatesWithAttendance.data;
+  if (updatesWithAttendance.error) {
+    const fallback = await supabase
+      .from("student_lesson_updates")
+      .select("lesson_id, behavior_rating, individual_note, homework_completed")
+      .eq("student_id", student.id)
+      .in(
+        "lesson_id",
+        lessons.map((l) => l.id),
+      );
+    updatesData = (fallback.data ?? []).map((r) => ({ ...r, attendance: null }));
+  }
+  const updatesRes = { data: updatesData };
 
   const updateByLesson = new Map<string, UpdateRow>();
   for (const u of (updatesRes.data ?? []) as UpdateRow[]) {
@@ -490,13 +514,22 @@ export default async function StudentProgressPage({
                       </p>
                     ) : null}
                   </div>
-                  {ratingLabel && ratingTone ? (
-                    <span
-                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ratingTone} print:bg-transparent print:border print:border-black`}
-                    >
-                      {ratingLabel}
-                    </span>
-                  ) : null}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {u?.attendance && ATTENDANCE_TONES[u.attendance] ? (
+                      <span
+                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ATTENDANCE_TONES[u.attendance]} print:bg-transparent print:border print:border-black`}
+                      >
+                        {tAttendance(u.attendance)}
+                      </span>
+                    ) : null}
+                    {ratingLabel && ratingTone ? (
+                      <span
+                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${ratingTone} print:bg-transparent print:border print:border-black`}
+                      >
+                        {ratingLabel}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {/* Per-child feedback (the parent only sees the unit/lesson

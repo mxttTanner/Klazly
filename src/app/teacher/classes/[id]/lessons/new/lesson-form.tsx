@@ -21,6 +21,7 @@ export type StudentDefault = {
   behavior_rating: string | null;
   individual_note: string | null;
   homework_completed: boolean;
+  attendance: string | null;
 };
 
 export type LessonDefaults = {
@@ -105,6 +106,14 @@ export function LessonForm({
       .forEach((btn) => {
         const isChecked = btn.hasAttribute("data-checked");
         if (isChecked !== done) btn.click();
+      });
+  }
+
+  function setAllAttendance(value: "present" | "absent" | "late") {
+    document
+      .querySelectorAll<HTMLSelectElement>('select[name^="attendance_"]')
+      .forEach((el) => {
+        el.value = value;
       });
   }
 
@@ -348,6 +357,14 @@ export function LessonForm({
           {students.length > 1 ? (
             <div className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-md border border-dashed p-3 text-sm">
               <span className="text-muted-foreground">{t("bulkLabel")}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setAllAttendance("present")}
+              >
+                {t("bulkAllPresent")}
+              </Button>
               <Label
                 htmlFor="bulk-behavior"
                 className="text-muted-foreground sr-only"
@@ -403,12 +420,28 @@ export function LessonForm({
               return (
                 <div
                   key={s.id}
-                  className="grid gap-4 rounded-md border p-4 sm:grid-cols-[1fr_1fr_auto]"
+                  className="grid gap-4 rounded-md border p-4 sm:grid-cols-[10rem_10rem_1fr_auto]"
                 >
                   <input type="hidden" name="student_id" value={s.id} />
 
-                  <div className="space-y-2 sm:col-span-3">
+                  <div className="space-y-2 sm:col-span-4">
                     <p className="font-medium">{s.full_name}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`attendance_${s.id}`}>
+                      {t("attendance")}
+                    </Label>
+                    <select
+                      id={`attendance_${s.id}`}
+                      name={`attendance_${s.id}`}
+                      defaultValue={su?.attendance ?? "present"}
+                      className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                    >
+                      <option value="present">{t("attendancePresent")}</option>
+                      <option value="late">{t("attendanceLate")}</option>
+                      <option value="absent">{t("attendanceAbsent")}</option>
+                    </select>
                   </div>
 
                   <div className="space-y-2">

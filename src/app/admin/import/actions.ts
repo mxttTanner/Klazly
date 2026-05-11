@@ -28,6 +28,9 @@ export type ImportResult = {
   imported: number;
   skipped: number;
   errors: { row: number; message: string }[];
+  /** Auto-generated passwords for parents that left the password column blank.
+      Admin must capture these before navigating away — they're not recoverable. */
+  generated?: { email: string; full_name: string; password: string }[];
 };
 
 export async function importParentsCsv(
@@ -67,6 +70,7 @@ export async function importParentsCsv(
       continue;
     }
 
+    const passwordWasGenerated = !parsed.data.password;
     const password =
       parsed.data.password ??
       Math.random().toString(36).slice(-10) + "Aa1!";
@@ -96,6 +100,14 @@ export async function importParentsCsv(
       await supabase.auth.admin.deleteUser(created.user.id);
       result.errors.push({ row: rowNum, message: profileErr.message });
       continue;
+    }
+
+    if (passwordWasGenerated) {
+      (result.generated ??= []).push({
+        email: parsed.data.email,
+        full_name: parsed.data.full_name,
+        password,
+      });
     }
 
     result.imported++;

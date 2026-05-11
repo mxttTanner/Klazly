@@ -129,6 +129,7 @@ const studentUpdateSchema = z.object({
     .nullable(),
   individual_note: z.string().max(500).optional().nullable(),
   homework_completed: z.boolean(),
+  attendance: z.enum(["present", "absent", "late"]).optional().nullable(),
 });
 
 const lessonSchema = z.object({
@@ -151,6 +152,7 @@ function buildUpdates(formData: FormData) {
     const ratingRaw = String(formData.get(`behavior_${sid}`) ?? "");
     const noteRaw = formData.get(`note_${sid}`);
     const hwDone = formData.get(`homework_${sid}`) === "on";
+    const attendanceRaw = String(formData.get(`attendance_${sid}`) ?? "");
     return {
       student_id: sid,
       behavior_rating:
@@ -159,6 +161,10 @@ function buildUpdates(formData: FormData) {
           : null,
       individual_note: nullableString(noteRaw),
       homework_completed: hwDone,
+      attendance:
+        attendanceRaw && attendanceRaw !== "none"
+          ? (attendanceRaw as "present" | "absent" | "late")
+          : null,
     };
   });
 }
@@ -261,11 +267,25 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     behavior_rating: u.behavior_rating,
     individual_note: u.individual_note,
     homework_completed: u.homework_completed,
+    attendance: u.attendance,
   }));
 
-  const { error: uErr } = await supabase
+  let { error: uErr } = await supabase
     .from("student_lesson_updates")
     .insert(updateRows);
+  if (uErr && /attendance/i.test(uErr.message)) {
+    // Attendance migration hasn't been run; drop it and retry.
+    const retry = await supabase
+      .from("student_lesson_updates")
+      .insert(
+        updateRows.map((row) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { attendance, ...rest } = row;
+          return rest;
+        }),
+      );
+    uErr = retry.error;
+  }
   if (uErr) {
     await supabase.from("lessons").delete().eq("id", lesson.id);
     return { error: t("saveUpdatesError", { message: uErr.message }) };
@@ -378,10 +398,23 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     behavior_rating: u.behavior_rating,
     individual_note: u.individual_note,
     homework_completed: u.homework_completed,
+    attendance: u.attendance,
   }));
-  const { error: uErr } = await supabase
+  let { error: uErr } = await supabase
     .from("student_lesson_updates")
     .insert(updateRows);
+  if (uErr && /attendance/i.test(uErr.message)) {
+    const retry = await supabase
+      .from("student_lesson_updates")
+      .insert(
+        updateRows.map((row) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { attendance, ...rest } = row;
+          return rest;
+        }),
+      );
+    uErr = retry.error;
+  }
   if (uErr) {
     return { error: t("saveUpdatesError", { message: uErr.message }) };
   }

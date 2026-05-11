@@ -120,7 +120,34 @@
     "password": "Mật khẩu",
     "submit": "Đăng nhập",
     "submitting": "Đang đăng nhập...",
-    "invalidCredentials": "Email hoặc mật khẩu không đúng."
+    "invalidCredentials": "Email hoặc mật khẩu không đúng.",
+    "forgot": "Quên mật khẩu?"
+  },
+  "forgotPassword": {
+    "title": "Đặt lại mật khẩu",
+    "subtitle": "Nhập email của bạn. Nếu tài khoản tồn tại, chúng tôi sẽ gửi đường dẫn để đặt mật khẩu mới.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "ban@example.com",
+    "submit": "Gửi đường dẫn đặt lại",
+    "submitting": "Đang gửi...",
+    "sentTitle": "Kiểm tra email của bạn",
+    "sentBody": "Nếu email của bạn đã đăng ký, chúng tôi vừa gửi đường dẫn đặt mật khẩu mới. Đường dẫn hết hạn sau 1 giờ."
+  },
+  "resetPassword": {
+    "title": "Đặt mật khẩu mới",
+    "subtitle": "Chọn mật khẩu mới (ít nhất 8 ký tự).",
+    "loading": "Đang tải...",
+    "newPassword": "Mật khẩu mới",
+    "passwordPlaceholder": "Ít nhất 8 ký tự",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "submit": "Lưu mật khẩu mới",
+    "submitting": "Đang lưu...",
+    "tooShort": "Mật khẩu phải có ít nhất 8 ký tự.",
+    "mismatch": "Mật khẩu không khớp.",
+    "updateError": "Không thể cập nhật mật khẩu: {message}",
+    "expiredTitle": "Đường dẫn đã hết hạn hoặc không hợp lệ",
+    "expiredBody": "Vui lòng yêu cầu đường dẫn đặt lại mới.",
+    "doneBody": "Đã cập nhật mật khẩu. Đang đăng nhập..."
   },
   "admin": {
     "navTitle": "Quản trị",
@@ -305,9 +332,14 @@
       "perStudentHeader": "Nhận xét từng học sinh",
       "perStudentSubtitle": "Đánh giá thái độ, ghi chú và đánh dấu bài tập về nhà cho mỗi học sinh.",
       "bulkLabel": "Áp dụng nhanh cho cả lớp:",
+      "bulkAllPresent": "Tất cả có mặt",
       "bulkSetBehavior": "Đặt thái độ tất cả",
       "bulkAllHomeworkDone": "Tất cả đã làm BTVN",
       "bulkAllHomeworkUndone": "Tất cả chưa làm BTVN",
+      "attendance": "Điểm danh",
+      "attendancePresent": "Có mặt",
+      "attendanceLate": "Đi trễ",
+      "attendanceAbsent": "Vắng",
       "behavior": "Thái độ",
       "behaviorNone": "— Chưa đánh giá —",
       "individualNote": "Ghi chú riêng",
@@ -373,6 +405,11 @@
     "okay": "Khá",
     "needs_attention": "Cần lưu ý"
   },
+  "attendance": {
+    "present": "Có mặt",
+    "late": "Đi trễ",
+    "absent": "Vắng"
+  },
   "level": {
     "header": "Đánh giá chung",
     "none": "Chưa đánh giá",
@@ -405,6 +442,11 @@
     "errorsHeader": "{n} dòng có lỗi:",
     "row": "Dòng {n}",
     "moreErrors": "...và {n} lỗi khác.",
+    "generatedHeader": "Đã sinh {n} mật khẩu — sao chép ngay bây giờ",
+    "generatedHelp": "Các dòng này không có mật khẩu trong CSV nên hệ thống đã sinh. Lưu lại danh sách này (Zalo, email, giấy) — bạn sẽ không thấy lại sau khi rời trang.",
+    "generatedColName": "Tên",
+    "generatedColEmail": "Email",
+    "generatedColPassword": "Mật khẩu",
     "legacyHint": "Tính năng nhập CSV đã chuyển sang trang Phụ huynh và Học sinh — bấm bên dưới để mở trực tiếp.",
     "legacyParentsTitle": "Nhập phụ huynh",
     "legacyParentsHint": "Thêm hàng loạt tài khoản phụ huynh từ tệp CSV.",

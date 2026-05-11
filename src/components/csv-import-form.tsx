@@ -2,7 +2,7 @@
 
 import { useFormState } from "react-dom";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { CheckCircle2, AlertCircle, Info, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
@@ -82,6 +82,46 @@ export function CsvImportForm({ variant }: { variant: Variant }) {
                   </li>
                 ) : null}
               </ul>
+            </div>
+          ) : null}
+
+          {state.result.generated && state.result.generated.length > 0 ? (
+            <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3">
+              <div className="text-amber-900 flex items-center gap-2 text-sm font-medium">
+                <KeyRound className="size-4" />
+                {t("generatedHeader", { n: state.result.generated.length })}
+              </div>
+              <p className="text-amber-800 text-xs">
+                {t("generatedHelp")}
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead className="text-amber-900">
+                    <tr>
+                      <th className="text-left py-1 pr-2">
+                        {t("generatedColName")}
+                      </th>
+                      <th className="text-left py-1 pr-2">
+                        {t("generatedColEmail")}
+                      </th>
+                      <th className="text-left py-1">
+                        {t("generatedColPassword")}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.result.generated.map((g, i) => (
+                      <tr key={i} className="border-t border-amber-200">
+                        <td className="py-1 pr-2">{g.full_name}</td>
+                        <td className="py-1 pr-2 font-mono">{g.email}</td>
+                        <td className="py-1 font-mono select-all">
+                          {g.password}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : null}
         </div>

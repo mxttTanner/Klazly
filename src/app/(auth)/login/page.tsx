@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { LoginForm } from "./login-form";
@@ -24,6 +25,14 @@ export default async function LoginPage() {
             <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
           </div>
           <LoginForm />
+          <p className="text-center text-sm">
+            <Link
+              href="/forgot-password"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              {t("forgot")}
+            </Link>
+          </p>
         </div>
       </main>
     </>

@@ -120,7 +120,34 @@
     "password": "Password",
     "submit": "Log in",
     "submitting": "Logging in...",
-    "invalidCredentials": "Incorrect email or password."
+    "invalidCredentials": "Incorrect email or password.",
+    "forgot": "Forgot your password?"
+  },
+  "forgotPassword": {
+    "title": "Reset your password",
+    "subtitle": "Enter your email address. If we find your account we'll send you a link to set a new password.",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you@example.com",
+    "submit": "Send reset link",
+    "submitting": "Sending...",
+    "sentTitle": "Check your email",
+    "sentBody": "If your email is registered, we just sent you a link to set a new password. The link expires in 1 hour."
+  },
+  "resetPassword": {
+    "title": "Set a new password",
+    "subtitle": "Pick a new password (at least 8 characters).",
+    "loading": "Loading...",
+    "newPassword": "New password",
+    "passwordPlaceholder": "At least 8 characters",
+    "confirmPassword": "Confirm new password",
+    "submit": "Save new password",
+    "submitting": "Saving...",
+    "tooShort": "Password must be at least 8 characters.",
+    "mismatch": "Passwords don't match.",
+    "updateError": "Could not update password: {message}",
+    "expiredTitle": "Reset link expired or invalid",
+    "expiredBody": "Please request a fresh reset link.",
+    "doneBody": "Password updated. Logging you in..."
   },
   "admin": {
     "navTitle": "Admin",
@@ -305,9 +332,14 @@
       "perStudentHeader": "Per-student notes",
       "perStudentSubtitle": "Rate behavior, leave a note, and tick homework completion for each student.",
       "bulkLabel": "Bulk apply to whole class:",
+      "bulkAllPresent": "Mark all present",
       "bulkSetBehavior": "Set all behavior to",
       "bulkAllHomeworkDone": "All did homework",
       "bulkAllHomeworkUndone": "All didn't do homework",
+      "attendance": "Attendance",
+      "attendancePresent": "Present",
+      "attendanceLate": "Late",
+      "attendanceAbsent": "Absent",
       "behavior": "Behavior",
       "behaviorNone": "— Not rated —",
       "individualNote": "Individual note",
@@ -373,6 +405,11 @@
     "okay": "Okay",
     "needs_attention": "Needs attention"
   },
+  "attendance": {
+    "present": "Present",
+    "late": "Late",
+    "absent": "Absent"
+  },
   "level": {
     "header": "Overall level",
     "none": "Not rated",
@@ -405,6 +442,11 @@
     "errorsHeader": "{n} rows had errors:",
     "row": "Row {n}",
     "moreErrors": "...and {n} more errors.",
+    "generatedHeader": "{n} passwords generated — copy them now",
+    "generatedHelp": "These rows had no password in the CSV so we generated one. Save this list (Zalo, email, paper) — you can't see these again after you leave the page.",
+    "generatedColName": "Name",
+    "generatedColEmail": "Email",
+    "generatedColPassword": "Password",
     "legacyHint": "CSV import now lives on the Parents and Students pages — click below to jump straight in.",
     "legacyParentsTitle": "Import parents",
     "legacyParentsHint": "Bulk-add parent accounts from a CSV.",
