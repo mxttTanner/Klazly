@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ClipboardList,
   FileText,
-  GraduationCap,
   MessageSquareText,
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
@@ -63,6 +62,7 @@ export default async function StudentProgressPage({
   const user = await requireRole("parent");
   const supabase = createClient();
   const t = await getTranslations("parent.student");
+  const tHome = await getTranslations("parent.home");
   const tBehavior = await getTranslations("behavior");
   const tLevel = await getTranslations("level");
   const tWorksheets = await getTranslations("worksheets");
@@ -288,35 +288,111 @@ export default async function StudentProgressPage({
         <PrintButton label={t("print")} />
       </div>
 
-      {/* On-screen header — kept light, hidden on print */}
-      <header className="space-y-2 print:hidden">
-        <div className="flex items-center gap-3">
-          {center?.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={center.logo_url}
-              alt={center?.name ?? ""}
-              className="size-10 rounded-md object-contain"
-            />
+      {/* On-screen hero card — friendly, colorful summary of the child */}
+      <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-violet-100/50 to-rose-100/40 p-6 sm:p-7 print:hidden">
+        <div className="absolute -right-10 -top-10 size-40 rounded-full bg-amber-200/40 blur-3xl" />
+        <div className="absolute -left-8 -bottom-8 size-32 rounded-full bg-sky-200/40 blur-3xl" />
+        <div className="relative space-y-5">
+          {center?.name ? (
+            <div className="flex items-center gap-2">
+              {center?.logo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={center.logo_url}
+                  alt={center?.name ?? ""}
+                  className="size-7 rounded-md object-contain bg-background/60 p-0.5"
+                />
+              ) : null}
+              <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                {center?.name}
+              </p>
+            </div>
           ) : null}
-          <p className="text-muted-foreground text-xs uppercase tracking-wide">
-            {center?.name}
-          </p>
+
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+            <div className="bg-amber-100 text-amber-700 ring-card flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-bold ring-4 sm:size-16 sm:text-2xl">
+              {student.full_name.trim().split(/\s+/).slice(-1)[0]?.charAt(0).toUpperCase() ?? "?"}
+            </div>
+            <div className="flex-1 min-w-[10rem] space-y-1">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                {student.full_name}
+              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                {student.overall_level &&
+                LEVEL_TONES[student.overall_level] ? (
+                  <span
+                    className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${LEVEL_TONES[student.overall_level]}`}
+                    title={tLevel("header")}
+                  >
+                    {tLevel(
+                      student.overall_level as
+                        | "good"
+                        | "okay"
+                        | "needs_attention",
+                    )}
+                  </span>
+                ) : null}
+                {student.age !== null && student.age !== undefined ? (
+                  <span className="text-muted-foreground text-xs">
+                    {tHome("ageLabel", { n: student.age })}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-muted-foreground text-sm">{classLineText}</p>
+            </div>
+          </div>
+
+          {/* Quick stats row */}
+          {lessons.length > 0 ? (
+            <dl className="grid grid-cols-3 gap-2 rounded-xl bg-background/70 p-3 backdrop-blur-sm sm:gap-3 sm:p-4">
+              <div>
+                <dt className="text-muted-foreground text-xs uppercase tracking-wide">
+                  {t("heroLessonsLabel")}
+                </dt>
+                <dd className="mt-0.5 text-xl font-bold sm:text-2xl">
+                  {monthlyLessons.length || lessons.length}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs uppercase tracking-wide">
+                  {t("heroHomeworkLabel")}
+                </dt>
+                <dd className="mt-0.5 text-xl font-bold text-emerald-700 sm:text-2xl">
+                  {monthHomeworkPct === null ? "—" : `${monthHomeworkPct}%`}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground text-xs uppercase tracking-wide">
+                  {t("heroBehaviorLabel")}
+                </dt>
+                <dd className="mt-1 inline-flex items-center gap-1">
+                  {(["great", "good", "okay", "needs_attention"] as const)
+                    .filter((k) => behaviorCounts[k] > 0)
+                    .slice(0, 4)
+                    .map((k) => (
+                      <span
+                        key={k}
+                        className={`size-2.5 rounded-full ${
+                          k === "great"
+                            ? "bg-emerald-500"
+                            : k === "good"
+                              ? "bg-sky-500"
+                              : k === "okay"
+                                ? "bg-amber-500"
+                                : "bg-rose-500"
+                        }`}
+                        title={`${behaviorCounts[k]}`}
+                      />
+                    ))}
+                  {behaviorTotal === 0 ? (
+                    <span className="text-muted-foreground text-sm">—</span>
+                  ) : null}
+                </dd>
+              </div>
+            </dl>
+          ) : null}
         </div>
-        <h1 className="inline-flex flex-wrap items-center gap-2 text-3xl font-semibold tracking-tight">
-          <GraduationCap className="text-amber-600 size-7" />
-          {student.full_name}
-          {student.overall_level && LEVEL_TONES[student.overall_level] ? (
-            <span
-              className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${LEVEL_TONES[student.overall_level]}`}
-              title={tLevel("header")}
-            >
-              {tLevel(student.overall_level as "good" | "okay" | "needs_attention")}
-            </span>
-          ) : null}
-        </h1>
-        <p className="text-muted-foreground text-sm">{classLineText}</p>
-      </header>
+      </section>
 
       {/* Print-only formal report header */}
       <div className="print-only">

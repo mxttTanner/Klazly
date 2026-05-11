@@ -358,6 +358,13 @@
     "home": {
       "title": "Con của bạn",
       "subtitle": "Chọn con để xem tiến trình học tập gần đây.",
+      "greetingEyebrow": "Chào mừng trở lại",
+      "greetingNamed": "Xin chào, {name}",
+      "greetingOneChild": "Tiến trình học tập gần đây của con bạn.",
+      "greetingManyChildren": "Tiến trình học tập gần đây của {n} con bạn.",
+      "ageLabel": "{n} tuổi",
+      "recentTrend": "Thái độ gần đây",
+      "lastLesson": "Buổi gần nhất",
       "class": "Lớp:",
       "teacher": "Giáo viên:",
       "schedule": "Lịch học:",
@@ -366,6 +373,9 @@
     },
     "student": {
       "back": "← Tất cả các con",
+      "heroLessonsLabel": "Buổi học",
+      "heroHomeworkLabel": "Hoàn thành BTVN",
+      "heroBehaviorLabel": "Thái độ",
       "classLine": "Lớp {className}",
       "classWithTeacher": "Lớp {className} • Giáo viên {teacher}",
       "noClass": "Chưa được xếp lớp.",

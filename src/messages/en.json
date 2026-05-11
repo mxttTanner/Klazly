@@ -358,6 +358,13 @@
     "home": {
       "title": "Your children",
       "subtitle": "Pick a child to see their recent progress.",
+      "greetingEyebrow": "Welcome back",
+      "greetingNamed": "Hello, {name}",
+      "greetingOneChild": "Here's how your child has been doing.",
+      "greetingManyChildren": "Here's how your {n} children have been doing.",
+      "ageLabel": "Age {n}",
+      "recentTrend": "Recent behavior",
+      "lastLesson": "Last lesson",
       "class": "Class:",
       "teacher": "Teacher:",
       "schedule": "Schedule:",
@@ -366,6 +373,9 @@
     },
     "student": {
       "back": "← All children",
+      "heroLessonsLabel": "Lessons",
+      "heroHomeworkLabel": "Homework",
+      "heroBehaviorLabel": "Behavior",
       "classLine": "Class {className}",
       "classWithTeacher": "Class {className} • Teacher {teacher}",
       "noClass": "Not enrolled in a class.",
