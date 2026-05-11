@@ -420,6 +420,24 @@
     "late": "Đi trễ",
     "absent": "Vắng"
   },
+  "messages": {
+    "send": "Gửi",
+    "sending": "Đang gửi…",
+    "composerPlaceholder": "Nhắn cho giáo viên…",
+    "messagesHeading": "Tin nhắn với giáo viên",
+    "messagesHelp": "Cuộc trò chuyện riêng tư về con bạn. Chỉ bạn, giáo viên chủ nhiệm và quản trị trung tâm thấy được.",
+    "messagesEmpty": "Chưa có tin nhắn nào. Hãy chào giáo viên của con.",
+    "teacherEmptyHint": "Chưa có tin nhắn nào. Hãy chào phụ huynh.",
+    "validationBody": "Vui lòng nhập nội dung (1–2000 ký tự).",
+    "notAllowed": "Bạn không có quyền nhắn về học sinh này.",
+    "sendError": "Không thể gửi: {message}",
+    "teacherTag": "Giáo viên",
+    "adminTag": "Quản trị",
+    "classHeading": "Tin nhắn từ phụ huynh",
+    "threadTitle": "Tin nhắn về {name}",
+    "threadParent": "Phụ huynh: {name}",
+    "threadNoParent": "Học sinh này chưa được liên kết với phụ huynh."
+  },
   "level": {
     "header": "Đánh giá chung",
     "none": "Chưa đánh giá",

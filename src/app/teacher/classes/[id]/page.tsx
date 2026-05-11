@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Copy,
   GraduationCap,
+  MessageSquareText,
   Pencil,
   Plus,
   Trash2,
@@ -42,6 +43,7 @@ export default async function ClassDetailPage({
   const tForm = await getTranslations("teacher.lessonForm");
   const tLevel = await getTranslations("level");
   const tBehavior = await getTranslations("behavior");
+  const tMessages = await getTranslations("messages");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -148,6 +150,51 @@ export default async function ClassDetailPage({
     okay: "bg-amber-500",
     needs_attention: "bg-rose-500",
   };
+
+  // Per-student parent ↔ teacher message stats. Fail silently if the
+  // migration hasn't been run yet.
+  type StudentMessageStats = {
+    total: number;
+    unread: number;
+    lastBody: string | null;
+    lastAt: string | null;
+  };
+  const messageStats = new Map<string, StudentMessageStats>();
+  const studentIds = (students ?? []).map((s) => s.id);
+  if (studentIds.length > 0) {
+    const msgRes = await supabase
+      .from("parent_teacher_messages")
+      .select("student_id, sender_user_id, body, created_at, read_at")
+      .in("student_id", studentIds)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (!msgRes.error && msgRes.data) {
+      type MsgRow = {
+        student_id: string;
+        sender_user_id: string;
+        body: string;
+        created_at: string;
+        read_at: string | null;
+      };
+      const rows = msgRes.data as MsgRow[];
+      for (const sid of studentIds) {
+        const mine = rows.filter((r) => r.student_id === sid);
+        const unread = mine.filter(
+          (r) => r.sender_user_id !== user.id && r.read_at === null,
+        ).length;
+        const latest = mine[0];
+        messageStats.set(sid, {
+          total: mine.length,
+          unread,
+          lastBody: latest?.body ?? null,
+          lastAt: latest?.created_at ?? null,
+        });
+      }
+    }
+  }
+  const hasAnyMessages = Array.from(messageStats.values()).some(
+    (s) => s.total > 0,
+  );
 
   return (
     <div className="space-y-8">
@@ -365,6 +412,64 @@ export default async function ClassDetailPage({
           </div>
         )}
       </section>
+
+      {/* Parent ↔ teacher messages section. Shows one row per student who
+          has messages or unread messages; click into a private thread. */}
+      {hasAnyMessages ? (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <MessageSquareText className="text-primary size-5" />
+            <h2 className="text-xl font-semibold tracking-tight">
+              {tMessages("classHeading")}
+            </h2>
+          </div>
+          <ul className="space-y-2">
+            {(students ?? [])
+              .filter((s) => (messageStats.get(s.id)?.total ?? 0) > 0)
+              .map((s) => {
+                const stats = messageStats.get(s.id);
+                if (!stats) return null;
+                const lastWhen = stats.lastAt
+                  ? new Date(stats.lastAt).toLocaleString(dateLocale, {
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : null;
+                return (
+                  <li key={s.id}>
+                    <Link
+                      href={`/teacher/classes/${cls.id}/messages/${s.id}`}
+                      className="bg-card hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border p-3 transition"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-medium">{s.full_name}</p>
+                          {stats.unread > 0 ? (
+                            <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                              {stats.unread}
+                            </span>
+                          ) : null}
+                        </div>
+                        {stats.lastBody ? (
+                          <p className="text-muted-foreground mt-0.5 truncate text-xs">
+                            {stats.lastBody}
+                          </p>
+                        ) : null}
+                      </div>
+                      {lastWhen ? (
+                        <span className="text-muted-foreground text-xs">
+                          {lastWhen}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </li>
+                );
+              })}
+          </ul>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -420,6 +420,24 @@
     "late": "Late",
     "absent": "Absent"
   },
+  "messages": {
+    "send": "Send",
+    "sending": "Sending…",
+    "composerPlaceholder": "Type a message to the teacher…",
+    "messagesHeading": "Messages with your teacher",
+    "messagesHelp": "Private 1-on-1 thread about your child. Only you, the class teacher, and your center admin can see it.",
+    "messagesEmpty": "No messages yet. Say hello to your child's teacher.",
+    "teacherEmptyHint": "No messages yet. Say hello to the parent.",
+    "validationBody": "Please write a message (1–2000 characters).",
+    "notAllowed": "You don't have permission to message about this student.",
+    "sendError": "Could not send: {message}",
+    "teacherTag": "Teacher",
+    "adminTag": "Admin",
+    "classHeading": "Parent messages",
+    "threadTitle": "Messages about {name}",
+    "threadParent": "Parent: {name}",
+    "threadNoParent": "This student has no parent linked yet."
+  },
   "level": {
     "header": "Overall level",
     "none": "Not rated",

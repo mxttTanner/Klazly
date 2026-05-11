@@ -12,6 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/print-button";
 import { parseDateOnly } from "@/lib/utils";
+import { MessageThread } from "@/components/message-thread";
+import { markThreadRead } from "@/app/messages-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -133,6 +135,15 @@ export default async function StudentProgressPage({
   }
 
   if (!student || student.parent_user_id !== user.id) notFound();
+
+  // Mark teacher → parent messages as read when the parent opens the page.
+  // Best-effort; ignore errors so the page renders even if the migration
+  // hasn't been applied.
+  {
+    const fd = new FormData();
+    fd.append("student_id", student.id);
+    await markThreadRead(fd).catch(() => {});
+  }
 
   const cls = Array.isArray(student.class) ? student.class[0] : student.class;
   const teacher = cls
@@ -542,6 +553,23 @@ export default async function StudentProgressPage({
           </div>
         </section>
       ) : null}
+
+      {/* Private message thread with the teacher (hidden in print) */}
+      <section className="space-y-3 print:hidden">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold tracking-tight">
+            {t("messagesHeading")}
+          </h2>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          {t("messagesHelp")}
+        </p>
+        <MessageThread
+          studentId={student.id}
+          currentUserId={user.id}
+          emptyHint={t("messagesEmpty")}
+        />
+      </section>
 
       {/* Print-only section heading before the lesson log */}
       {lessons.length > 0 ? (
