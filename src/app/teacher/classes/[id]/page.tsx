@@ -66,7 +66,9 @@ export default async function ClassDetailPage({
   const [{ data: students }, lessonsRes] = await Promise.all([
     supabase
       .from("students")
-      .select("id, full_name, age, overall_level")
+      .select(
+        "id, full_name, age, overall_level, parent_user_id, parent:users!students_parent_user_id_fkey(full_name)",
+      )
       .eq("class_id", cls.id)
       .order("full_name", { ascending: true }),
     supabase
@@ -192,10 +194,6 @@ export default async function ClassDetailPage({
       }
     }
   }
-  const hasAnyMessages = Array.from(messageStats.values()).some(
-    (s) => s.total > 0,
-  );
-
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -413,23 +411,45 @@ export default async function ClassDetailPage({
         )}
       </section>
 
-      {/* Parent ↔ teacher messages section. Shows one row per student who
-          has messages or unread messages; click into a private thread. */}
-      {hasAnyMessages ? (
-        <section className="space-y-3">
-          <div className="flex items-center gap-2">
-            <MessageSquareText className="text-primary size-5" />
-            <h2 className="text-xl font-semibold tracking-tight">
-              {tMessages("classHeading")}
-            </h2>
-          </div>
-          <ul className="space-y-2">
-            {(students ?? [])
-              .filter((s) => (messageStats.get(s.id)?.total ?? 0) > 0)
-              .map((s) => {
+      {/* Messages section — shows every student who has a parent linked, so
+          the teacher can both reply to incoming threads AND start new ones.
+          Sort: unread first → has-any-messages → no-messages-yet → name. */}
+      {(() => {
+        const messageableStudents = (students ?? []).filter(
+          (s) => s.parent_user_id,
+        );
+        if (messageableStudents.length === 0) return null;
+
+        const sorted = [...messageableStudents].sort((a, b) => {
+          const sa = messageStats.get(a.id);
+          const sb = messageStats.get(b.id);
+          // 1) Unread DESC
+          const ua = sa?.unread ?? 0;
+          const ub = sb?.unread ?? 0;
+          if (ua !== ub) return ub - ua;
+          // 2) Most recent activity DESC (no activity sinks)
+          const ta = sa?.lastAt ? new Date(sa.lastAt).getTime() : 0;
+          const tb = sb?.lastAt ? new Date(sb.lastAt).getTime() : 0;
+          if (ta !== tb) return tb - ta;
+          // 3) Name ASC
+          return a.full_name.localeCompare(b.full_name);
+        });
+
+        return (
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <MessageSquareText className="text-primary size-5" />
+              <h2 className="text-xl font-semibold tracking-tight">
+                {tMessages("classHeading")}
+              </h2>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              {tMessages("teacherSectionHelp")}
+            </p>
+            <ul className="space-y-2">
+              {sorted.map((s) => {
                 const stats = messageStats.get(s.id);
-                if (!stats) return null;
-                const lastWhen = stats.lastAt
+                const lastWhen = stats?.lastAt
                   ? new Date(stats.lastAt).toLocaleString(dateLocale, {
                       day: "2-digit",
                       month: "2-digit",
@@ -437,29 +457,46 @@ export default async function ClassDetailPage({
                       minute: "2-digit",
                     })
                   : null;
+                const parent = Array.isArray(s.parent)
+                  ? s.parent[0]
+                  : s.parent;
+                const hasMessages = (stats?.total ?? 0) > 0;
                 return (
                   <li key={s.id}>
                     <Link
                       href={`/teacher/classes/${cls.id}/messages/${s.id}`}
                       className="bg-card hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border p-3 transition"
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate font-medium">{s.full_name}</p>
-                          {stats.unread > 0 ? (
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate font-medium">
+                            {s.full_name}
+                          </p>
+                          {stats && stats.unread > 0 ? (
                             <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
                               {stats.unread}
                             </span>
                           ) : null}
+                          {parent ? (
+                            <span className="text-muted-foreground text-xs">
+                              {tMessages("teacherSectionParent", {
+                                name: parent.full_name,
+                              })}
+                            </span>
+                          ) : null}
                         </div>
-                        {stats.lastBody ? (
-                          <p className="text-muted-foreground mt-0.5 truncate text-xs">
+                        {hasMessages && stats?.lastBody ? (
+                          <p className="text-muted-foreground truncate text-xs">
                             {stats.lastBody}
                           </p>
-                        ) : null}
+                        ) : (
+                          <p className="text-muted-foreground truncate text-xs italic">
+                            {tMessages("teacherSectionStart")}
+                          </p>
+                        )}
                       </div>
                       {lastWhen ? (
-                        <span className="text-muted-foreground text-xs">
+                        <span className="text-muted-foreground whitespace-nowrap text-xs">
                           {lastWhen}
                         </span>
                       ) : null}
@@ -467,9 +504,10 @@ export default async function ClassDetailPage({
                   </li>
                 );
               })}
-          </ul>
-        </section>
-      ) : null}
+            </ul>
+          </section>
+        );
+      })()}
     </div>
   );
 }

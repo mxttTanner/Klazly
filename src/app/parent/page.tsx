@@ -5,6 +5,7 @@ import {
   CalendarClock,
   ChevronRight,
   GraduationCap,
+  MessageSquareText,
   Sparkles,
   UserCircle2,
 } from "lucide-react";
@@ -143,6 +144,26 @@ export default async function ParentHomePage() {
       : { data: [] as UpdateRow[] };
   const allUpdates = (updatesRes.data ?? []) as UpdateRow[];
 
+  // Unread message count per student (messages NOT sent by this parent and
+  // with no read_at). Fails soft if the messages table doesn't exist.
+  const unreadByStudent = new Map<string, number>();
+  if (studentIds.length) {
+    const unreadRes = await supabase
+      .from("parent_teacher_messages")
+      .select("student_id")
+      .in("student_id", studentIds)
+      .neq("sender_user_id", user.id)
+      .is("read_at", null);
+    if (!unreadRes.error && unreadRes.data) {
+      for (const row of unreadRes.data as Array<{ student_id: string }>) {
+        unreadByStudent.set(
+          row.student_id,
+          (unreadByStudent.get(row.student_id) ?? 0) + 1,
+        );
+      }
+    }
+  }
+
   // Build helpers per student.
   const lessonsByClass = new Map<string, LessonRow[]>();
   for (const l of allLessons) {
@@ -219,7 +240,14 @@ export default async function ParentHomePage() {
                 href={`/parent/students/${s.id}`}
                 className="group bg-card relative flex flex-col overflow-hidden rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
               >
-                <div className={`h-16 bg-gradient-to-br ${headerGrad}`} />
+                <div className={`relative h-16 bg-gradient-to-br ${headerGrad}`}>
+                  {(unreadByStudent.get(s.id) ?? 0) > 0 ? (
+                    <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                      <MessageSquareText className="size-3" />
+                      {unreadByStudent.get(s.id)}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="-mt-8 flex flex-col items-start gap-3 px-5 pb-5">
                   <div
                     className={`flex size-16 items-center justify-center rounded-full ring-4 ring-card text-2xl font-bold ${avatarTone}`}
