@@ -101,7 +101,7 @@ export default async function ClassDetailPage({
       .select(lessonSelectNoTopic)
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
-      .limit(10);
+      .limit(50);
     lessons = ((fallback.data ?? []) as Omit<LessonListRow, "topic">[]).map(
       (l) => ({ ...l, topic: null }),
     );

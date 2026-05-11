@@ -7,7 +7,9 @@ import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
 
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
+// SVG intentionally excluded: SVG files can carry <script> tags and execute
+// as XSS when rendered via <img>+blob or fetched directly. Raster only.
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export async function uploadCenterLogo(_prev: unknown, formData: FormData) {
@@ -28,7 +30,7 @@ export async function uploadCenterLogo(_prev: unknown, formData: FormData) {
   }
 
   const supabase = createAdminClient();
-  const ext = file.type === "image/svg+xml" ? "svg" : file.type.split("/")[1];
+  const ext = file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
   const path = `${admin.center_id}.${ext}`;
 
   const { error: uploadErr } = await supabase.storage

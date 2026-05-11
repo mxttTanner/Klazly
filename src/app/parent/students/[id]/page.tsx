@@ -165,7 +165,7 @@ export default async function StudentProgressPage({
       )
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
-      .limit(20);
+      .limit(100);
     if (withTopic.error) {
       console.warn(
         "[parent/student] lessons select with topic failed, falling back:",
@@ -178,7 +178,7 @@ export default async function StudentProgressPage({
         )
         .eq("class_id", cls.id)
         .order("lesson_date", { ascending: false })
-        .limit(20);
+        .limit(100);
       if (fallback.error) {
         console.error(
           "[parent/student] lessons fallback also failed:",
