@@ -137,7 +137,22 @@ const studentUpdateSchema = z.object({
 
 const lessonSchema = z.object({
   class_id: z.string().uuid(),
-  lesson_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  // YYYY-MM-DD, and must be a real calendar date (no 2026-13-01 etc.)
+  lesson_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .refine(
+      (s) => {
+        const [y, m, d] = s.split("-").map(Number);
+        const dt = new Date(y, m - 1, d);
+        return (
+          dt.getFullYear() === y &&
+          dt.getMonth() === m - 1 &&
+          dt.getDate() === d
+        );
+      },
+      { message: "invalid date" },
+    ),
   unit: z.string().max(80).optional().nullable(),
   lesson_number: z.string().max(80).optional().nullable(),
   topic: z.string().max(120).optional().nullable(),

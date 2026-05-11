@@ -74,6 +74,7 @@ export default async function ParentHomePage() {
   const supabase = createClient();
   const t = await getTranslations("parent.home");
   const tLevel = await getTranslations("level");
+  const tBehavior = await getTranslations("behavior");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -325,6 +326,28 @@ export default async function ParentHomePage() {
                                   ? BEHAVIOR_DOT[r]
                                   : "bg-muted-foreground/30"
                               }`}
+                              title={
+                                r
+                                  ? tBehavior(
+                                      r as
+                                        | "great"
+                                        | "good"
+                                        | "okay"
+                                        | "needs_attention",
+                                    )
+                                  : ""
+                              }
+                              aria-label={
+                                r
+                                  ? tBehavior(
+                                      r as
+                                        | "great"
+                                        | "good"
+                                        | "okay"
+                                        | "needs_attention",
+                                    )
+                                  : ""
+                              }
                             />
                           ))}
                         </span>

@@ -21,8 +21,11 @@ export function LoginForm() {
     setError(null);
     startTransition(async () => {
       const supabase = createClient();
+      // Normalise the email — accounts are invited and stored with lowercased
+      // emails, so a user who types "Jean@example.com" needs to match the
+      // "jean@example.com" record in auth.users.
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
       if (signInError) {

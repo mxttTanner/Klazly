@@ -12,6 +12,8 @@ export async function setLocale(formData: FormData) {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
   });
   revalidatePath("/", "layout");
 }

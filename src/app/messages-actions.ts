@@ -76,8 +76,12 @@ export async function sendParentTeacherMessage(
   // Both views revalidate on the next render — RLS makes sure each side only
   // sees their own thread.
   revalidatePath(`/parent/students/${parsed.data.student_id}`);
-  revalidatePath(`/teacher/classes/[id]/messages/${parsed.data.student_id}`);
-  revalidatePath(`/teacher/classes`, "layout");
+  // revalidatePath understands the file route pattern. Use the literal
+  // "[id]" placeholder so Next.js invalidates every classId variant of the
+  // teacher messages route.
+  revalidatePath("/teacher/classes/[id]/messages/[studentId]", "page");
+  revalidatePath("/teacher/classes", "layout");
+  revalidatePath("/admin/messages", "layout");
   return { success: true };
 }
 
@@ -100,6 +104,7 @@ export async function markThreadRead(formData: FormData) {
     .is("read_at", null);
 
   revalidatePath(`/parent/students/${studentId}`);
-  revalidatePath(`/teacher/classes/[id]/messages/${studentId}`);
-  revalidatePath(`/teacher/classes`, "layout");
+  revalidatePath("/teacher/classes/[id]/messages/[studentId]", "page");
+  revalidatePath("/teacher/classes", "layout");
+  revalidatePath("/admin/messages", "layout");
 }
