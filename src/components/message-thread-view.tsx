@@ -1,11 +1,26 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
 import { Check, CheckCheck, MessageSquareText, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { sendParentTeacherMessage } from "@/app/messages-actions";
+
+function SendButton({ idle, pending }: { idle: string; pending: string }) {
+  const { pending: isPending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      size="sm"
+      disabled={isPending}
+      className="inline-flex gap-1.5"
+    >
+      <Send className="size-3.5" />
+      {isPending ? pending : idle}
+    </Button>
+  );
+}
 
 export type ChatMessage = {
   id: string;
@@ -175,38 +190,62 @@ export function MessageThreadView({
         className="bg-card sticky bottom-0 flex flex-col gap-2 rounded-lg border p-3 shadow-sm"
       >
         <input type="hidden" name="student_id" value={studentId} />
-        <Textarea
-          ref={textRef}
-          name="body"
-          placeholder={labels.composerPlaceholder}
-          rows={2}
-          required
-          maxLength={2000}
-          className="min-h-[2.5rem] resize-none border-0 px-0 shadow-none focus-visible:ring-0"
-          onKeyDown={(e) => {
-            // Enter to send; Shift+Enter for newline.
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              formRef.current?.requestSubmit();
-            }
-          }}
+        <ComposerBody
+          studentId={studentId}
+          textRef={textRef}
+          formRef={formRef}
+          labels={labels}
+          errorText={state.error ?? ""}
         />
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-destructive text-xs" role="alert">
-            {state.error ?? ""}
-          </p>
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground hidden text-[10px] sm:inline">
-              {labels.enterHint}
-            </span>
-            <Button type="submit" size="sm" className="inline-flex gap-1.5">
-              <Send className="size-3.5" />
-              {labels.send}
-            </Button>
-          </div>
-        </div>
       </form>
     </div>
+  );
+}
+
+function ComposerBody({
+  textRef,
+  formRef,
+  labels,
+  errorText,
+}: {
+  studentId: string;
+  textRef: React.RefObject<HTMLTextAreaElement>;
+  formRef: React.RefObject<HTMLFormElement>;
+  labels: Labels;
+  errorText: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <>
+      <Textarea
+        ref={textRef}
+        name="body"
+        placeholder={labels.composerPlaceholder}
+        rows={2}
+        required
+        maxLength={2000}
+        disabled={pending}
+        className="min-h-[2.5rem] resize-none border-0 px-0 shadow-none focus-visible:ring-0 disabled:opacity-60"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (pending) return;
+            formRef.current?.requestSubmit();
+          }
+        }}
+      />
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-destructive text-xs" role="alert">
+          {errorText}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground hidden text-[10px] sm:inline">
+            {labels.enterHint}
+          </span>
+          <SendButton idle={labels.send} pending={labels.sending} />
+        </div>
+      </div>
+    </>
   );
 }
 

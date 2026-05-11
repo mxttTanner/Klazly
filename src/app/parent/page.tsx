@@ -15,28 +15,13 @@ import { parseDateOnly } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-// Warm avatar tones, picked deterministically from the student name so each
-// child keeps the same colour across visits.
+// Soft avatar tones — each child gets a consistent colour from a small,
+// muted palette. Fewer tones = a calmer, less circus-like wall of cards.
 const AVATAR_TONES = [
-  "bg-rose-100 text-rose-700 ring-rose-200",
-  "bg-amber-100 text-amber-700 ring-amber-200",
-  "bg-emerald-100 text-emerald-700 ring-emerald-200",
-  "bg-sky-100 text-sky-700 ring-sky-200",
-  "bg-violet-100 text-violet-700 ring-violet-200",
-  "bg-pink-100 text-pink-700 ring-pink-200",
-  "bg-teal-100 text-teal-700 ring-teal-200",
-  "bg-indigo-100 text-indigo-700 ring-indigo-200",
-];
-
-const HEADER_GRADIENTS = [
-  "from-rose-400/30 to-amber-400/30",
-  "from-amber-400/30 to-emerald-400/30",
-  "from-emerald-400/30 to-sky-400/30",
-  "from-sky-400/30 to-violet-400/30",
-  "from-violet-400/30 to-pink-400/30",
-  "from-pink-400/30 to-rose-400/30",
-  "from-teal-400/30 to-emerald-400/30",
-  "from-indigo-400/30 to-sky-400/30",
+  "bg-sky-50 text-sky-700 ring-sky-100",
+  "bg-emerald-50 text-emerald-700 ring-emerald-100",
+  "bg-violet-50 text-violet-700 ring-violet-100",
+  "bg-amber-50 text-amber-700 ring-amber-100",
 ];
 
 function hashIndex(s: string, mod: number) {
@@ -184,22 +169,21 @@ export default async function ParentHomePage() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Friendly greeting */}
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-violet-100/40 to-rose-100/40 p-6 sm:p-8">
-        <div className="absolute -right-8 -top-8 size-32 rounded-full bg-amber-200/40 blur-2xl" />
-        <div className="absolute -left-6 -bottom-6 size-28 rounded-full bg-sky-200/40 blur-2xl" />
-        <div className="relative space-y-1.5">
+    <div className="space-y-6">
+      {/* Friendly greeting — kept calm: one soft accent strip, no blurs. */}
+      <div className="bg-card relative overflow-hidden rounded-2xl border p-6 sm:p-7">
+        <div className="bg-primary absolute inset-x-0 top-0 h-1" />
+        <div className="space-y-1.5">
           <p className="text-primary inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
             <Sparkles className="size-3.5" />
             {t("greetingEyebrow")}
           </p>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             {user.full_name
               ? t("greetingNamed", { name: user.full_name })
               : t("title")}
           </h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
+          <p className="text-muted-foreground text-sm">
             {students.length === 0
               ? t("subtitle")
               : students.length === 1
@@ -219,8 +203,6 @@ export default async function ParentHomePage() {
                 : cls.teacher
               : null;
             const avatarTone = AVATAR_TONES[hashIndex(s.full_name, AVATAR_TONES.length)];
-            const headerGrad =
-              HEADER_GRADIENTS[hashIndex(s.full_name, HEADER_GRADIENTS.length)];
 
             // Trend = behavior ratings for this student in the last 3 of their
             // class's lessons (already sorted desc by date).
@@ -245,19 +227,17 @@ export default async function ParentHomePage() {
               <Link
                 key={s.id}
                 href={`/parent/students/${s.id}`}
-                className="group bg-card relative flex flex-col overflow-hidden rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                className="group bg-card relative flex flex-col overflow-hidden rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
-                <div className={`relative h-16 bg-gradient-to-br ${headerGrad}`}>
-                  {(unreadByStudent.get(s.id) ?? 0) > 0 ? (
-                    <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
-                      <MessageSquareText className="size-3" />
-                      {unreadByStudent.get(s.id)}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="-mt-8 flex flex-col items-start gap-3 px-5 pb-5">
+                {(unreadByStudent.get(s.id) ?? 0) > 0 ? (
+                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                    <MessageSquareText className="size-3" />
+                    {unreadByStudent.get(s.id)}
+                  </span>
+                ) : null}
+                <div className="flex flex-col items-start gap-3 px-5 pb-5 pt-5">
                   <div
-                    className={`flex size-16 items-center justify-center rounded-full ring-4 ring-card text-2xl font-bold ${avatarTone}`}
+                    className={`flex size-14 items-center justify-center rounded-full ring-1 text-xl font-semibold ${avatarTone}`}
                   >
                     {initial(s.full_name)}
                   </div>

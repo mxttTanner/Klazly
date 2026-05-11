@@ -80,6 +80,7 @@ export default async function AdminThreadPage({
         studentId={student.id}
         currentUserId={admin.id}
         emptyHint={t("adminEmptyHint")}
+        composeTo="parent"
       />
     </div>
   );

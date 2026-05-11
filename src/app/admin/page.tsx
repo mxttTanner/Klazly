@@ -29,9 +29,16 @@ import {
 export const dynamic = "force-dynamic";
 
 function weekAgoIsoDate(): string {
+  // Compute "6 days ago in the server's local time" without bouncing through
+  // toISOString — that conversion runs in UTC and shifts the date by one in
+  // any timezone east of UTC (i.e. Vietnam), making the week filter exclude
+  // lessons that happened "today".
   const d = new Date();
   d.setDate(d.getDate() - 6);
-  return d.toISOString().split("T")[0];
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 export default async function AdminHomePage({

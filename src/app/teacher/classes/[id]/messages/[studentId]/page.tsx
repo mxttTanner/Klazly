@@ -91,6 +91,7 @@ export default async function TeacherStudentMessagesPage({
         studentId={student.id}
         currentUserId={user.id}
         emptyHint={t("teacherEmptyHint")}
+        composeTo="parent"
       />
       {/* TODO: a "back to class" button could go here for mobile UX */}
       <p className="sr-only">{tClass("back")}</p>

@@ -300,11 +300,12 @@ export default async function StudentProgressPage({
         <PrintButton label={t("print")} />
       </div>
 
-      {/* On-screen hero card — friendly, colorful summary of the child */}
-      <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/10 via-violet-100/50 to-rose-100/40 p-6 sm:p-7 print:hidden">
-        <div className="absolute -right-10 -top-10 size-40 rounded-full bg-amber-200/40 blur-3xl" />
-        <div className="absolute -left-8 -bottom-8 size-32 rounded-full bg-sky-200/40 blur-3xl" />
-        <div className="relative space-y-5">
+      {/* On-screen hero card — clean and calm: thin accent strip, no blur
+          circles, no rainbow gradients. Colour is reserved for the level
+          badge and behaviour dots, where it carries meaning. */}
+      <section className="bg-card relative overflow-hidden rounded-2xl border print:hidden">
+        <div className="bg-primary absolute inset-x-0 top-0 h-1" />
+        <div className="space-y-5 p-6 sm:p-7">
           {center?.name ? (
             <div className="flex items-center gap-2">
               {center?.logo_url ? (
@@ -312,7 +313,7 @@ export default async function StudentProgressPage({
                 <img
                   src={center.logo_url}
                   alt={center?.name ?? ""}
-                  className="size-7 rounded-md object-contain bg-background/60 p-0.5"
+                  className="size-7 rounded-md object-contain p-0.5"
                 />
               ) : null}
               <p className="text-muted-foreground text-xs uppercase tracking-wide">
@@ -322,7 +323,7 @@ export default async function StudentProgressPage({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <div className="bg-amber-100 text-amber-700 ring-card flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-bold ring-4 sm:size-16 sm:text-2xl">
+            <div className="bg-sky-50 text-sky-700 ring-sky-100 flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-semibold ring-1 sm:size-16 sm:text-2xl">
               {student.full_name.trim().split(/\s+/).slice(-1)[0]?.charAt(0).toUpperCase() ?? "?"}
             </div>
             <div className="flex-1 min-w-[10rem] space-y-1">
@@ -354,11 +355,9 @@ export default async function StudentProgressPage({
             </div>
           </div>
 
-          {/* Quick stats row — kept compact so the hero stays focused on
-              the child's identity, not numbers. Hidden if there are no
-              lessons yet. */}
+          {/* Quick stats row — focused on the child's recent activity. */}
           {lessons.length > 0 ? (
-            <dl className="grid grid-cols-2 gap-2 rounded-xl bg-background/70 p-3 backdrop-blur-sm sm:grid-cols-3 sm:gap-3 sm:p-4">
+            <dl className="bg-muted/40 grid grid-cols-2 gap-2 rounded-xl p-3 sm:grid-cols-3 sm:gap-3 sm:p-4">
               <div>
                 <dt className="text-muted-foreground text-xs uppercase tracking-wide">
                   {t("heroLessonsLabel")}

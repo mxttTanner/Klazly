@@ -21,15 +21,16 @@ async function maybeUploadInlineWorksheet(
   formData: FormData,
   centerId: string,
   uploaderId: string,
+  errors: { tooLarge: string; badType: string },
 ): Promise<{ id: string | null; error?: string }> {
   const file = formData.get("worksheet_file");
   if (!(file instanceof File) || file.size === 0) return { id: null };
 
   if (file.size > MAX_WORKSHEET_BYTES) {
-    return { id: null, error: "Worksheet too large (max 5MB)." };
+    return { id: null, error: errors.tooLarge };
   }
   if (!ALLOWED_WORKSHEET_TYPES.includes(file.type)) {
-    return { id: null, error: "Worksheet must be PDF, PNG, JPG, or WebP." };
+    return { id: null, error: errors.badType };
   }
 
   const supabase = createAdminClient();
@@ -231,10 +232,12 @@ export async function createLesson(_prev: unknown, formData: FormData) {
   if (pickedRaw && pickedRaw !== "none") {
     worksheetId = pickedRaw;
   } else {
+    const tw = await getTranslations("worksheets");
     const uploaded = await maybeUploadInlineWorksheet(
       formData,
       user.center_id,
       user.id,
+      { tooLarge: tw("tooLarge"), badType: tw("badType") },
     );
     if (uploaded.error) {
       return { error: t("saveLessonError", { message: uploaded.error }) };
@@ -370,10 +373,12 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   } else if (pickedRaw) {
     worksheetId = pickedRaw;
   } else {
+    const tw = await getTranslations("worksheets");
     const uploaded = await maybeUploadInlineWorksheet(
       formData,
       user.center_id,
       user.id,
+      { tooLarge: tw("tooLarge"), badType: tw("badType") },
     );
     if (uploaded.error) {
       return { error: t("saveLessonError", { message: uploaded.error }) };

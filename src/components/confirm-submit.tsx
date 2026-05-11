@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 import { buttonVariants } from "@/components/ui/button";
 
 /**
@@ -21,13 +22,15 @@ export function ConfirmSubmitButton({
   size?: "sm" | "default" | "lg" | "icon";
   ariaLabel?: string;
 }) {
+  const { pending } = useFormStatus();
   return (
     <button
       type="submit"
       aria-label={ariaLabel}
-      className={buttonVariants({ variant, size })}
+      disabled={pending}
+      className={`${buttonVariants({ variant, size })} disabled:opacity-60`}
       onClick={(e) => {
-        if (!window.confirm(confirmMessage)) {
+        if (pending || !window.confirm(confirmMessage)) {
           e.preventDefault();
         }
       }}

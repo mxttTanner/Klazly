@@ -13,10 +13,15 @@ export async function MessageThread({
   studentId,
   currentUserId,
   emptyHint,
+  composeTo = "teacher",
 }: {
   studentId: string;
   currentUserId: string;
   emptyHint: string;
+  // Whose perspective is the composer being filled from? Drives the
+  // placeholder text — a parent writes "to the teacher", a teacher/admin
+  // writes "to the parent".
+  composeTo?: "teacher" | "parent";
 }) {
   const supabase = createClient();
   const t = await getTranslations("messages");
@@ -69,7 +74,10 @@ export async function MessageThread({
         empty: emptyHint,
         send: t("send"),
         sending: t("sending"),
-        composerPlaceholder: t("composerPlaceholder"),
+        composerPlaceholder:
+          composeTo === "parent"
+            ? t("composerPlaceholderToParent")
+            : t("composerPlaceholder"),
         teacherTag: t("teacherTag"),
         adminTag: t("adminTag"),
         readReceiptRead: t("readReceiptRead"),

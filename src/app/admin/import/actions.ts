@@ -18,11 +18,16 @@ const studentRowSchema = z.object({
   full_name: z.string().trim().min(1).max(120),
   age: z.string().optional(),
   class_name: z.string().trim().optional(),
-  parent_email: z
-    .string()
-    .email()
-    .transform((s) => s.trim().toLowerCase())
-    .optional(),
+  // CSV cells come in as "" not undefined when blank, so .optional() alone
+  // won't bypass .email(). Preprocess empty/whitespace to undefined.
+  parent_email: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z
+      .string()
+      .email()
+      .transform((s) => s.trim().toLowerCase())
+      .optional(),
+  ),
 });
 
 export type ImportResult = {
