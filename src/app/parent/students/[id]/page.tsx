@@ -557,6 +557,7 @@ export default async function StudentProgressPage({
       {/* Private message thread with the teacher (hidden in print) */}
       <section className="space-y-3 print:hidden">
         <div className="flex items-center gap-2">
+          <MessageSquareText className="text-primary size-5" />
           <h2 className="text-xl font-semibold tracking-tight">
             {t("messagesHeading")}
           </h2>
