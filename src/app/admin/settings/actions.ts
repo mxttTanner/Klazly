@@ -56,6 +56,9 @@ export async function uploadCenterLogo(_prev: unknown, formData: FormData) {
 
   revalidatePath("/admin/settings");
   revalidatePath("/parent", "layout");
+  // Logo also renders on the teacher topbar + parent printable report.
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/admin", "layout");
   return { success: t("uploadSuccess") };
 }
 
@@ -129,4 +132,6 @@ export async function removeCenterLogo() {
 
   revalidatePath("/admin/settings");
   revalidatePath("/parent", "layout");
+  revalidatePath("/teacher", "layout");
+  revalidatePath("/admin", "layout");
 }

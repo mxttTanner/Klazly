@@ -178,6 +178,10 @@ export async function updateClassTeacher(formData: FormData) {
 
   await supabase.from("classes").update({ teacher_id }).eq("id", id);
   revalidatePath("/admin/classes");
+  revalidatePath("/admin");
+  // Teacher's home + class detail need to refresh since the assignment
+  // affects what classes they see and which they own.
+  revalidatePath("/teacher", "layout");
 }
 
 export async function deleteClass(formData: FormData) {

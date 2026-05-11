@@ -13,8 +13,50 @@ const beVietnamPro = Be_Vietnam_Pro({
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("common");
+  const tLanding = await getTranslations("landing");
+  const name = t("appName");
+  const description = tLanding("tagline");
+  const url = "https://parent-portal-nine.vercel.app";
+
   return {
-    title: t("appName"),
+    metadataBase: new URL(url),
+    title: {
+      default: name,
+      template: `%s · ${name}`,
+    },
+    description,
+    keywords: [
+      "parent portal",
+      "english center",
+      "vietnam",
+      "trung tâm tiếng anh",
+      "cổng phụ huynh",
+      "lesson report",
+      "báo cáo phụ huynh",
+    ],
+    applicationName: name,
+    authors: [{ name: "Matthew Stadler" }],
+    icons: {
+      icon: "/favicon.ico",
+    },
+    openGraph: {
+      type: "website",
+      url,
+      title: name,
+      description,
+      siteName: name,
+      locale: "vi_VN",
+      alternateLocale: ["en_US"],
+    },
+    twitter: {
+      card: "summary",
+      title: name,
+      description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 

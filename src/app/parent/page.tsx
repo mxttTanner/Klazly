@@ -117,14 +117,28 @@ export default async function ParentHomePage() {
     .filter((v): v is string => Boolean(v));
 
   type LessonRow = { id: string; class_id: string; lesson_date: string };
-  const lessonsRes = classIds.length
-    ? await supabase
-        .from("lessons")
-        .select("id, class_id, lesson_date")
-        .in("class_id", classIds)
-        .order("lesson_date", { ascending: false })
-        .limit(50)
-    : { data: [] as LessonRow[] };
+  type UnreadRow = { student_id: string };
+
+  // Lessons (needs classIds) and unread messages (only needs studentIds)
+  // can run in parallel. Updates has to wait for lessons.
+  const [lessonsRes, unreadRes] = await Promise.all([
+    classIds.length
+      ? supabase
+          .from("lessons")
+          .select("id, class_id, lesson_date")
+          .in("class_id", classIds)
+          .order("lesson_date", { ascending: false })
+          .limit(50)
+      : Promise.resolve({ data: [] as LessonRow[], error: null }),
+    studentIds.length
+      ? supabase
+          .from("parent_teacher_messages")
+          .select("student_id")
+          .in("student_id", studentIds)
+          .neq("sender_user_id", user.id)
+          .is("read_at", null)
+      : Promise.resolve({ data: [] as UnreadRow[], error: null }),
+  ]);
   const allLessons = (lessonsRes.data ?? []) as LessonRow[];
 
   type UpdateRow = {
@@ -148,20 +162,12 @@ export default async function ParentHomePage() {
   // Unread message count per student (messages NOT sent by this parent and
   // with no read_at). Fails soft if the messages table doesn't exist.
   const unreadByStudent = new Map<string, number>();
-  if (studentIds.length) {
-    const unreadRes = await supabase
-      .from("parent_teacher_messages")
-      .select("student_id")
-      .in("student_id", studentIds)
-      .neq("sender_user_id", user.id)
-      .is("read_at", null);
-    if (!unreadRes.error && unreadRes.data) {
-      for (const row of unreadRes.data as Array<{ student_id: string }>) {
-        unreadByStudent.set(
-          row.student_id,
-          (unreadByStudent.get(row.student_id) ?? 0) + 1,
-        );
-      }
+  if (!("error" in unreadRes ? unreadRes.error : null) && unreadRes.data) {
+    for (const row of unreadRes.data as UnreadRow[]) {
+      unreadByStudent.set(
+        row.student_id,
+        (unreadByStudent.get(row.student_id) ?? 0) + 1,
+      );
     }
   }
 
