@@ -23,19 +23,23 @@ export function NotesCell({
   const [savedValue, setSavedValue] = useState(initial ?? "");
   const [pending, startTransition] = useTransition();
   const [savedFlash, setSavedFlash] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function save() {
     const fd = new FormData();
     fd.append("id", centerId);
     fd.append("notes", value);
+    setError(null);
     startTransition(async () => {
       const res = await updateCenterNotes(fd);
-      if (!res?.error) {
-        setSavedValue(value);
-        setSavedFlash(true);
-        setTimeout(() => setSavedFlash(false), 1500);
-        setEditing(false);
+      if (res?.error) {
+        setError(res.error);
+        return;
       }
+      setSavedValue(value);
+      setSavedFlash(true);
+      setEditing(false);
+      setTimeout(() => setSavedFlash(false), 1500);
     });
   }
 
@@ -84,6 +88,7 @@ export function NotesCell({
           disabled={pending}
           onClick={() => {
             setValue(savedValue);
+            setError(null);
             setEditing(false);
           }}
           className="text-muted-foreground hover:text-foreground text-xs"
@@ -91,6 +96,11 @@ export function NotesCell({
           {t("notesCancel")}
         </button>
       </div>
+      {error ? (
+        <p className="text-destructive text-[10px]" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -127,13 +127,19 @@ export async function updateSubscriptionPlan(formData: FormData) {
     .from("centers")
     .update({ subscription_plan: plan })
     .eq("id", id);
-  if (error && /subscription_plan/i.test(error.message)) {
-    // Column missing — migration not run. Silently no-op so the UI
-    // doesn't crash; super-admin needs to run db/subscription-plan.sql.
-    return;
+  if (error) {
+    // If the column is missing the super-admin needs to run the
+    // migration; surface a helpful hint instead of silently swallowing.
+    // Any other error (RLS, network, FK) also surfaces so the caller
+    // doesn't think a failed update succeeded.
+    if (/subscription_plan/i.test(error.message)) {
+      return { error: "subscription_plan column not migrated yet" };
+    }
+    return { error: error.message };
   }
 
   revalidatePath("/super-admin");
+  return { success: true };
 }
 
 export async function updateSubscriptionStatus(formData: FormData) {
