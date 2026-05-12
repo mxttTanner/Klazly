@@ -1,22 +1,11 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { AlarmClock, Building2, CircleDollarSign, Plus, Sparkles, Trash2 } from "lucide-react";
+import { AlarmClock, Building2, CircleDollarSign, Sparkles } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { CenterForm } from "./center-form";
-import { deleteCenterCascade } from "./actions";
-import { StatusSelect } from "./status-select";
-import { PlanSelect } from "./plan-select";
-import { NotesCell } from "./notes-cell";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { CenterCard, type CenterCardData } from "./center-card";
+import { SuperAdminTabs } from "./super-admin-tabs";
 
 // Per-month VND contribution of each paid plan. Six-month and annual are
 // amortised so MRR is comparable across tiers.
@@ -31,7 +20,6 @@ export const dynamic = "force-dynamic";
 export default async function SuperAdminHomePage() {
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
-  const tc = await getTranslations("common");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
@@ -160,13 +148,48 @@ export default async function SuperAdminHomePage() {
     },
   ];
 
+  // Strings the client-side CenterCard needs for trial pluralisation.
+  // Computed server-side so translations stay in next-intl-server.
+  const trialDaysLabels = {
+    active: (n: number) => t("trialDaysShort", { n }),
+    expired: t("trialExpiredShort"),
+  };
+
+  const centersList =
+    centers && centers.length > 0 ? (
+      <div className="grid gap-4 lg:grid-cols-2">
+        {centers.map((c) => (
+          <CenterCard
+            key={c.id}
+            center={c as CenterCardData}
+            dateLocale={dateLocale}
+            trialDaysLabels={trialDaysLabels}
+          />
+        ))}
+      </div>
+    ) : (
+      <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
+        <Building2 className="size-8 opacity-50" />
+        <p>{t("empty")}</p>
+      </div>
+    );
+
+  const newCenterPanel = (
+    <div className="space-y-4">
+      <p className="text-muted-foreground text-sm">{t("createSubtitle")}</p>
+      <CenterForm />
+    </div>
+  );
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
+      {/* Stats — always visible. The business-glance snapshot. */}
       <div className="space-y-3">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s) => {
@@ -194,130 +217,24 @@ export default async function SuperAdminHomePage() {
         </p>
       </div>
 
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Plus className="text-primary size-5" />
-          <h2 className="text-xl font-semibold tracking-tight">
-            {t("createHeader")}
-          </h2>
-        </div>
-        <p className="text-muted-foreground text-sm">{t("createSubtitle")}</p>
-        <CenterForm />
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Building2 className="text-primary size-5" />
-          <h2 className="text-xl font-semibold tracking-tight">
-            {t("listHeader", { count: centers?.length ?? 0 })}
-          </h2>
-        </div>
-
-        {centers && centers.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("centerName")}</TableHead>
-                  <TableHead>{t("adminEmail")}</TableHead>
-                  <TableHead className="w-32">{t("status")}</TableHead>
-                  <TableHead className="w-36">{t("planLabel")}</TableHead>
-                  <TableHead className="w-36">{t("trialEnds")}</TableHead>
-                  <TableHead className="w-32">{t("created")}</TableHead>
-                  <TableHead className="min-w-[10rem]">
-                    {t("notesLabel")}
-                  </TableHead>
-                  <TableHead className="w-24 text-right">
-                    {tc("actions")}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {centers.map((c) => {
-                  // Trial expiry — color cells red within 7 days, amber within 14.
-                  let trialCell: React.ReactNode = "—";
-                  let trialClass = "text-muted-foreground";
-                  if (
-                    c.subscription_status === "trial" &&
-                    c.trial_ends_at
-                  ) {
-                    const ends = new Date(c.trial_ends_at);
-                    const days = Math.ceil(
-                      (ends.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-                    );
-                    trialCell = `${ends.toLocaleDateString(dateLocale, {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    })} (${
-                      days <= 0
-                        ? t("trialExpiredShort")
-                        : t("trialDaysShort", { n: days })
-                    })`;
-                    if (days <= 0) trialClass = "text-rose-700 font-medium";
-                    else if (days <= 7) trialClass = "text-rose-600";
-                    else if (days <= 14) trialClass = "text-amber-700";
-                  }
-                  return (
-                    <TableRow key={c.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2 font-medium">
-                          <Building2 className="text-muted-foreground size-4" />
-                          {c.name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {c.contact_email ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <StatusSelect
-                          centerId={c.id}
-                          currentStatus={c.subscription_status}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <PlanSelect
-                          centerId={c.id}
-                          currentPlan={c.subscription_plan}
-                        />
-                      </TableCell>
-                      <TableCell className={trialClass + " text-xs"}>
-                        {trialCell}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(c.created_at).toLocaleDateString(dateLocale, {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <NotesCell centerId={c.id} initial={c.notes} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <form action={deleteCenterCascade}>
-                          <input type="hidden" name="id" value={c.id} />
-                          <ConfirmSubmitButton
-                            confirmMessage={t("deleteConfirm", { name: c.name })}
-                            ariaLabel={tc("delete")}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </ConfirmSubmitButton>
-                        </form>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        ) : (
-          <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
-            <Building2 className="size-8 opacity-50" />
-            <p>{t("empty")}</p>
-          </div>
-        )}
-      </section>
+      {/* Tabs — splits the working surface so it doesn't feel cramped. */}
+      <SuperAdminTabs
+        tabs={[
+          {
+            id: "centers",
+            label: t("tabCenters"),
+            iconKey: "centers",
+            badge: centers?.length ?? 0,
+            content: centersList,
+          },
+          {
+            id: "new",
+            label: t("tabNewCenter"),
+            iconKey: "new",
+            content: newCenterPanel,
+          },
+        ]}
+      />
     </div>
   );
 }
