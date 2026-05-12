@@ -150,15 +150,17 @@ export async function updateSubscriptionStatus(formData: FormData) {
     !id ||
     !["trial", "active", "past_due", "canceled"].includes(status)
   )
-    return;
+    return { error: "invalid input" };
 
   const supabase = createAdminClient();
-  await supabase
+  const { error } = await supabase
     .from("centers")
     .update({ subscription_status: status })
     .eq("id", id);
+  if (error) return { error: error.message };
 
   revalidatePath("/super-admin");
+  return { success: true };
 }
 
 export async function updateCenterNotes(formData: FormData) {
