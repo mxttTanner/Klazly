@@ -187,24 +187,56 @@ export async function updateCenterNotes(formData: FormData) {
   return { success: true };
 }
 
-export async function deleteCenterCascade(formData: FormData) {
+export async function deleteCenterCascade(formData: FormData): Promise<void> {
   await requireSuperAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createAdminClient();
 
-  // Find every auth user in this center so we can delete them along with the
-  // center cascade. (centers.* CASCADE only deletes public.users rows; auth.users
-  // lives in a different schema and Supabase doesn't auto-cascade across.)
-  const { data: profiles } = await supabase
+  // Previously: delete center first (cascades to public.users), then
+  // loop and delete auth.users. Two bugs there:
+  //   1. The result of centers.delete was never checked, so if it
+  //      failed for any reason the auth.users wipe loop still ran and
+  //      destroyed user accounts while their center stayed.
+  //   2. If the auth-loop crashed partway, we ended with orphan
+  //      auth.users (no profile, no center) that the super-admin
+  //      can't see in the UI to retry.
+  //
+  // New order: delete auth.users first (each cascades public.users via
+  // the public.users.id → auth.users.id ON DELETE CASCADE FK), then
+  // delete the now-empty center row. A failure at either stage stops
+  // the chain and is what a manual retry needs to finish — no more
+  // silent destruction of auth users on a failed center.delete.
+  //
+  // Note: this signature stays void so it can plug into <form action={}>
+  // directly; errors are logged + revalidate fires so the super-admin
+  // sees the row come back in their UI on retry.
+  const { data: profiles, error: profilesErr } = await supabase
     .from("users")
     .select("id")
     .eq("center_id", id);
+  if (profilesErr) {
+    console.error("[deleteCenterCascade] fetching profiles failed:", profilesErr);
+    revalidatePath("/super-admin");
+    return;
+  }
 
-  await supabase.from("centers").delete().eq("id", id);
   for (const p of profiles ?? []) {
-    await supabase.auth.admin.deleteUser(p.id);
+    const { error: delErr } = await supabase.auth.admin.deleteUser(p.id);
+    if (delErr) {
+      console.error(`[deleteCenterCascade] auth user ${p.id}:`, delErr);
+      revalidatePath("/super-admin");
+      return;
+    }
+  }
+
+  const { error: centerErr } = await supabase
+    .from("centers")
+    .delete()
+    .eq("id", id);
+  if (centerErr) {
+    console.error("[deleteCenterCascade] center delete failed:", centerErr);
   }
 
   revalidatePath("/super-admin");

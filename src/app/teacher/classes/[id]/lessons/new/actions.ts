@@ -413,12 +413,16 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     return { error: t("saveLessonError", { message: lErr.message }) };
   }
 
-  // Replace per-student rows: delete then re-insert.
-  await supabase
-    .from("student_lesson_updates")
-    .delete()
-    .eq("lesson_id", lessonId);
-
+  // Replace per-student rows via upsert on (lesson_id, student_id).
+  // The previous delete-then-insert was racy: two concurrent edits of
+  // the same lesson could clobber each other and drop student rows.
+  // Upsert with the unique constraint serialises both callers; last
+  // writer wins per row, no rows lost.
+  //
+  // Note: if a student was removed from the class between create and
+  // edit, their row from the original lesson stays — that's a feature,
+  // not a bug. Their attendance/behavior for that day shouldn't vanish
+  // just because they later left the class.
   const updateRows = parsed.data.updates.map((u) => ({
     lesson_id: lessonId,
     student_id: u.student_id,
@@ -429,18 +433,31 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   }));
   let { error: uErr } = await supabase
     .from("student_lesson_updates")
-    .insert(updateRows);
+    .upsert(updateRows, { onConflict: "lesson_id,student_id" });
   if (uErr && /attendance/i.test(uErr.message)) {
     const retry = await supabase
       .from("student_lesson_updates")
-      .insert(
+      .upsert(
         updateRows.map((row) => {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { attendance, ...rest } = row;
           return rest;
         }),
+        { onConflict: "lesson_id,student_id" },
       );
     uErr = retry.error;
+  }
+  // If the unique constraint hasn't been added yet (migration not run),
+  // fall back to the legacy delete-then-insert so the action still works.
+  if (uErr && /(student_lesson_updates_lesson_student_unique|on conflict|no unique)/i.test(uErr.message)) {
+    await supabase
+      .from("student_lesson_updates")
+      .delete()
+      .eq("lesson_id", lessonId);
+    const fallback = await supabase
+      .from("student_lesson_updates")
+      .insert(updateRows);
+    uErr = fallback.error;
   }
   if (uErr) {
     return { error: t("saveUpdatesError", { message: uErr.message }) };

@@ -202,6 +202,10 @@ export default async function AdminHomePage({
   const lessonsByTeacherTotal = new Map<string, number>();
   const lessonsByTeacherWeek = new Map<string, number>();
   for (const l of allLessons) {
+    // Skip lessons whose teacher has since been removed — teacher_id can
+    // be null after the schema fix that lets us actually delete teachers
+    // who logged lessons (lessons.teacher_id ON DELETE SET NULL).
+    if (!l.teacher_id) continue;
     lessonsByTeacherTotal.set(
       l.teacher_id,
       (lessonsByTeacherTotal.get(l.teacher_id) ?? 0) + 1,
