@@ -18,6 +18,11 @@ export type CenterCardData = {
   notes: string | null;
   trial_ends_at: string | null;
   created_at: string;
+  /** Pre-rendered "Tạo 12/05/2026" / "Created 12/05/2026" — comes from
+   *  the server so locale + translation stay in next-intl-server. */
+  createdShort: string;
+  /** Pre-rendered trial badge (text + tailwind classes) or null. */
+  trialBadge: { text: string; tone: string } | null;
 };
 
 /**
@@ -26,50 +31,14 @@ export type CenterCardData = {
  * each center its own bounded space and make the inline edit affordances
  * (status, plan, notes) feel like a real edit surface instead of a
  * shrunken cell.
+ *
+ * The page passes pre-rendered strings (dates, trial badge) so this
+ * client component doesn't have to receive any server-side functions —
+ * that crashes the client/server boundary.
  */
-export function CenterCard({
-  center,
-  dateLocale,
-  trialDaysLabels,
-}: {
-  center: CenterCardData;
-  dateLocale: string;
-  trialDaysLabels: { active: (n: number) => string; expired: string };
-}) {
+export function CenterCard({ center }: { center: CenterCardData }) {
   const t = useTranslations("superAdmin");
   const tc = useTranslations("common");
-
-  const created = new Date(center.created_at).toLocaleDateString(dateLocale, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-
-  let trialBadge: { text: string; tone: string } | null = null;
-  if (center.subscription_status === "trial" && center.trial_ends_at) {
-    const ends = new Date(center.trial_ends_at);
-    const days = Math.ceil(
-      (ends.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-    );
-    const dateText = ends.toLocaleDateString(dateLocale, {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-    const tail =
-      days <= 0 ? trialDaysLabels.expired : trialDaysLabels.active(days);
-    trialBadge = {
-      text: `${dateText} · ${tail}`,
-      tone:
-        days <= 0
-          ? "bg-rose-100 text-rose-800 border-rose-200"
-          : days <= 7
-            ? "bg-rose-50 text-rose-700 border-rose-200"
-            : days <= 14
-              ? "bg-amber-50 text-amber-800 border-amber-200"
-              : "bg-muted text-muted-foreground border-muted",
-    };
-  }
 
   return (
     <article className="bg-card overflow-hidden rounded-2xl border shadow-sm">
@@ -102,7 +71,7 @@ export function CenterCard({
             ) : null}
             <span className="inline-flex items-center gap-1">
               <Calendar className="size-3" />
-              {t("createdShort", { date: created })}
+              {center.createdShort}
             </span>
           </div>
         </div>
@@ -137,15 +106,15 @@ export function CenterCard({
             currentPlan={center.subscription_plan}
           />
         </div>
-        {trialBadge ? (
+        {center.trialBadge ? (
           <div className="sm:col-span-2">
             <span
-              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${trialBadge.tone}`}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${center.trialBadge.tone}`}
             >
               <span className="text-muted-foreground uppercase tracking-wide text-[10px]">
                 {t("trialEnds")}
               </span>
-              <span className="font-medium">{trialBadge.text}</span>
+              <span className="font-medium">{center.trialBadge.text}</span>
             </span>
           </div>
         ) : null}

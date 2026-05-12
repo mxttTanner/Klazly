@@ -148,23 +148,53 @@ export default async function SuperAdminHomePage() {
     },
   ];
 
-  // Strings the client-side CenterCard needs for trial pluralisation.
-  // Computed server-side so translations stay in next-intl-server.
-  const trialDaysLabels = {
-    active: (n: number) => t("trialDaysShort", { n }),
-    expired: t("trialExpiredShort"),
-  };
+  // Pre-render the per-center trial badge server-side so we can hand the
+  // client component plain strings/numbers — functions can't cross the
+  // server→client boundary, and translations are easier here.
+  const decorated: (CenterCardData & {
+    trialBadge: { text: string; tone: string } | null;
+    createdShort: string;
+  })[] = (centers ?? []).map((c) => {
+    let trialBadge: { text: string; tone: string } | null = null;
+    if (c.subscription_status === "trial" && c.trial_ends_at) {
+      const ends = new Date(c.trial_ends_at);
+      const days = Math.ceil(
+        (ends.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      );
+      const dateText = ends.toLocaleDateString(dateLocale, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const tail =
+        days <= 0 ? t("trialExpiredShort") : t("trialDaysShort", { n: days });
+      trialBadge = {
+        text: `${dateText} · ${tail}`,
+        tone:
+          days <= 0
+            ? "bg-rose-100 text-rose-800 border-rose-200"
+            : days <= 7
+              ? "bg-rose-50 text-rose-700 border-rose-200"
+              : days <= 14
+                ? "bg-amber-50 text-amber-800 border-amber-200"
+                : "bg-muted text-muted-foreground border-muted",
+      };
+    }
+    const createdShort = t("createdShort", {
+      date: new Date(c.created_at).toLocaleDateString(dateLocale, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }),
+    });
+    return { ...c, trialBadge, createdShort };
+  });
 
   const centersList =
-    centers && centers.length > 0 ? (
+    decorated.length > 0 ? (
       <div className="grid gap-4 lg:grid-cols-2">
-        {centers.map((c) => (
-          <CenterCard
-            key={c.id}
-            center={c as CenterCardData}
-            dateLocale={dateLocale}
-            trialDaysLabels={trialDaysLabels}
-          />
+        {decorated.map((c) => (
+          <CenterCard key={c.id} center={c} />
         ))}
       </div>
     ) : (
