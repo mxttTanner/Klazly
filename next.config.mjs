@@ -1,4 +1,5 @@
 import createNextIntlPlugin from "next-intl/plugin";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -34,4 +35,16 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+// Sentry wraps last so its webpack plugin sees the final config. When
+// SENTRY_DSN isn't set the runtime SDK no-ops; this wrap is still safe.
+export default withSentryConfig(withNextIntl(nextConfig), {
+  silent: true,
+  // Source maps are uploaded only when SENTRY_AUTH_TOKEN is configured.
+  // Without it, the wrap stays a no-op at build time.
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+});

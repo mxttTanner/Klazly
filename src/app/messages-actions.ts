@@ -5,7 +5,9 @@ import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
+import { sendNewMessageEmail } from "@/lib/email";
 
 const sendSchema = z.object({
   student_id: z.string().uuid(),
@@ -73,6 +75,20 @@ export async function sendParentTeacherMessage(
     return { error: t("sendError", { message: insertErr.message }) };
   }
 
+  // Fire an email notification to the recipient. Best-effort — if it
+  // fails, the message is already in the DB and we still revalidate.
+  // Uses the admin client because the parent/teacher RLS scope won't
+  // let a sender read the recipient's email column.
+  await notifyRecipientByEmail({
+    senderRole: user.role,
+    senderName: user.full_name,
+    centerId: student.center_id,
+    studentId: parsed.data.student_id,
+    parentUserId: student.parent_user_id,
+    classId: student.class_id,
+    body: parsed.data.body,
+  });
+
   // Both views revalidate on the next render — RLS makes sure each side only
   // sees their own thread.
   revalidatePath(`/parent/students/${parsed.data.student_id}`);
@@ -83,6 +99,74 @@ export async function sendParentTeacherMessage(
   revalidatePath("/teacher/classes", "layout");
   revalidatePath("/admin/messages", "layout");
   return { success: true };
+}
+
+async function notifyRecipientByEmail(opts: {
+  senderRole: "parent" | "teacher" | "admin";
+  senderName: string;
+  centerId: string;
+  studentId: string;
+  parentUserId: string | null;
+  classId: string | null;
+  body: string;
+}): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    // Need the student name for the subject line; one cheap fetch.
+    const { data: student } = await admin
+      .from("students")
+      .select("full_name")
+      .eq("id", opts.studentId)
+      .single();
+    const studentName = student?.full_name ?? "—";
+
+    if (opts.senderRole === "parent") {
+      // Notify the class teacher.
+      if (!opts.classId) return;
+      const { data: cls } = await admin
+        .from("classes")
+        .select("teacher_id")
+        .eq("id", opts.classId)
+        .single();
+      if (!cls?.teacher_id) return;
+      const { data: teacher } = await admin
+        .from("users")
+        .select("email, full_name")
+        .eq("id", cls.teacher_id)
+        .single();
+      if (!teacher?.email) return;
+      await sendNewMessageEmail({
+        toEmail: teacher.email,
+        toName: teacher.full_name,
+        fromName: opts.senderName,
+        fromRoleLabel: "Phụ huynh / Parent",
+        studentName,
+        body: opts.body,
+        threadPath: `/teacher/classes/${opts.classId}/messages/${opts.studentId}`,
+      });
+    } else {
+      // Teacher or admin → notify the parent.
+      if (!opts.parentUserId) return;
+      const { data: parent } = await admin
+        .from("users")
+        .select("email, full_name")
+        .eq("id", opts.parentUserId)
+        .single();
+      if (!parent?.email) return;
+      await sendNewMessageEmail({
+        toEmail: parent.email,
+        toName: parent.full_name,
+        fromName: opts.senderName,
+        fromRoleLabel:
+          opts.senderRole === "admin" ? "Quản trị / Admin" : "Giáo viên / Teacher",
+        studentName,
+        body: opts.body,
+        threadPath: `/parent/students/${opts.studentId}`,
+      });
+    }
+  } catch (err) {
+    console.error("[messages] email notify failed:", err);
+  }
 }
 
 /**
