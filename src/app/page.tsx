@@ -212,10 +212,41 @@ export default async function HomePage() {
             </p>
           </div>
 
-          <div className="mx-auto mt-10 grid max-w-3xl gap-6 sm:grid-cols-2">
-            {/* Monthly */}
-            <div className="bg-card flex flex-col rounded-2xl border p-8 shadow-sm">
-              <div className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-3">
+            {/* 1 month — anchor tier, intentionally simple and unstyled
+                so the longer plans feel like the obvious choice. */}
+            <div className="bg-card flex flex-col rounded-2xl border p-6 shadow-sm sm:p-8">
+              <div className="text-muted-foreground text-sm font-medium uppercase tracking-wide">
+                {t("pricingMicroName")}
+              </div>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="text-3xl font-bold tracking-tight">
+                  {t("pricingMicroPrice")}
+                </span>
+                <span className="text-muted-foreground text-sm">
+                  {t("pricingMicroPeriod")}
+                </span>
+              </div>
+              <p className="text-muted-foreground mt-2 text-sm">
+                {t("pricingMicroNote")}
+              </p>
+              <Link
+                href="/demo"
+                className={`${buttonVariants({ variant: "outline", size: "lg" })} mt-auto w-full`}
+              >
+                {t("pricingCta")}
+              </Link>
+              <p className="text-muted-foreground mt-2 text-center text-xs">
+                {t("pricingTrialInline")}
+              </p>
+            </div>
+
+            {/* 6 months — middle tier with a soft savings badge. */}
+            <div className="bg-card relative flex flex-col rounded-2xl border p-6 shadow-sm sm:p-8">
+              <div className="bg-emerald-100 text-emerald-800 absolute -top-3 right-6 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
+                {t("pricingMonthlyBadge")}
+              </div>
+              <div className="text-muted-foreground text-sm font-medium uppercase tracking-wide">
                 {t("pricingMonthlyName")}
               </div>
               <div className="mt-3 flex items-baseline gap-1">
@@ -240,9 +271,9 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Annual — highlighted */}
-            <div className="bg-card relative flex flex-col rounded-2xl border-2 border-primary p-8 shadow-xl shadow-primary/10">
-              <div className="absolute -top-3 right-6 inline-flex items-center rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
+            {/* 12 months — highlighted, the value play. */}
+            <div className="bg-card relative flex flex-col rounded-2xl border-2 border-primary p-6 shadow-xl shadow-primary/10 sm:p-8">
+              <div className="bg-primary text-primary-foreground absolute -top-3 right-6 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
                 {t("pricingAnnualBadge")}
               </div>
               <div className="text-primary text-sm font-medium uppercase tracking-wide">
