@@ -41,6 +41,21 @@ export function CenterForm() {
             />
           </div>
         </div>
+        <div className="space-y-2 sm:max-w-md">
+          <Label htmlFor="subscription_plan">{t("planLabel")}</Label>
+          <select
+            id="subscription_plan"
+            name="subscription_plan"
+            defaultValue=""
+            className="border-input bg-background h-9 w-full rounded-md border px-2 text-sm"
+          >
+            <option value="">{t("planNone")}</option>
+            <option value="monthly">{t("planMonthly")}</option>
+            <option value="six_months">{t("planSixMonths")}</option>
+            <option value="annual">{t("planAnnual")}</option>
+          </select>
+          <p className="text-muted-foreground text-xs">{t("planHint")}</p>
+        </div>
       </div>
 
       <div className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">

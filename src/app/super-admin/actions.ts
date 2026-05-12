@@ -6,24 +6,38 @@ import { getTranslations } from "next-intl/server";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+const PLAN_VALUES = ["monthly", "six_months", "annual"] as const;
+type Plan = (typeof PLAN_VALUES)[number];
+
 const createCenterSchema = z.object({
   center_name: z.string().min(1).max(120),
   admin_full_name: z.string().min(1).max(120),
-  admin_email: z.string().email(),
+  // Normalise: trim + lowercase so a center created with "Foo@Bar.com"
+  // matches the lowercased email Supabase Auth stores.
+  admin_email: z
+    .string()
+    .email()
+    .transform((s) => s.trim().toLowerCase()),
   admin_password: z.string().min(8).max(72),
   contact_phone: z.string().max(40).optional().nullable(),
+  subscription_plan: z.enum(PLAN_VALUES).optional().nullable(),
 });
 
 export async function createCenter(_prev: unknown, formData: FormData) {
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
 
+  const planRaw = String(formData.get("subscription_plan") ?? "");
   const parsed = createCenterSchema.safeParse({
     center_name: formData.get("center_name"),
     admin_full_name: formData.get("admin_full_name"),
     admin_email: formData.get("admin_email"),
     admin_password: formData.get("admin_password"),
     contact_phone: formData.get("contact_phone") || null,
+    subscription_plan:
+      planRaw && (PLAN_VALUES as readonly string[]).includes(planRaw)
+        ? (planRaw as Plan)
+        : null,
   });
   if (!parsed.success) return { error: t("validation") };
 
@@ -33,17 +47,29 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   const trialEnds = new Date();
   trialEnds.setDate(trialEnds.getDate() + 14);
 
-  const { data: center, error: centerErr } = await supabase
+  // Try inserting with subscription_plan; fall back without it if the
+  // column doesn't exist yet (migration not run).
+  const baseInsert = {
+    name: parsed.data.center_name,
+    contact_email: parsed.data.admin_email,
+    contact_phone: parsed.data.contact_phone,
+    subscription_status: "trial",
+    trial_ends_at: trialEnds.toISOString(),
+  };
+  let { data: center, error: centerErr } = await supabase
     .from("centers")
-    .insert({
-      name: parsed.data.center_name,
-      contact_email: parsed.data.admin_email,
-      contact_phone: parsed.data.contact_phone,
-      subscription_status: "trial",
-      trial_ends_at: trialEnds.toISOString(),
-    })
+    .insert({ ...baseInsert, subscription_plan: parsed.data.subscription_plan })
     .select()
     .single();
+  if (centerErr && /subscription_plan/i.test(centerErr.message)) {
+    const retry = await supabase
+      .from("centers")
+      .insert(baseInsert)
+      .select()
+      .single();
+    center = retry.data;
+    centerErr = retry.error;
+  }
   if (centerErr || !center) {
     return {
       error: t("createCenterError", { message: centerErr?.message ?? "" }),
@@ -84,6 +110,30 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       email: parsed.data.admin_email,
     }),
   };
+}
+
+export async function updateSubscriptionPlan(formData: FormData) {
+  await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  const planRaw = String(formData.get("plan") ?? "");
+  if (!id) return;
+  const plan: Plan | null =
+    planRaw && (PLAN_VALUES as readonly string[]).includes(planRaw)
+      ? (planRaw as Plan)
+      : null;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("centers")
+    .update({ subscription_plan: plan })
+    .eq("id", id);
+  if (error && /subscription_plan/i.test(error.message)) {
+    // Column missing — migration not run. Silently no-op so the UI
+    // doesn't crash; super-admin needs to run db/subscription-plan.sql.
+    return;
+  }
+
+  revalidatePath("/super-admin");
 }
 
 export async function updateSubscriptionStatus(formData: FormData) {

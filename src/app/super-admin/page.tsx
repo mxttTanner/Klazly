@@ -14,6 +14,7 @@ import {
 import { CenterForm } from "./center-form";
 import { deleteCenterCascade } from "./actions";
 import { StatusSelect } from "./status-select";
+import { PlanSelect } from "./plan-select";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
 
 export const dynamic = "force-dynamic";
@@ -27,18 +28,45 @@ export default async function SuperAdminHomePage() {
 
   const supabase = createAdminClient();
 
-  const [
-    { data: centers },
-    { count: activeCount },
-    { count: studentCount },
-    { count: lessonCount },
-  ] = await Promise.all([
-    supabase
+  // Try to fetch with subscription_plan; if the column doesn't exist yet
+  // (migration not run) fall back to the basic select so the page still
+  // renders. Same pattern used elsewhere for late-added columns.
+  type CenterRow = {
+    id: string;
+    name: string;
+    contact_email: string | null;
+    contact_phone: string | null;
+    subscription_status: string;
+    subscription_plan: string | null;
+    trial_ends_at: string | null;
+    created_at: string;
+  };
+  const centersFull = await supabase
+    .from("centers")
+    .select(
+      "id, name, contact_email, contact_phone, subscription_status, subscription_plan, trial_ends_at, created_at",
+    )
+    .order("created_at", { ascending: false });
+  let centers: CenterRow[] | null = (centersFull.data ?? null) as
+    | CenterRow[]
+    | null;
+  if (centersFull.error && /subscription_plan/i.test(centersFull.error.message)) {
+    const basic = await supabase
       .from("centers")
       .select(
         "id, name, contact_email, contact_phone, subscription_status, trial_ends_at, created_at",
       )
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false });
+    centers = ((basic.data ?? []) as Omit<CenterRow, "subscription_plan">[]).map(
+      (c) => ({ ...c, subscription_plan: null }),
+    );
+  }
+
+  const [
+    { count: activeCount },
+    { count: studentCount },
+    { count: lessonCount },
+  ] = await Promise.all([
     supabase
       .from("centers")
       .select("id", { count: "exact", head: true })
@@ -127,6 +155,7 @@ export default async function SuperAdminHomePage() {
                   <TableHead>{t("centerName")}</TableHead>
                   <TableHead>{t("adminEmail")}</TableHead>
                   <TableHead className="w-32">{t("status")}</TableHead>
+                  <TableHead className="w-36">{t("planLabel")}</TableHead>
                   <TableHead className="w-36">{t("trialEnds")}</TableHead>
                   <TableHead className="w-32">{t("created")}</TableHead>
                   <TableHead className="w-24 text-right">
@@ -175,6 +204,12 @@ export default async function SuperAdminHomePage() {
                         <StatusSelect
                           centerId={c.id}
                           currentStatus={c.subscription_status}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <PlanSelect
+                          centerId={c.id}
+                          currentPlan={c.subscription_plan}
                         />
                       </TableCell>
                       <TableCell className={trialClass + " text-xs"}>
