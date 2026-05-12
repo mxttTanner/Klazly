@@ -155,6 +155,30 @@ export async function updateSubscriptionStatus(formData: FormData) {
   revalidatePath("/super-admin");
 }
 
+export async function updateCenterNotes(formData: FormData) {
+  await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  const notesRaw = String(formData.get("notes") ?? "");
+  if (!id) return { error: "missing id" };
+  // Cap at 4000 chars so a misclick paste doesn't blow the cell up.
+  const notes = notesRaw.trim().slice(0, 4000) || null;
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("centers")
+    .update({ notes })
+    .eq("id", id);
+  if (error && /notes/i.test(error.message)) {
+    // Column missing — migration not run yet. Silent no-op so the UI
+    // doesn't crash; super-admin needs to run db/center-notes.sql.
+    return { error: "notes column not migrated yet" };
+  }
+  if (error) return { error: error.message };
+
+  revalidatePath("/super-admin");
+  return { success: true };
+}
+
 export async function deleteCenterCascade(formData: FormData) {
   await requireSuperAdmin();
   const id = String(formData.get("id") ?? "");

@@ -1,5 +1,5 @@
 import { getLocale, getTranslations } from "next-intl/server";
-import { Building2, GraduationCap, Plus, Sparkles, Trash2, Users } from "lucide-react";
+import { AlarmClock, Building2, CircleDollarSign, Plus, Sparkles, Trash2 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,16 @@ import { CenterForm } from "./center-form";
 import { deleteCenterCascade } from "./actions";
 import { StatusSelect } from "./status-select";
 import { PlanSelect } from "./plan-select";
+import { NotesCell } from "./notes-cell";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
+
+// Per-month VND contribution of each paid plan. Six-month and annual are
+// amortised so MRR is comparable across tiers.
+const PLAN_MONTHLY_VND: Record<string, number> = {
+  monthly: 1_200_000,
+  six_months: 900_000,
+  annual: 825_000,
+};
 
 export const dynamic = "force-dynamic";
 
@@ -38,67 +47,116 @@ export default async function SuperAdminHomePage() {
     contact_phone: string | null;
     subscription_status: string;
     subscription_plan: string | null;
+    notes: string | null;
     trial_ends_at: string | null;
     created_at: string;
   };
-  const centersFull = await supabase
+  // Two columns (subscription_plan, notes) were added in later migrations.
+  // Try the full select, then progressively peel them off if the column
+  // doesn't exist yet, so the page renders regardless of which migrations
+  // have been applied.
+  const fullSelect =
+    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, notes, trial_ends_at, created_at";
+  const noNotesSelect =
+    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, trial_ends_at, created_at";
+  const basicSelect =
+    "id, name, contact_email, contact_phone, subscription_status, trial_ends_at, created_at";
+
+  let centers: CenterRow[] | null = null;
+  const res1 = await supabase
     .from("centers")
-    .select(
-      "id, name, contact_email, contact_phone, subscription_status, subscription_plan, trial_ends_at, created_at",
-    )
+    .select(fullSelect)
     .order("created_at", { ascending: false });
-  let centers: CenterRow[] | null = (centersFull.data ?? null) as
-    | CenterRow[]
-    | null;
-  if (centersFull.error && /subscription_plan/i.test(centersFull.error.message)) {
-    const basic = await supabase
+  if (!res1.error) {
+    centers = (res1.data ?? []) as CenterRow[];
+  } else if (/notes/i.test(res1.error.message)) {
+    const res2 = await supabase
       .from("centers")
-      .select(
-        "id, name, contact_email, contact_phone, subscription_status, trial_ends_at, created_at",
-      )
+      .select(noNotesSelect)
       .order("created_at", { ascending: false });
-    centers = ((basic.data ?? []) as Omit<CenterRow, "subscription_plan">[]).map(
-      (c) => ({ ...c, subscription_plan: null }),
-    );
+    if (!res2.error) {
+      centers = ((res2.data ?? []) as Omit<CenterRow, "notes">[]).map((c) => ({
+        ...c,
+        notes: null,
+      }));
+    } else if (/subscription_plan/i.test(res2.error.message)) {
+      const res3 = await supabase
+        .from("centers")
+        .select(basicSelect)
+        .order("created_at", { ascending: false });
+      centers = (
+        (res3.data ?? []) as Omit<CenterRow, "subscription_plan" | "notes">[]
+      ).map((c) => ({ ...c, subscription_plan: null, notes: null }));
+    }
+  } else if (/subscription_plan/i.test(res1.error.message)) {
+    const res3 = await supabase
+      .from("centers")
+      .select(basicSelect)
+      .order("created_at", { ascending: false });
+    centers = (
+      (res3.data ?? []) as Omit<CenterRow, "subscription_plan" | "notes">[]
+    ).map((c) => ({ ...c, subscription_plan: null, notes: null }));
   }
 
-  const [
-    { count: activeCount },
-    { count: studentCount },
-    { count: lessonCount },
-  ] = await Promise.all([
-    supabase
-      .from("centers")
-      .select("id", { count: "exact", head: true })
-      .eq("subscription_status", "active"),
+  // Compute MRR and trials-expiring from the centers we already fetched —
+  // saves three more roundtrips. Active centers with a known plan
+  // contribute their amortised monthly rate.
+  const [{ count: studentCount }, { count: lessonCount }] = await Promise.all([
     supabase.from("students").select("id", { count: "exact", head: true }),
     supabase.from("lessons").select("id", { count: "exact", head: true }),
   ]);
 
+  let mrrVnd = 0;
+  let activeCount = 0;
+  let trialsExpiringSoon = 0;
+  const now = Date.now();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  for (const c of centers ?? []) {
+    if (c.subscription_status === "active") {
+      activeCount += 1;
+      if (c.subscription_plan && PLAN_MONTHLY_VND[c.subscription_plan]) {
+        mrrVnd += PLAN_MONTHLY_VND[c.subscription_plan];
+      }
+    }
+    if (
+      c.subscription_status === "trial" &&
+      c.trial_ends_at &&
+      new Date(c.trial_ends_at).getTime() - now <= sevenDaysMs &&
+      new Date(c.trial_ends_at).getTime() - now >= 0
+    ) {
+      trialsExpiringSoon += 1;
+    }
+  }
+  const mrrFormatted = new Intl.NumberFormat(dateLocale, {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(mrrVnd);
+
   const stats = [
     {
       label: t("statsCenters"),
-      value: centers?.length ?? 0,
+      value: String(centers?.length ?? 0),
       icon: Building2,
       tone: "text-sky-600",
     },
     {
       label: t("statsActive"),
-      value: activeCount ?? 0,
+      value: String(activeCount),
       icon: Sparkles,
       tone: "text-emerald-600",
     },
     {
-      label: t("statsStudents"),
-      value: studentCount ?? 0,
-      icon: GraduationCap,
-      tone: "text-violet-600",
+      label: t("statsTrialsExpiring"),
+      value: String(trialsExpiringSoon),
+      icon: AlarmClock,
+      tone: trialsExpiringSoon > 0 ? "text-rose-600" : "text-muted-foreground",
     },
     {
-      label: t("statsLessons"),
-      value: lessonCount ?? 0,
-      icon: Users,
-      tone: "text-amber-600",
+      label: t("statsMrr"),
+      value: mrrFormatted,
+      icon: CircleDollarSign,
+      tone: "text-emerald-600",
     },
   ];
 
@@ -109,23 +167,31 @@ export default async function SuperAdminHomePage() {
         <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((s) => {
-          const Icon = s.icon;
-          return (
-            <Card key={s.label}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-muted-foreground text-sm font-medium">
-                  {s.label}
-                </CardTitle>
-                <Icon className={`size-4 ${s.tone}`} />
-              </CardHeader>
-              <CardContent>
-                <p className="text-3xl font-semibold">{s.value}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="space-y-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((s) => {
+            const Icon = s.icon;
+            return (
+              <Card key={s.label}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-muted-foreground text-sm font-medium">
+                    {s.label}
+                  </CardTitle>
+                  <Icon className={`size-4 ${s.tone}`} />
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-semibold">{s.value}</p>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+        <p className="text-muted-foreground text-xs">
+          {t("usageFootnote", {
+            students: studentCount ?? 0,
+            lessons: lessonCount ?? 0,
+          })}
+        </p>
       </div>
 
       <section className="space-y-4">
@@ -158,6 +224,9 @@ export default async function SuperAdminHomePage() {
                   <TableHead className="w-36">{t("planLabel")}</TableHead>
                   <TableHead className="w-36">{t("trialEnds")}</TableHead>
                   <TableHead className="w-32">{t("created")}</TableHead>
+                  <TableHead className="min-w-[10rem]">
+                    {t("notesLabel")}
+                  </TableHead>
                   <TableHead className="w-24 text-right">
                     {tc("actions")}
                   </TableHead>
@@ -221,6 +290,9 @@ export default async function SuperAdminHomePage() {
                           month: "2-digit",
                           year: "numeric",
                         })}
+                      </TableCell>
+                      <TableCell>
+                        <NotesCell centerId={c.id} initial={c.notes} />
                       </TableCell>
                       <TableCell className="text-right">
                         <form action={deleteCenterCascade}>
