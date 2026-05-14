@@ -259,6 +259,28 @@ export default async function StudentProgressPage({
     0,
   );
 
+  // Attendance summary across the same monthly window. Present + late
+  // both count as "showed up" — being a few minutes late shouldn't drop
+  // a kid's attendance below 100% on this card.
+  const monthAttendanceTotal = monthlyUpdates.filter(
+    (u) => u.attendance,
+  ).length;
+  const monthPresentish = monthlyUpdates.filter(
+    (u) => u.attendance === "present" || u.attendance === "late",
+  ).length;
+  const monthAttendancePct =
+    monthAttendanceTotal > 0
+      ? Math.round((monthPresentish / monthAttendanceTotal) * 100)
+      : null;
+
+  // Dominant behavior rating in the period for the "behavior" card.
+  const topBehaviorEntry = (
+    Object.entries(behaviorCounts) as [keyof typeof BEHAVIOR_TONES, number][]
+  )
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])[0];
+  const topBehavior = topBehaviorEntry ? topBehaviorEntry[0] : null;
+
   const printedOn = new Date().toLocaleDateString(dateLocale, {
     day: "2-digit",
     month: "2-digit",
@@ -354,58 +376,85 @@ export default async function StudentProgressPage({
               <p className="text-muted-foreground text-sm">{classLineText}</p>
             </div>
           </div>
-
-          {/* Quick stats row — focused on the child's recent activity. */}
-          {lessons.length > 0 ? (
-            <dl className="bg-muted/40 grid grid-cols-2 gap-2 rounded-xl p-3 sm:grid-cols-3 sm:gap-3 sm:p-4">
-              <div>
-                <dt className="text-muted-foreground text-xs uppercase tracking-wide">
-                  {t("heroLessonsLabel")}
-                </dt>
-                <dd className="mt-0.5 text-xl font-bold sm:text-2xl">
-                  {monthlyLessons.length || lessons.length}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground text-xs uppercase tracking-wide">
-                  {t("heroHomeworkLabel")}
-                </dt>
-                <dd className="mt-0.5 text-xl font-bold text-emerald-700 sm:text-2xl">
-                  {monthHomeworkPct === null ? "—" : `${monthHomeworkPct}%`}
-                </dd>
-              </div>
-              <div className="col-span-2 sm:col-span-1">
-                <dt className="text-muted-foreground text-xs uppercase tracking-wide">
-                  {t("heroBehaviorLabel")}
-                </dt>
-                <dd className="mt-1 inline-flex items-center gap-1">
-                  {(["great", "good", "okay", "needs_attention"] as const)
-                    .filter((k) => behaviorCounts[k] > 0)
-                    .slice(0, 4)
-                    .map((k) => (
-                      <span
-                        key={k}
-                        className={`size-2.5 rounded-full ${
-                          k === "great"
-                            ? "bg-emerald-500"
-                            : k === "good"
-                              ? "bg-sky-500"
-                              : k === "okay"
-                                ? "bg-amber-500"
-                                : "bg-rose-500"
-                        }`}
-                        title={`${behaviorCounts[k]}`}
-                      />
-                    ))}
-                  {behaviorTotal === 0 ? (
-                    <span className="text-muted-foreground text-sm">—</span>
-                  ) : null}
-                </dd>
-              </div>
-            </dl>
-          ) : null}
         </div>
       </section>
+
+      {/* Stats strip — dedicated row of cards under the hero. Pulled out
+          of the hero card so each metric gets visual weight; reads like a
+          report card rather than a sidebar widget. Hidden on print since
+          the formal letterhead already summarises the period. */}
+      {lessons.length > 0 ? (
+        <section className="grid grid-cols-2 gap-3 print:hidden sm:grid-cols-4">
+          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
+            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              {t("heroLessonsLabel")}
+            </span>
+            <span className="text-3xl font-semibold tabular-nums">
+              {monthlyLessons.length || lessons.length}
+            </span>
+          </div>
+
+          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
+            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              {t("heroAttendanceLabel")}
+            </span>
+            <span
+              className={`text-3xl font-semibold tabular-nums ${
+                monthAttendancePct === null
+                  ? ""
+                  : monthAttendancePct >= 90
+                    ? "text-emerald-700"
+                    : monthAttendancePct >= 75
+                      ? "text-amber-700"
+                      : "text-rose-700"
+              }`}
+            >
+              {monthAttendancePct === null ? "—" : `${monthAttendancePct}%`}
+            </span>
+          </div>
+
+          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
+            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              {t("heroHomeworkLabel")}
+            </span>
+            <span
+              className={`text-3xl font-semibold tabular-nums ${
+                monthHomeworkPct === null
+                  ? ""
+                  : monthHomeworkPct >= 80
+                    ? "text-emerald-700"
+                    : monthHomeworkPct >= 60
+                      ? "text-amber-700"
+                      : "text-rose-700"
+              }`}
+            >
+              {monthHomeworkPct === null ? "—" : `${monthHomeworkPct}%`}
+            </span>
+          </div>
+
+          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
+            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+              {t("heroBehaviorLabel")}
+            </span>
+            {topBehavior ? (
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center rounded-md px-2 py-1 text-sm font-semibold ${BEHAVIOR_TONES[topBehavior]}`}
+                >
+                  {tBehavior(topBehavior)}
+                </span>
+                {behaviorTotal > 1 ? (
+                  <span className="text-muted-foreground text-xs">
+                    {behaviorCounts[topBehavior]}/{behaviorTotal}
+                  </span>
+                ) : null}
+              </div>
+            ) : (
+              <span className="text-muted-foreground text-2xl">—</span>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {/* Print-only formal report header */}
       <div className="print-only">

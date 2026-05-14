@@ -391,6 +391,7 @@
     "student": {
       "back": "← All children",
       "heroLessonsLabel": "Lessons",
+      "heroAttendanceLabel": "Attendance",
       "heroHomeworkLabel": "Homework",
       "heroBehaviorLabel": "Behavior",
       "lessonsHeading": "Recent lessons",

@@ -391,6 +391,7 @@
     "student": {
       "back": "← Tất cả các con",
       "heroLessonsLabel": "Buổi học",
+      "heroAttendanceLabel": "Chuyên cần",
       "heroHomeworkLabel": "Hoàn thành BTVN",
       "heroBehaviorLabel": "Thái độ",
       "lessonsHeading": "Buổi học gần đây",
