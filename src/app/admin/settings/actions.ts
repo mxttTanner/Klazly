@@ -82,7 +82,10 @@ export async function updateReportSettings(
   _prev: unknown,
   formData: FormData,
 ) {
-  const user = await requireRole(["admin", "teacher"]);
+  // Admin-only: this writes to center-wide report_* columns which affect
+  // every parent's printed PDF in the center. Teachers can preview the
+  // current settings on /teacher/report-settings but can't edit them.
+  const user = await requireRole("admin");
   const t = await getTranslations("settings");
   const tc = await getTranslations("common");
   if (isDemoUser(user)) return { error: tc("demoReadOnly") };

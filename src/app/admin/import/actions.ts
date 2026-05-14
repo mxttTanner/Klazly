@@ -61,6 +61,13 @@ export async function importParentsCsv(
   const supabase = createAdminClient();
   const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
 
+  // Track emails we've already seen in THIS file so a duplicated row
+  // doesn't slip through as a generic Supabase auth error ("User already
+  // registered") — that error reads like "the parent already exists in
+  // the system" when in fact the admin just listed them twice in the
+  // CSV. Map email → row number for a clearer message.
+  const seenEmailRow = new Map<string, number>();
+
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2; // +1 for 0-index, +1 for header line
     const parsed = parentRowSchema.safeParse(rows[i]);
@@ -68,6 +75,16 @@ export async function importParentsCsv(
       result.errors.push({ row: rowNum, message: t("rowInvalid") });
       continue;
     }
+
+    const dupRow = seenEmailRow.get(parsed.data.email);
+    if (dupRow !== undefined) {
+      result.errors.push({
+        row: rowNum,
+        message: t("duplicateInFile", { row: dupRow }),
+      });
+      continue;
+    }
+    seenEmailRow.set(parsed.data.email, rowNum);
 
     const { data: existing } = await supabase
       .from("users")

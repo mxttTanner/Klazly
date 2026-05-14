@@ -81,19 +81,25 @@ export async function uploadWorksheet(_prev: unknown, formData: FormData) {
 }
 
 export async function deleteWorksheet(formData: FormData) {
-  const admin = await requireRole(["admin", "teacher"]);
+  const user = await requireRole(["admin", "teacher"]);
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  if (isDemoUser(admin)) return;
+  if (isDemoUser(user)) return;
 
   const supabase = createAdminClient();
 
   const { data: ws } = await supabase
     .from("worksheets")
-    .select("center_id, storage_path")
+    .select("center_id, storage_path, uploaded_by")
     .eq("id", id)
     .single();
-  if (!ws || ws.center_id !== admin.center_id) return;
+  if (!ws || ws.center_id !== user.center_id) return;
+
+  // Teachers can only delete worksheets THEY uploaded. Admins can delete
+  // any worksheet in their center. Without this check, one teacher could
+  // wipe out another teacher's or the admin's worksheet library by
+  // hitting the delete form action directly.
+  if (user.role === "teacher" && ws.uploaded_by !== user.id) return;
 
   const { error: delErr } = await supabase
     .from("worksheets")
