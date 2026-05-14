@@ -394,6 +394,8 @@
       "heroAttendanceLabel": "Attendance",
       "heroHomeworkLabel": "Homework",
       "heroBehaviorLabel": "Behavior",
+      "tabLessons": "Lessons",
+      "tabMessages": "Messages",
       "lessonsHeading": "Recent lessons",
       "lessonsSubtitle": "What your child did in class. Newest first.",
       "teacherNoteLabel": "Teacher's note about your child",

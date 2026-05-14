@@ -58,10 +58,14 @@ const ATTENDANCE_TONES: Record<string, string> = {
 
 export default async function StudentProgressPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams: { tab?: string };
 }) {
   const user = await requireRole("parent");
+  const activeTab: "lessons" | "messages" =
+    searchParams.tab === "messages" ? "messages" : "lessons";
   const supabase = createClient();
   const t = await getTranslations("parent.student");
   const tHome = await getTranslations("parent.home");
@@ -605,23 +609,63 @@ export default async function StudentProgressPage({
         </section>
       ) : null}
 
-      {/* Private message thread with the teacher (hidden in print) */}
-      <section className="space-y-3 print:hidden">
-        <div className="flex items-center gap-2">
-          <MessageSquareText className="text-primary size-5" />
-          <h2 className="text-xl font-semibold tracking-tight">
-            {tMessages("messagesHeading")}
-          </h2>
+      {/* Tab bar — splits the page into Buổi học / Tin nhắn so parents
+          land on a focused view instead of scrolling through everything.
+          Hidden on print: the printed report still includes both the
+          lesson log and the (printable) summary. */}
+      <nav className="border-b print:hidden">
+        <div className="-mb-px flex gap-1 overflow-x-auto">
+          {(
+            [
+              { key: "lessons", label: t("tabLessons"), icon: ClipboardList },
+              { key: "messages", label: t("tabMessages"), icon: MessageSquareText },
+            ] as const
+          ).map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.key;
+            const href =
+              tab.key === "lessons"
+                ? `/parent/students/${student.id}`
+                : `/parent/students/${student.id}?tab=${tab.key}`;
+            return (
+              <Link
+                key={tab.key}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={
+                  "inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition " +
+                  (active
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground")
+                }
+              >
+                <Icon className="size-4" />
+                {tab.label}
+              </Link>
+            );
+          })}
         </div>
-        <p className="text-muted-foreground text-sm">
-          {tMessages("messagesHelp")}
-        </p>
-        <MessageThread
-          studentId={student.id}
-          currentUserId={user.id}
-          emptyHint={tMessages("messagesEmpty")}
-        />
-      </section>
+      </nav>
+
+      {/* On-screen tab content — only the active tab renders. */}
+      {activeTab === "messages" ? (
+        <section className="space-y-3 print:hidden">
+          <div className="flex items-center gap-2">
+            <MessageSquareText className="text-primary size-5" />
+            <h2 className="text-xl font-semibold tracking-tight">
+              {tMessages("messagesHeading")}
+            </h2>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            {tMessages("messagesHelp")}
+          </p>
+          <MessageThread
+            studentId={student.id}
+            currentUserId={user.id}
+            emptyHint={tMessages("messagesEmpty")}
+          />
+        </section>
+      ) : null}
 
       {/* Print-only section heading before the lesson log */}
       {lessons.length > 0 ? (
@@ -630,25 +674,59 @@ export default async function StudentProgressPage({
         </div>
       ) : null}
 
-      {/* On-screen "Recent lessons" heading — friendly intro so parent
-          immediately knows what's below. */}
-      {lessons.length > 0 ? (
-        <div className="space-y-1 print:hidden">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="text-primary size-5" />
-            <h2 className="text-xl font-semibold tracking-tight">
-              {t("lessonsHeading")}
-            </h2>
-          </div>
-          <p className="text-muted-foreground text-sm">
-            {t("lessonsSubtitle")}
-          </p>
-        </div>
-      ) : null}
-
-      {lessons.length > 0 ? (
-        <ul className="space-y-3">
-          {lessons.map((l) => {
+      {/* Lessons tab content (also always rendered for print). The lessons
+          are grouped by month with <details> so a long history doesn't
+          require scrolling past 30 cards — older months collapse. The
+          most recent month is open by default. */}
+      <div
+        className={
+          activeTab === "lessons"
+            ? "space-y-4 print:space-y-2"
+            : "hidden print:block print:space-y-2"
+        }
+      >
+        {lessons.length > 0 ? (
+          (() => {
+            // Group lessons by year-month, preserving the desc order of
+            // the parent array (newest first).
+            const byMonth = new Map<string, typeof lessons>();
+            for (const l of lessons) {
+              const d = parseDateOnly(l.lesson_date);
+              if (!d) continue;
+              const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+              if (!byMonth.has(key)) byMonth.set(key, []);
+              byMonth.get(key)!.push(l);
+            }
+            const monthLabel = (key: string) => {
+              const [y, m] = key.split("-").map(Number);
+              return new Date(y, m - 1).toLocaleDateString(dateLocale, {
+                year: "numeric",
+                month: "long",
+              });
+            };
+            const entries = Array.from(byMonth.entries());
+            return entries.map(([monthKey, monthLessons], monthIdx) => (
+              <details
+                key={monthKey}
+                open={monthIdx === 0}
+                className="bg-card group rounded-xl border shadow-sm print:border-0 print:bg-transparent print:shadow-none"
+              >
+                <summary className="hover:bg-muted/40 flex cursor-pointer items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden print:hidden">
+                  <span className="inline-flex items-center gap-2">
+                    <ClipboardList className="text-primary size-4" />
+                    <span className="text-base font-semibold capitalize tracking-tight">
+                      {monthLabel(monthKey)}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      ({monthLessons.length})
+                    </span>
+                  </span>
+                  <span className="text-muted-foreground text-xs transition group-open:rotate-180">
+                    ▾
+                  </span>
+                </summary>
+                <ul className="space-y-3 px-3 pb-3 print:p-0">
+                  {monthLessons.map((l) => {
             const u = updateByLesson.get(l.id);
             const rating = u?.behavior_rating;
             const ratingTone = rating ? BEHAVIOR_TONES[rating] : null;
@@ -742,13 +820,19 @@ export default async function StudentProgressPage({
               </li>
             );
           })}
-        </ul>
-      ) : (
-        <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
-          <ClipboardList className="size-8 opacity-50" />
-          <p>{t("noLessons")}</p>
-        </div>
-      )}
+                </ul>
+              </details>
+            ));
+          })()
+        ) : (
+          <div className="bg-muted/30 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center print:hidden">
+            <div className="bg-background flex size-12 items-center justify-center rounded-full border">
+              <ClipboardList className="text-muted-foreground size-5" />
+            </div>
+            <p className="text-muted-foreground text-sm">{t("noLessons")}</p>
+          </div>
+        )}
+      </div>
 
       {/* Print-only signature + footer */}
       <div className="print-only">
