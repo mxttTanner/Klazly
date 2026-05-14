@@ -39,16 +39,26 @@ export async function resolveLoginEmail(
   if (!phone) return { error: "invalidPhone" };
 
   const supabase = createAdminClient();
-  const { data: hit } = await supabase
+  // Use limit(1) instead of maybeSingle: per-center uniqueness allows
+  // the same phone across multiple centers (one parent with kids in two
+  // schools). maybeSingle throws when more than one row matches, which
+  // would crash login. With limit(1) + a deterministic order we pick
+  // the newest-created row's email — if that user has a real email
+  // they're routed to their real-email auth account; if all matching
+  // rows are phone-only their auth is on the synthetic email anyway.
+  const { data: hits } = await supabase
     .from("users")
     .select("email")
     .eq("phone", phone)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const hit = hits?.[0];
 
-  // If the row exists and has a real email, use that (account was created
-  // with both email + phone; auth lives on the real email). Otherwise
-  // fall through to the synthetic email — either the user is phone-only,
-  // or the phone isn't registered and signIn will fail naturally.
+  // If the row exists and has a real email, use that. Otherwise fall
+  // through to the synthetic email — either the user is phone-only,
+  // or the phone isn't registered and signIn will fail naturally with
+  // "invalid credentials" (same shape as a wrong password, so no
+  // enumeration leak).
   if (hit?.email) return { email: hit.email };
   return { email: syntheticEmailForPhone(phone) };
 }

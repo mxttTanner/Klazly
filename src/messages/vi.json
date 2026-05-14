@@ -39,7 +39,8 @@
     "phoneAlreadyUsed": "Số điện thoại này đã được dùng cho tài khoản khác trong trung tâm.",
     "emailOrPhonePlaceholder": "Email hoặc số điện thoại",
     "emailOrPhoneLabel": "Email hoặc số điện thoại",
-    "phoneOnlyResetNote": "Tài khoản chỉ dùng số điện thoại chưa thể tự đặt lại mật khẩu. Vui lòng liên hệ trung tâm để bổ sung email vào hồ sơ."
+    "phoneOnlyResetNote": "Tài khoản chỉ dùng số điện thoại chưa thể tự đặt lại mật khẩu. Vui lòng liên hệ trung tâm để bổ sung email vào hồ sơ.",
+    "phoneTakenAnotherCenter": "Số điện thoại này đã được dùng cho một tài khoản chỉ-điện-thoại ở trung tâm khác. Vui lòng mời bằng email, hoặc dùng số khác."
   },
   "landing": {
     "title": "Cổng Phụ Huynh",

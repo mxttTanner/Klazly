@@ -39,7 +39,8 @@
     "phoneAlreadyUsed": "That phone is already used by another account in this center.",
     "emailOrPhonePlaceholder": "Email or phone number",
     "emailOrPhoneLabel": "Email or phone number",
-    "phoneOnlyResetNote": "Phone-only accounts can't self-reset their password yet. Please contact your center to add an email to your profile."
+    "phoneOnlyResetNote": "Phone-only accounts can't self-reset their password yet. Please contact your center to add an email to your profile.",
+    "phoneTakenAnotherCenter": "That phone is already used by a phone-only account at another center. Invite by email instead, or use a different number."
   },
   "landing": {
     "title": "Parent Portal",

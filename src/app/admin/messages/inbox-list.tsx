@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MessageSquareText } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 
 type Thread = {
   studentId: string;
@@ -18,30 +19,6 @@ type Thread = {
 };
 
 type Filter = "all" | "unread";
-
-// Deterministic initial-circle color picked from a small palette by
-// hashing the student id, so the same student always gets the same
-// colour but the inbox isn't a wall of one tone.
-const AVATAR_TONES = [
-  "bg-sky-100 text-sky-700 ring-sky-200",
-  "bg-violet-100 text-violet-700 ring-violet-200",
-  "bg-emerald-100 text-emerald-700 ring-emerald-200",
-  "bg-amber-100 text-amber-700 ring-amber-200",
-  "bg-rose-100 text-rose-700 ring-rose-200",
-  "bg-indigo-100 text-indigo-700 ring-indigo-200",
-];
-
-function pickTone(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
-  return AVATAR_TONES[Math.abs(h) % AVATAR_TONES.length];
-}
-
-function initial(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  const last = parts[parts.length - 1] ?? "";
-  return last.charAt(0).toUpperCase() || "?";
-}
 
 export function InboxList({
   threads,
@@ -122,7 +99,6 @@ export function InboxList({
       ) : (
         <ul className="space-y-2">
           {filtered.map((thread) => {
-            const tone = pickTone(thread.studentId);
             return (
               <li key={thread.studentId}>
                 <Link
@@ -132,11 +108,12 @@ export function InboxList({
                     (thread.unread > 0 ? "border-rose-200" : "")
                   }
                 >
-                  <div
-                    className={`mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ring-1 ${tone}`}
-                  >
-                    {initial(thread.studentName)}
-                  </div>
+                  <Avatar
+                    name={thread.studentName}
+                    seed={thread.studentId}
+                    size="md"
+                    className="mt-0.5"
+                  />
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{thread.studentName}</p>

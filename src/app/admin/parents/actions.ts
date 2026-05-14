@@ -95,6 +95,17 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
     email_confirm: true,
   });
   if (authErr) {
+    // Special case: phone-only account whose synthetic email collides
+    // with one already in auth.users (the same phone has a phone-only
+    // account at another center). Surface a clearer error so the admin
+    // understands the conflict isn't about THIS center's records.
+    if (
+      phone &&
+      !email &&
+      /already.*registered|already.*used|duplicate/i.test(authErr.message)
+    ) {
+      return { error: tco("phoneTakenAnotherCenter") };
+    }
     return { error: tt("createUserError", { message: authErr.message }) };
   }
 

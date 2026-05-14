@@ -80,6 +80,13 @@ export async function inviteTeacher(_prev: unknown, formData: FormData) {
     email_confirm: true,
   });
   if (authErr) {
+    if (
+      phone &&
+      !email &&
+      /already.*registered|already.*used|duplicate/i.test(authErr.message)
+    ) {
+      return { error: tco("phoneTakenAnotherCenter") };
+    }
     return { error: t("createUserError", { message: authErr.message }) };
   }
 
