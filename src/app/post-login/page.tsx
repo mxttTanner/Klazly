@@ -22,6 +22,15 @@ export default async function PostLoginPage() {
     .eq("id", authUser.id)
     .single();
 
-  if (!profile) redirect("/login");
+  if (!profile) {
+    // Auth session is valid but no profile exists. Most likely cause:
+    // the user's center was deleted (cascades to public.users) while
+    // their auth session is still alive. Without signing them out
+    // they bounce login → post-login → login forever because login
+    // sees a logged-in non-super-admin and post-login can't route
+    // them. Sign out the stale session so /login can render fresh.
+    await supabase.auth.signOut();
+    redirect("/login");
+  }
   redirect(dashboardPathFor((profile as AppUser).role));
 }
