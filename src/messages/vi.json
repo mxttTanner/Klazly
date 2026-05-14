@@ -481,7 +481,7 @@
     "inlineToggleStudents": "Nhập danh sách học sinh từ CSV",
     "parentsHeader": "Nhập phụ huynh",
     "parentsHelp": "Tệp CSV với 3 cột: full_name, email, password. Cột password có thể để trống — hệ thống sẽ sinh mật khẩu ngẫu nhiên.",
-    "parentsPasswordNote": "Lưu ý: nếu để trống cột password, bạn sẽ cần đặt lại mật khẩu cho phụ huynh sau (tính năng đặt lại mật khẩu chưa có).",
+    "parentsPasswordNote": "Lưu ý: nếu để trống cột password, hệ thống sẽ tự sinh mật khẩu tạm cho mỗi phụ huynh — hãy ghi lại trước khi rời trang. Phụ huynh có thể tự đặt lại mật khẩu sau qua đường dẫn \"Quên mật khẩu?\" ở trang đăng nhập.",
     "studentsHeader": "Nhập học sinh",
     "studentsHelp": "Tệp CSV với 4 cột: full_name, age, class_name, parent_email. Tên lớp phải khớp với lớp đã có. Email phụ huynh phải khớp với phụ huynh đã có.",
     "studentsNote": "Mẹo: tạo phụ huynh trước, lớp học trước, rồi mới nhập học sinh.",

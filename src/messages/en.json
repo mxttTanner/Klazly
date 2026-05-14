@@ -481,7 +481,7 @@
     "inlineToggleStudents": "Bulk import students from CSV",
     "parentsHeader": "Import parents",
     "parentsHelp": "CSV with 3 columns: full_name, email, password. Password column can be blank — the system will generate a random password.",
-    "parentsPasswordNote": "Note: if you leave password blank, you'll need to reset it for the parent later (password reset is not built yet).",
+    "parentsPasswordNote": "Note: if you leave password blank, the system generates a temporary password for each parent — capture it before leaving the page. Parents can reset their own password later via the \"Forgot password?\" link on the login page.",
     "studentsHeader": "Import students",
     "studentsHelp": "CSV with 4 columns: full_name, age, class_name, parent_email. Class name must match an existing class. Parent email must match an existing parent.",
     "studentsNote": "Tip: create parents first, then classes, then import students.",
