@@ -71,7 +71,10 @@ create index if not exists students_parent_user_id_idx on public.students(parent
 create table if not exists public.lessons (
   id uuid primary key default uuid_generate_v4(),
   class_id uuid not null references public.classes(id) on delete cascade,
-  teacher_id uuid not null references public.users(id) on delete restrict,
+  -- teacher_id is nullable + SET NULL so a teacher who logged lessons can
+  -- still be removed; their historical lessons stay (parents need the
+  -- record) and the attribution becomes "—". See lessons-teacher-id-nullable.sql.
+  teacher_id uuid references public.users(id) on delete set null,
   lesson_date date not null,
   vocabulary text,
   grammar_point text,
