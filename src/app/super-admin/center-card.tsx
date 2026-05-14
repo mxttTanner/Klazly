@@ -21,7 +21,19 @@ export type CenterCardData = {
   /** Pre-rendered "Tạo 12/05/2026" / "Created 12/05/2026" — comes from
    *  the server so locale + translation stay in next-intl-server. */
   createdShort: string;
-  /** Pre-rendered trial badge (text + tailwind classes) or null. */
+  /** Pre-rendered status+plan badge from src/lib/subscription.ts.
+   *  labelKey is the i18n key under superAdmin.*; tone is the Tailwind
+   *  class string for the badge. subText is an optional secondary line
+   *  ("4 days left" / "ends 30/06/2026"). */
+  statusBadge: {
+    labelKey: string;
+    tone: string;
+    subText: string | null;
+  };
+  /** Translated plan label ("Yearly" / "1 năm"), or null when on trial. */
+  planText: string | null;
+  /** Deprecated — kept for backward compat. The new statusBadge already
+   *  carries trial-days-left in its subText. */
   trialBadge: { text: string; tone: string } | null;
 };
 
@@ -44,7 +56,7 @@ export function CenterCard({ center }: { center: CenterCardData }) {
     <article className="bg-card overflow-hidden rounded-2xl border shadow-sm">
       {/* Header */}
       <header className="flex items-start justify-between gap-3 border-b p-4 sm:p-5">
-        <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
             <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
               <Building2 className="size-4" />
@@ -52,6 +64,28 @@ export function CenterCard({ center }: { center: CenterCardData }) {
             <h3 className="truncate text-lg font-semibold tracking-tight">
               {center.name}
             </h3>
+          </div>
+          {/* Status + plan combined badge — the primary at-a-glance
+              signal. "Active · Yearly" / "Trial · 4 days left" / etc. */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${center.statusBadge.tone}`}
+            >
+              {t(
+                // Coerce dynamic key — the page guarantees it exists.
+                center.statusBadge.labelKey as Parameters<typeof t>[0],
+              )}
+            </span>
+            {center.planText ? (
+              <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium">
+                {center.planText}
+              </span>
+            ) : null}
+            {center.statusBadge.subText ? (
+              <span className="text-muted-foreground text-[11px]">
+                · {center.statusBadge.subText}
+              </span>
+            ) : null}
           </div>
           <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
             {center.contact_email ? (
@@ -106,18 +140,6 @@ export function CenterCard({ center }: { center: CenterCardData }) {
             currentPlan={center.subscription_plan}
           />
         </div>
-        {center.trialBadge ? (
-          <div className="sm:col-span-2">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${center.trialBadge.tone}`}
-            >
-              <span className="text-muted-foreground uppercase tracking-wide text-[10px]">
-                {t("trialEnds")}
-              </span>
-              <span className="font-medium">{center.trialBadge.text}</span>
-            </span>
-          </div>
-        ) : null}
       </div>
 
       {/* Notes */}

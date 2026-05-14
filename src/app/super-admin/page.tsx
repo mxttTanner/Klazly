@@ -1,8 +1,24 @@
+import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { AlarmClock, Building2, CircleDollarSign, Sparkles } from "lucide-react";
+import {
+  AlarmClock,
+  Building2,
+  CircleDollarSign,
+  Sparkles,
+} from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  deriveStatus,
+  expireOverdueTrials,
+  planLabelKey,
+  statusLabelKey,
+  statusTone,
+  trialDaysLeft,
+  type CenterSubscriptionInput,
+  type DerivedStatus,
+} from "@/lib/subscription";
 import { CenterForm } from "./center-form";
 import { CenterCard, type CenterCardData } from "./center-card";
 import { SuperAdminTabs } from "./super-admin-tabs";
@@ -17,17 +33,36 @@ const PLAN_MONTHLY_VND: Record<string, number> = {
 
 export const dynamic = "force-dynamic";
 
-export default async function SuperAdminHomePage() {
+const STATUS_FILTERS = [
+  "all",
+  "trial",
+  "active",
+  "past_due",
+  "canceled",
+  "expired",
+] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
+export default async function SuperAdminHomePage({
+  searchParams,
+}: {
+  searchParams: { status?: string };
+}) {
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
+  const activeFilter: StatusFilter = (STATUS_FILTERS as readonly string[]).includes(
+    searchParams.status ?? "",
+  )
+    ? (searchParams.status as StatusFilter)
+    : "all";
+
   const supabase = createAdminClient();
 
-  // Try to fetch with subscription_plan; if the column doesn't exist yet
-  // (migration not run) fall back to the basic select so the page still
-  // renders. Same pattern used elsewhere for late-added columns.
+  // Try to fetch with the full lifecycle columns; fall back if the
+  // db/subscription-lifecycle.sql migration hasn't been run yet.
   type CenterRow = {
     id: string;
     name: string;
@@ -37,13 +72,15 @@ export default async function SuperAdminHomePage() {
     subscription_plan: string | null;
     notes: string | null;
     trial_ends_at: string | null;
+    subscription_started_at: string | null;
+    subscription_ends_at: string | null;
+    last_payment_at: string | null;
+    next_billing_at: string | null;
     created_at: string;
   };
-  // Two columns (subscription_plan, notes) were added in later migrations.
-  // Try the full select, then progressively peel them off if the column
-  // doesn't exist yet, so the page renders regardless of which migrations
-  // have been applied.
   const fullSelect =
+    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
+  const preLifecycleSelect =
     "id, name, contact_email, contact_phone, subscription_status, subscription_plan, notes, trial_ends_at, created_at";
   const noNotesSelect =
     "id, name, contact_email, contact_phone, subscription_status, subscription_plan, trial_ends_at, created_at";
@@ -57,38 +94,107 @@ export default async function SuperAdminHomePage() {
     .order("created_at", { ascending: false });
   if (!res1.error) {
     centers = (res1.data ?? []) as CenterRow[];
+  } else if (/subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
+    const r = await supabase
+      .from("centers")
+      .select(preLifecycleSelect)
+      .order("created_at", { ascending: false });
+    if (!r.error) {
+      centers = (r.data ?? []).map((c) => ({
+        ...(c as Omit<
+          CenterRow,
+          | "subscription_started_at"
+          | "subscription_ends_at"
+          | "last_payment_at"
+          | "next_billing_at"
+        >),
+        subscription_started_at: null,
+        subscription_ends_at: null,
+        last_payment_at: null,
+        next_billing_at: null,
+      }));
+    }
   } else if (/notes/i.test(res1.error.message)) {
-    const res2 = await supabase
+    const r = await supabase
       .from("centers")
       .select(noNotesSelect)
       .order("created_at", { ascending: false });
-    if (!res2.error) {
-      centers = ((res2.data ?? []) as Omit<CenterRow, "notes">[]).map((c) => ({
-        ...c,
+    if (!r.error) {
+      centers = (r.data ?? []).map((c) => ({
+        ...(c as Omit<
+          CenterRow,
+          | "notes"
+          | "subscription_started_at"
+          | "subscription_ends_at"
+          | "last_payment_at"
+          | "next_billing_at"
+        >),
         notes: null,
+        subscription_started_at: null,
+        subscription_ends_at: null,
+        last_payment_at: null,
+        next_billing_at: null,
       }));
-    } else if (/subscription_plan/i.test(res2.error.message)) {
-      const res3 = await supabase
-        .from("centers")
-        .select(basicSelect)
-        .order("created_at", { ascending: false });
-      centers = (
-        (res3.data ?? []) as Omit<CenterRow, "subscription_plan" | "notes">[]
-      ).map((c) => ({ ...c, subscription_plan: null, notes: null }));
     }
   } else if (/subscription_plan/i.test(res1.error.message)) {
-    const res3 = await supabase
+    const r = await supabase
       .from("centers")
       .select(basicSelect)
       .order("created_at", { ascending: false });
-    centers = (
-      (res3.data ?? []) as Omit<CenterRow, "subscription_plan" | "notes">[]
-    ).map((c) => ({ ...c, subscription_plan: null, notes: null }));
+    centers = ((r.data ?? []) as Array<{
+      id: string;
+      name: string;
+      contact_email: string | null;
+      contact_phone: string | null;
+      subscription_status: string;
+      trial_ends_at: string | null;
+      created_at: string;
+    }>).map((c) => ({
+      ...c,
+      subscription_plan: null,
+      notes: null,
+      subscription_started_at: null,
+      subscription_ends_at: null,
+      last_payment_at: null,
+      next_billing_at: null,
+    }));
   }
 
-  // Compute MRR and trials-expiring from the centers we already fetched —
-  // saves three more roundtrips. Active centers with a known plan
-  // contribute their amortised monthly rate.
+  // Lazy auto-expire: any trial whose trial_ends_at is in the past
+  // gets flipped to 'expired' before the dashboard renders, with one
+  // audit_log row per transition. Failures here don't block the page.
+  if (centers && centers.length > 0) {
+    await expireOverdueTrials(supabase, centers);
+    // Re-fetch the freshly-updated statuses for accurate display.
+    const refresh = await supabase
+      .from("centers")
+      .select("id, subscription_status")
+      .in(
+        "id",
+        centers.map((c) => c.id),
+      );
+    if (!refresh.error && refresh.data) {
+      const map = new Map(
+        (refresh.data as { id: string; subscription_status: string }[]).map(
+          (r) => [r.id, r.subscription_status],
+        ),
+      );
+      centers = centers.map((c) => ({
+        ...c,
+        subscription_status: map.get(c.id) ?? c.subscription_status,
+      }));
+    }
+  }
+
+  // Compute derived status for every center (adds 'trial_ending_soon'
+  // when trial_ends_at is ≤3 days out).
+  const withDerived = (centers ?? []).map((c) => ({
+    ...c,
+    derived: deriveStatus(c as CenterSubscriptionInput),
+  }));
+
+  // KPIs use the derived status so the dashboard reflects what the
+  // admin actually sees, not the raw DB value.
   const [{ count: studentCount }, { count: lessonCount }] = await Promise.all([
     supabase.from("students").select("id", { count: "exact", head: true }),
     supabase.from("lessons").select("id", { count: "exact", head: true }),
@@ -96,22 +202,19 @@ export default async function SuperAdminHomePage() {
 
   let mrrVnd = 0;
   let activeCount = 0;
+  let trialCount = 0;
   let trialsExpiringSoon = 0;
-  const now = Date.now();
-  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-  for (const c of centers ?? []) {
-    if (c.subscription_status === "active") {
+  for (const c of withDerived) {
+    if (c.derived === "active") {
       activeCount += 1;
       if (c.subscription_plan && PLAN_MONTHLY_VND[c.subscription_plan]) {
         mrrVnd += PLAN_MONTHLY_VND[c.subscription_plan];
       }
     }
-    if (
-      c.subscription_status === "trial" &&
-      c.trial_ends_at &&
-      new Date(c.trial_ends_at).getTime() - now <= sevenDaysMs &&
-      new Date(c.trial_ends_at).getTime() - now >= 0
-    ) {
+    if (c.derived === "trial" || c.derived === "trial_ending_soon") {
+      trialCount += 1;
+    }
+    if (c.derived === "trial_ending_soon") {
       trialsExpiringSoon += 1;
     }
   }
@@ -124,7 +227,7 @@ export default async function SuperAdminHomePage() {
   const stats = [
     {
       label: t("statsCenters"),
-      value: String(centers?.length ?? 0),
+      value: String(withDerived.length),
       icon: Building2,
       tone: "text-sky-600",
     },
@@ -135,10 +238,14 @@ export default async function SuperAdminHomePage() {
       tone: "text-emerald-600",
     },
     {
-      label: t("statsTrialsExpiring"),
-      value: String(trialsExpiringSoon),
+      label: t("statsTrial"),
+      value: String(trialCount),
       icon: AlarmClock,
-      tone: trialsExpiringSoon > 0 ? "text-rose-600" : "text-muted-foreground",
+      tone: trialsExpiringSoon > 0 ? "text-amber-600" : "text-muted-foreground",
+      sub:
+        trialsExpiringSoon > 0
+          ? t("statsTrialEndingSoonHint", { n: trialsExpiringSoon })
+          : null,
     },
     {
       label: t("statsMrr"),
@@ -148,61 +255,143 @@ export default async function SuperAdminHomePage() {
     },
   ];
 
-  // Pre-render the per-center trial badge server-side so we can hand the
-  // client component plain strings/numbers — functions can't cross the
-  // server→client boundary, and translations are easier here.
-  const decorated: (CenterCardData & {
-    trialBadge: { text: string; tone: string } | null;
-    createdShort: string;
-  })[] = (centers ?? []).map((c) => {
-    let trialBadge: { text: string; tone: string } | null = null;
-    if (c.subscription_status === "trial" && c.trial_ends_at) {
-      const ends = new Date(c.trial_ends_at);
-      const days = Math.ceil(
-        (ends.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-      );
-      const dateText = ends.toLocaleDateString(dateLocale, {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-      const tail =
-        days <= 0 ? t("trialExpiredShort") : t("trialDaysShort", { n: days });
-      trialBadge = {
-        text: `${dateText} · ${tail}`,
-        tone:
-          days <= 0
-            ? "bg-rose-100 text-rose-800 border-rose-200"
-            : days <= 7
-              ? "bg-rose-50 text-rose-700 border-rose-200"
-              : days <= 14
-                ? "bg-amber-50 text-amber-800 border-amber-200"
-                : "bg-muted text-muted-foreground border-muted",
-      };
+  // Filter tabs: count each status for badge display, then filter the
+  // visible list by the active filter.
+  const filterCounts: Record<StatusFilter, number> = {
+    all: withDerived.length,
+    trial: 0,
+    active: 0,
+    past_due: 0,
+    canceled: 0,
+    expired: 0,
+  };
+  for (const c of withDerived) {
+    // Trial + trial_ending_soon both count under "trial" tab.
+    if (c.derived === "trial" || c.derived === "trial_ending_soon") {
+      filterCounts.trial += 1;
+    } else {
+      filterCounts[c.derived] += 1;
     }
-    const createdShort = t("createdShort", {
-      date: new Date(c.created_at).toLocaleDateString(dateLocale, {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }),
-    });
-    return { ...c, trialBadge, createdShort };
+  }
+
+  const filteredCenters = withDerived.filter((c) => {
+    if (activeFilter === "all") return true;
+    if (activeFilter === "trial")
+      return c.derived === "trial" || c.derived === "trial_ending_soon";
+    return c.derived === activeFilter;
   });
 
-  const centersList =
-    decorated.length > 0 ? (
-      <div className="grid gap-4 lg:grid-cols-2">
-        {decorated.map((c) => (
-          <CenterCard key={c.id} center={c} />
-        ))}
-      </div>
-    ) : (
-      <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
-        <Building2 className="size-8 opacity-50" />
-        <p>{t("empty")}</p>
-      </div>
-    );
+  // Pre-render each card's status+plan badge server-side so the client
+  // component receives plain props.
+  const decorated: (CenterCardData & {
+    createdShort: string;
+    statusBadge: { labelKey: string; tone: string; subText: string | null };
+    planText: string | null;
+  })[] = filteredCenters.map((c) => {
+    const status: DerivedStatus = c.derived;
+    const planKey = planLabelKey(c.subscription_plan);
+    const planText = planKey ? t(planKey) : null;
+
+    let subText: string | null = null;
+    if (status === "trial" || status === "trial_ending_soon") {
+      const days = trialDaysLeft(c.trial_ends_at);
+      if (days !== null && days > 0) {
+        subText = t("trialDaysShort", { n: days });
+      }
+    }
+    if (status === "active" && c.subscription_ends_at) {
+      const ends = new Date(c.subscription_ends_at);
+      subText = t("subscriptionEndsAt", {
+        date: ends.toLocaleDateString(dateLocale, {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+      });
+    }
+
+    return {
+      ...c,
+      statusBadge: {
+        labelKey: statusLabelKey(status),
+        tone: statusTone(status),
+        subText,
+      },
+      planText,
+      createdShort: t("createdShort", {
+        date: new Date(c.created_at).toLocaleDateString(dateLocale, {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+      }),
+      // Legacy field still consumed by the card; superseded by statusBadge.
+      trialBadge: null,
+    };
+  });
+
+  const centersList = (
+    <div className="space-y-5">
+      {/* Filter tabs — derived statuses, badge with counts. */}
+      <nav className="border-b">
+        <div className="-mb-px flex flex-wrap gap-1">
+          {(
+            [
+              { key: "all" as const, label: t("filterAll") },
+              { key: "trial" as const, label: t("statusTrial") },
+              { key: "active" as const, label: t("statusActive") },
+              { key: "past_due" as const, label: t("statusPastDue") },
+              { key: "canceled" as const, label: t("statusCanceled") },
+              { key: "expired" as const, label: t("statusExpired") },
+            ]
+          ).map((tab) => {
+            const active = activeFilter === tab.key;
+            const href =
+              tab.key === "all" ? "/super-admin" : `/super-admin?status=${tab.key}`;
+            const count = filterCounts[tab.key];
+            return (
+              <Link
+                key={tab.key}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={
+                  "inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition " +
+                  (active
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground")
+                }
+              >
+                {tab.label}
+                <span
+                  className={
+                    "rounded-full px-1.5 text-[10px] font-semibold tabular-nums " +
+                    (active
+                      ? "bg-primary/15 text-primary"
+                      : "bg-muted text-muted-foreground")
+                  }
+                >
+                  {count}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {decorated.length > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {decorated.map((c) => (
+            <CenterCard key={c.id} center={c} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
+          <Building2 className="size-8 opacity-50" />
+          <p>{activeFilter === "all" ? t("empty") : t("filterEmpty")}</p>
+        </div>
+      )}
+    </div>
+  );
 
   const newCenterPanel = (
     <div className="space-y-4">
@@ -233,7 +422,14 @@ export default async function SuperAdminHomePage() {
                   <Icon className={`size-4 ${s.tone}`} />
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-semibold">{s.value}</p>
+                  <p className="text-3xl font-semibold tabular-nums">
+                    {s.value}
+                  </p>
+                  {s.sub ? (
+                    <p className="text-muted-foreground mt-0.5 text-xs">
+                      {s.sub}
+                    </p>
+                  ) : null}
                 </CardContent>
               </Card>
             );
@@ -254,7 +450,7 @@ export default async function SuperAdminHomePage() {
             id: "centers",
             label: t("tabCenters"),
             iconKey: "centers",
-            badge: centers?.length ?? 0,
+            badge: withDerived.length,
             content: centersList,
           },
           {

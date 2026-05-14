@@ -115,6 +115,12 @@ create table if not exists public.student_lesson_updates (
 create index if not exists slu_lesson_idx on public.student_lesson_updates(lesson_id);
 create index if not exists slu_student_idx on public.student_lesson_updates(student_id);
 
+-- Subscription lifecycle columns (also added incrementally via
+-- db/subscription-plan.sql, trial.sql, subscription-lifecycle.sql).
+-- Listed here so a fresh deploy from schema.sql alone gets the full
+-- shape. The trial_ends_at column on centers is set when a trial
+-- begins; subscription_started_at/ends_at + last_payment_at +
+-- next_billing_at track the paid window once the center converts.
 create table if not exists public.audit_log (
   id bigserial primary key,
   user_id uuid references public.users(id) on delete set null,
@@ -126,6 +132,12 @@ create table if not exists public.audit_log (
   created_at timestamptz not null default now()
 );
 create index if not exists audit_log_center_idx on public.audit_log(center_id, created_at desc);
+-- Index used by the lazy-expire query in /super-admin (see
+-- src/lib/subscription.ts):
+--   centers where subscription_status='trial' and trial_ends_at<now()
+create index if not exists centers_trial_expiry_idx
+  on public.centers (trial_ends_at)
+  where subscription_status = 'trial';
 
 -- ==========================================================================
 -- Helper functions used by RLS policies.

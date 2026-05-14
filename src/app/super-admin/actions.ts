@@ -177,21 +177,68 @@ export async function updateSubscriptionPlan(formData: FormData) {
 }
 
 export async function updateSubscriptionStatus(formData: FormData) {
-  await requireSuperAdmin();
+  const owner = await requireSuperAdmin();
   const id = String(formData.get("id") ?? "");
   const status = String(formData.get("status") ?? "");
   if (
     !id ||
-    !["trial", "active", "past_due", "canceled"].includes(status)
+    !["trial", "active", "past_due", "canceled", "expired"].includes(status)
   )
     return { error: "invalid input" };
 
   const supabase = createAdminClient();
+
+  // Read the previous status so the audit log can record the
+  // transition (from → to). Plus, when moving to 'active' for the
+  // first time we set subscription_started_at; when moving away from
+  // 'active' we set subscription_ends_at.
+  const { data: existing } = await supabase
+    .from("centers")
+    .select("subscription_status, subscription_started_at")
+    .eq("id", id)
+    .single();
+  const fromStatus = existing?.subscription_status ?? null;
+
+  const patch: Record<string, string | null> = {
+    subscription_status: status,
+  };
+  if (status === "active" && !existing?.subscription_started_at) {
+    patch.subscription_started_at = new Date().toISOString();
+  }
+  if (
+    fromStatus === "active" &&
+    (status === "canceled" || status === "expired") &&
+    // Don't overwrite an existing end timestamp.
+    !patch.subscription_ends_at
+  ) {
+    patch.subscription_ends_at = new Date().toISOString();
+  }
+
   const { error } = await supabase
     .from("centers")
-    .update({ subscription_status: status })
+    .update(patch)
     .eq("id", id);
-  if (error) return { error: error.message };
+  if (error) {
+    // Surface a clearer message when the CHECK constraint rejects an
+    // unexpected status value.
+    if (/centers_subscription_status_check/i.test(error.message)) {
+      return { error: "subscription_lifecycle.sql migration not applied" };
+    }
+    return { error: error.message };
+  }
+
+  // Audit-log the transition. Best-effort: don't block the user's
+  // save if the audit insert fails.
+  if (fromStatus !== status) {
+    await supabase.from("audit_log").insert({
+      user_id: owner.id,
+      center_id: id,
+      action: "subscription_status_change",
+      entity_type: "center",
+      entity_id: id,
+      metadata: { from: fromStatus, to: status, auto: false },
+    });
+  }
 
   revalidatePath("/super-admin");
   return { success: true };

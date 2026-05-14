@@ -38,6 +38,7 @@ export function StatusSelect({
         <option value="active">{t("statusActive")}</option>
         <option value="past_due">{t("statusPastDue")}</option>
         <option value="canceled">{t("statusCanceled")}</option>
+        <option value="expired">{t("statusExpired")}</option>
       </select>
       {error ? (
         <p className="text-destructive text-[10px]" role="alert">
