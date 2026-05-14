@@ -40,7 +40,11 @@ export default async function AdminLayout({
             soft shadow in addition to the hairline border so the panel
             feels lifted instead of stencil-cut. */}
         <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r border-border bg-background shadow-[1px_0_4px_-2px_rgb(0_0_0/0.06)] md:flex md:flex-col dark:bg-zinc-900">
-          <div className="border-b border-border p-4">
+          {/* Logo header: matched to the topbar with the same soft drop
+              shadow + bg gradient tint so it reads as a distinct sub-panel
+              within the sidebar, not just a section above a plain
+              border-b. */}
+          <div className="border-b border-border bg-gradient-to-b from-zinc-50/60 to-transparent p-4 shadow-[0_1px_2px_-1px_rgb(0_0_0/0.05)] dark:from-zinc-800/40">
             <Link
               href="/admin"
               className="flex min-w-0 max-w-full items-center gap-2.5"

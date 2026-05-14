@@ -45,8 +45,13 @@ export function CenterLogo({
           <GraduationCap className={dimensions.icon} />
         </div>
       )}
+      {/* line-clamp-2 instead of truncate: long center names wrap onto a
+          second line cleanly with tight leading instead of getting cut
+          mid-word with an ellipsis. The title attribute keeps the full
+          name accessible on hover for the rare case where two lines
+          still aren't enough. */}
       <span
-        className={`min-w-0 truncate font-semibold tracking-tight ${dimensions.text}`}
+        className={`line-clamp-2 min-w-0 font-semibold leading-tight tracking-tight ${dimensions.text}`}
         title={centerName ?? undefined}
       >
         {centerName ?? "Cổng Phụ Huynh"}

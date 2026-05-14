@@ -18,7 +18,7 @@ export function BrandLogo({
       <BrandMark className={`shrink-0 text-primary ${dimensions.mark}`} />
       {showText ? (
         <span
-          className={`min-w-0 truncate font-semibold tracking-tight ${dimensions.text}`}
+          className={`line-clamp-2 min-w-0 font-semibold leading-tight tracking-tight ${dimensions.text}`}
         >
           Cổng Phụ Huynh
         </span>
