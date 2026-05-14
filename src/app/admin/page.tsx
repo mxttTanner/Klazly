@@ -341,8 +341,8 @@ export default async function AdminHomePage({
         {cards.map((c) => {
           const Icon = c.icon;
           return (
-            <Link key={c.href} href={c.href}>
-              <Card className="transition hover:bg-muted/40">
+            <Link key={c.href} href={c.href} className="group">
+              <Card className="transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-muted-foreground text-sm font-medium">
                     {c.label}
@@ -350,7 +350,12 @@ export default async function AdminHomePage({
                   <Icon className={`size-4 ${c.tone}`} />
                 </CardHeader>
                 <CardContent>
-                  <p className="text-3xl font-semibold">{c.count}</p>
+                  <div className="flex items-end justify-between">
+                    <p className="text-3xl font-semibold tabular-nums">
+                      {c.count}
+                    </p>
+                    <ChevronRight className="text-muted-foreground/40 group-hover:text-primary size-4 transition-all group-hover:translate-x-0.5" />
+                  </div>
                 </CardContent>
               </Card>
             </Link>

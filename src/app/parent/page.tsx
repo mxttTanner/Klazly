@@ -178,7 +178,7 @@ export default async function ParentHomePage() {
             <Sparkles className="size-3.5" />
             {t("greetingEyebrow")}
           </p>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {user.full_name
               ? t("greetingNamed", { name: user.full_name })
               : t("title")}

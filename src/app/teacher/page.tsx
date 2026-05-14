@@ -89,8 +89,8 @@ export default async function TeacherHomePage() {
               : (c.teacher as { full_name: string } | null)?.full_name;
             const unread = unreadByClass.get(c.id) ?? 0;
             return (
-              <Link key={c.id} href={`/teacher/classes/${c.id}`}>
-                <Card className="group h-full transition hover:bg-muted/40 hover:shadow-md">
+              <Link key={c.id} href={`/teacher/classes/${c.id}`} className="group">
+                <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
                       <BookOpen className="text-violet-600 size-5" />
