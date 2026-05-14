@@ -189,6 +189,34 @@ export function trialDaysToneAndUrgency(days: number | null): {
   return { tone: "text-sky-700", urgent: false };
 }
 
+/**
+ * Days since a center's trial expired (or null if it doesn't look like
+ * a recently-expired trial). Used to surface "recently expired" follow-up
+ * candidates for the super-admin to chase. Returns a positive number
+ * when the trial_ends_at is in the past.
+ */
+export function trialDaysSinceExpiry(
+  trial_ends_at: string | null | undefined,
+): number | null {
+  if (!trial_ends_at) return null;
+  const ms = Date.now() - new Date(trial_ends_at).getTime();
+  if (ms <= 0) return null;
+  return Math.floor(ms / DAY_MS);
+}
+
+/** Strip a canonical VN phone ("+84...") to the form Zalo deep-links
+ *  expect (no leading "+"). Falls back to the raw input minus any
+ *  non-digits if it doesn't look canonical, so a sloppy entry still
+ *  produces a clickable link. Returns null if there's nothing usable. */
+export function zaloDeeplinkFromPhone(
+  phone: string | null | undefined,
+): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+  return `https://zalo.me/${digits}`;
+}
+
 /** i18n key for the status label. Caller translates via t(). */
 export function statusLabelKey(s: DerivedStatus): string {
   switch (s) {

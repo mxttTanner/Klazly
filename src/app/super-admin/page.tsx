@@ -2,8 +2,11 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   AlarmClock,
+  AlertTriangle,
   Building2,
   CircleDollarSign,
+  Clock,
+  MessageCircle,
   Sparkles,
 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -16,6 +19,8 @@ import {
   statusLabelKey,
   statusTone,
   trialDaysLeft,
+  trialDaysSinceExpiry,
+  zaloDeeplinkFromPhone,
   type CenterSubscriptionInput,
   type DerivedStatus,
 } from "@/lib/subscription";
@@ -192,6 +197,61 @@ export default async function SuperAdminHomePage({
     ...c,
     derived: deriveStatus(c as CenterSubscriptionInput),
   }));
+
+  // "Action required" buckets — trials about to lapse + recently
+  // expired centres to chase for conversion. Computed once here and
+  // rendered as a banner above the KPI cards. Hidden entirely when
+  // all three buckets are empty so a quiet account doesn't get a
+  // useless heading.
+  type ActionRow = {
+    id: string;
+    name: string;
+    contactPhone: string | null;
+    days: number; // positive = days left; for expired bucket = days since expiry
+    zaloUrl: string | null;
+  };
+  const urgentTrials: ActionRow[] = [];
+  const warningTrials: ActionRow[] = [];
+  const recentlyExpired: ActionRow[] = [];
+  for (const c of withDerived) {
+    if (c.derived === "trial" || c.derived === "trial_ending_soon") {
+      const days = trialDaysLeft(c.trial_ends_at);
+      if (days === null || days <= 0) continue;
+      if (days <= 3) {
+        urgentTrials.push({
+          id: c.id,
+          name: c.name,
+          contactPhone: c.contact_phone,
+          days,
+          zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
+        });
+      } else if (days <= 7) {
+        warningTrials.push({
+          id: c.id,
+          name: c.name,
+          contactPhone: c.contact_phone,
+          days,
+          zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
+        });
+      }
+    } else if (c.derived === "expired") {
+      const since = trialDaysSinceExpiry(c.trial_ends_at);
+      if (since !== null && since <= 14) {
+        recentlyExpired.push({
+          id: c.id,
+          name: c.name,
+          contactPhone: c.contact_phone,
+          days: since,
+          zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
+        });
+      }
+    }
+  }
+  urgentTrials.sort((a, b) => a.days - b.days);
+  warningTrials.sort((a, b) => a.days - b.days);
+  recentlyExpired.sort((a, b) => a.days - b.days);
+  const hasActionRequired =
+    urgentTrials.length + warningTrials.length + recentlyExpired.length > 0;
 
   // KPIs use the derived status so the dashboard reflects what the
   // admin actually sees, not the raw DB value.
@@ -408,6 +468,62 @@ export default async function SuperAdminHomePage({
         <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
       </div>
 
+      {/* Action required — trials about to lapse + recently expired
+          centres to chase. Hidden when nothing needs attention. */}
+      {hasActionRequired ? (
+        <section
+          aria-label={t("actionRequiredTitle")}
+          className="space-y-4 rounded-xl border border-amber-200 bg-amber-50/40 p-5 shadow-sm"
+        >
+          <div className="flex items-start gap-3">
+            <span className="bg-amber-100 text-amber-700 ring-amber-200 mt-0.5 inline-flex size-9 items-center justify-center rounded-full ring-1">
+              <AlertTriangle className="size-5" />
+            </span>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">
+                {t("actionRequiredTitle")}
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                {t("actionRequiredSubtitle")}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {urgentTrials.length > 0 ? (
+              <ActionGroup
+                tone="urgent"
+                title={t("urgentLabel")}
+                hint={t("urgentHint")}
+                centers={urgentTrials}
+                t={t as ActionGroupTranslator}
+                kind="left"
+              />
+            ) : null}
+            {warningTrials.length > 0 ? (
+              <ActionGroup
+                tone="warning"
+                title={t("warningLabel")}
+                hint={t("warningHint")}
+                centers={warningTrials}
+                t={t as ActionGroupTranslator}
+                kind="left"
+              />
+            ) : null}
+            {recentlyExpired.length > 0 ? (
+              <ActionGroup
+                tone="expired"
+                title={t("recentlyExpiredLabel")}
+                hint={t("recentlyExpiredHint")}
+                centers={recentlyExpired}
+                t={t as ActionGroupTranslator}
+                kind="ago"
+              />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       {/* Stats — always visible. The business-glance snapshot. */}
       <div className="space-y-3">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -443,6 +559,7 @@ export default async function SuperAdminHomePage({
         </p>
       </div>
 
+      {/* (action-required panel rendered above stats) */}
       {/* Tabs — splits the working surface so it doesn't feel cramped. */}
       <SuperAdminTabs
         tabs={[
@@ -461,6 +578,142 @@ export default async function SuperAdminHomePage({
           },
         ]}
       />
+    </div>
+  );
+}
+
+/**
+ * Loose translator signature for the inline ActionGroup helper. The
+ * real `t` returned by next-intl has a strictly-typed key union, so we
+ * cast to this at the call site — the helper itself only needs to
+ * call t() with the small set of keys it knows about.
+ */
+type ActionGroupTranslator = (
+  key: string,
+  values?: Record<string, string | number>,
+) => string;
+
+/**
+ * A single tone-coded panel inside the "Action required" section.
+ *
+ * - `kind="left"` renders the days field as "X days left" (trials).
+ * - `kind="ago"` renders it as "X days ago" (recently expired).
+ *
+ * `t` is the translator from the superAdmin namespace — we accept it
+ * as a prop so the sub-component stays a plain server function and we
+ * don't double-load the namespace.
+ */
+function ActionGroup({
+  tone,
+  title,
+  hint,
+  centers,
+  t,
+  kind,
+}: {
+  tone: "urgent" | "warning" | "expired";
+  title: string;
+  hint: string;
+  centers: {
+    id: string;
+    name: string;
+    contactPhone: string | null;
+    days: number;
+    zaloUrl: string | null;
+  }[];
+  t: ActionGroupTranslator;
+  kind: "left" | "ago";
+}) {
+  const toneClasses =
+    tone === "urgent"
+      ? {
+          card: "border-rose-300 bg-white",
+          header: "text-rose-800",
+          icon: "bg-rose-100 text-rose-700 ring-rose-200",
+          days: "text-rose-700 font-semibold",
+          button:
+            "bg-rose-600 text-white hover:bg-rose-500 ring-rose-700/20",
+        }
+      : tone === "warning"
+        ? {
+            card: "border-amber-300 bg-white",
+            header: "text-amber-900",
+            icon: "bg-amber-100 text-amber-700 ring-amber-200",
+            days: "text-amber-800 font-medium",
+            button:
+              "bg-amber-600 text-white hover:bg-amber-500 ring-amber-700/20",
+          }
+        : {
+            card: "border-slate-300 bg-white",
+            header: "text-slate-800",
+            icon: "bg-slate-100 text-slate-600 ring-slate-200",
+            days: "text-slate-700",
+            button:
+              "bg-slate-700 text-white hover:bg-slate-600 ring-slate-800/20",
+          };
+  const Icon =
+    tone === "urgent" ? AlertTriangle : tone === "warning" ? Clock : AlarmClock;
+  return (
+    <div
+      className={
+        "flex flex-col rounded-lg border p-4 shadow-sm " + toneClasses.card
+      }
+    >
+      <div className="flex items-center gap-2.5">
+        <span
+          className={
+            "inline-flex size-7 items-center justify-center rounded-full ring-1 " +
+            toneClasses.icon
+          }
+        >
+          <Icon className="size-4" />
+        </span>
+        <div className={"text-sm font-semibold " + toneClasses.header}>
+          {title}
+          <span className="text-muted-foreground ml-1.5 text-xs font-normal tabular-nums">
+            ({centers.length})
+          </span>
+        </div>
+      </div>
+      <p className="text-muted-foreground mt-1 text-xs">{hint}</p>
+
+      <ul className="mt-3 space-y-2">
+        {centers.map((c) => (
+          <li
+            key={c.id}
+            className="flex items-center justify-between gap-3 rounded-md border border-slate-200/80 bg-slate-50/60 px-3 py-2"
+          >
+            <div className="min-w-0">
+              {/* Center name will become a link to the detail page once
+                  the next phase ships /super-admin/centers/[id]. */}
+              <p className="block truncate text-sm font-medium">{c.name}</p>
+              <p className={"mt-0.5 text-xs tabular-nums " + toneClasses.days}>
+                {kind === "left"
+                  ? t("daysLeftShort", { n: c.days })
+                  : t("daysAgoShort", { n: c.days })}
+              </p>
+            </div>
+            {c.zaloUrl ? (
+              <a
+                href={c.zaloUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={
+                  "ring-offset-background focus-visible:ring-ring inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold shadow-sm ring-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
+                  toneClasses.button
+                }
+              >
+                <MessageCircle className="size-3.5" />
+                {t("messageOnZalo")}
+              </a>
+            ) : (
+              <span className="text-muted-foreground shrink-0 text-xs italic">
+                {t("noPhoneOnFile")}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
