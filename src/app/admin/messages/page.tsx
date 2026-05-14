@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { MessageSquareText } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { InboxList } from "./inbox-list";
 
 export const dynamic = "force-dynamic";
 
@@ -134,21 +134,22 @@ export default async function AdminMessagesPage() {
         </p>
       </div>
 
-      {threads.length === 0 ? (
-        <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
-          <MessageSquareText className="size-8 opacity-50" />
-          <p>{t("inboxEmpty")}</p>
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {threads.map((thread) => {
-            const s = studentMap.get(thread.student_id);
-            const teacher = s?.class?.teacher
-              ? Array.isArray(s.class.teacher)
-                ? s.class.teacher[0]
-                : s.class.teacher
-              : null;
-            const lastWhen = new Date(thread.last.created_at).toLocaleString(
+      <InboxList
+        threads={threads.map((thread) => {
+          const s = studentMap.get(thread.student_id);
+          const teacher = s?.class?.teacher
+            ? Array.isArray(s.class.teacher)
+              ? s.class.teacher[0]
+              : s.class.teacher
+            : null;
+          return {
+            studentId: thread.student_id,
+            studentName: s?.full_name ?? t("unknownStudent"),
+            className: s?.class?.name ?? null,
+            teacherName: teacher?.full_name ?? null,
+            lastBody: thread.last.body,
+            lastAtIso: thread.last.created_at,
+            lastWhen: new Date(thread.last.created_at).toLocaleString(
               dateLocale,
               {
                 day: "2-digit",
@@ -156,45 +157,19 @@ export default async function AdminMessagesPage() {
                 hour: "2-digit",
                 minute: "2-digit",
               },
-            );
-            const ownMsg = thread.last.sender_user_id === admin.id;
-            return (
-              <li key={thread.student_id}>
-                <Link
-                  href={`/admin/messages/${thread.student_id}`}
-                  className="bg-card hover:bg-muted/40 flex items-start justify-between gap-3 rounded-lg border p-3 transition"
-                >
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium">
-                        {s?.full_name ?? t("unknownStudent")}
-                      </p>
-                      {thread.unread > 0 ? (
-                        <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
-                          {thread.unread}
-                        </span>
-                      ) : null}
-                      {s?.class ? (
-                        <span className="text-muted-foreground text-xs">
-                          {s.class.name}
-                          {teacher ? ` · ${teacher.full_name}` : ""}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-muted-foreground truncate text-sm">
-                      {ownMsg ? `${t("youPrefix")} ` : ""}
-                      {thread.last.body}
-                    </p>
-                  </div>
-                  <span className="text-muted-foreground whitespace-nowrap text-xs">
-                    {lastWhen}
-                  </span>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+            ),
+            unread: thread.unread,
+            total: thread.total,
+            ownLast: thread.last.sender_user_id === admin.id,
+          };
+        })}
+        totalUnread={totalUnread}
+        youPrefix={t("youPrefix")}
+        emptyLabel={t("inboxEmpty")}
+        filterAllLabel={t("inboxFilterAll")}
+        filterUnreadLabel={t("inboxFilterUnread")}
+        filterEmptyLabel={t("inboxFilterUnreadEmpty")}
+      />
     </div>
   );
 }

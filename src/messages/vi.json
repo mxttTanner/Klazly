@@ -478,6 +478,9 @@
     "inboxSubtitle": "Toàn bộ cuộc trò chuyện riêng tư trong trung tâm. Trả lời thay giáo viên khi cần.",
     "inboxSubtitleWithUnread": "Toàn bộ cuộc trò chuyện riêng tư · {n} chưa đọc cần xem.",
     "inboxEmpty": "Chưa có tin nhắn nào. Phụ huynh và giáo viên có thể bắt đầu từ trang của con.",
+    "inboxFilterAll": "Tất cả",
+    "inboxFilterUnread": "Chưa đọc",
+    "inboxFilterUnreadEmpty": "Không có tin nhắn chưa đọc.",
     "unknownStudent": "Học sinh không xác định",
     "youPrefix": "Bạn:",
     "adminEmptyHint": "Chưa có tin nhắn. Bạn đang xem với vai trò quản trị — có thể trả lời thay giáo viên."

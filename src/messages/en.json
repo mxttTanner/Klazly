@@ -478,6 +478,9 @@
     "inboxSubtitle": "Every private conversation in your center. Reply on the teacher's behalf if they're busy or out.",
     "inboxSubtitleWithUnread": "Every private conversation in your center · {n} unread you may want to look at.",
     "inboxEmpty": "No messages yet. Parents and teachers can start a private thread from a child's page.",
+    "inboxFilterAll": "All",
+    "inboxFilterUnread": "Unread",
+    "inboxFilterUnreadEmpty": "No unread messages.",
     "unknownStudent": "Unknown student",
     "youPrefix": "You:",
     "adminEmptyHint": "No messages in this thread yet. You're viewing as admin — you can reply on the teacher's behalf."
