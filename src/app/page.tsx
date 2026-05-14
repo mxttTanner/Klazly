@@ -55,7 +55,7 @@ export default async function HomePage() {
 
   const navLinks = [
     { href: "#features", label: t("navFeatures") },
-    { href: "#pricing", label: t("navPricing") },
+    { href: "/pricing", label: t("navPricing") },
     { href: "/demo", label: t("navDemo") },
     { href: "#contact", label: t("navContact") },
   ];
