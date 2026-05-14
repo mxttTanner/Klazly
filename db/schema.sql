@@ -35,14 +35,30 @@ create table if not exists public.centers (
 
 create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,
-  email text not null,
+  -- email or phone (or both) — at least one required. Phone-only
+  -- accounts exist so Vietnamese parents without email can still log
+  -- in. See db/users-phone.sql for the synthetic-email workaround on
+  -- the Supabase Auth side.
+  email text,
+  phone text,
   full_name text not null,
   role user_role not null,
   center_id uuid not null references public.centers(id) on delete cascade,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint users_email_or_phone_required
+    check (email is not null or phone is not null)
 );
 create index if not exists users_center_id_idx on public.users(center_id);
 create index if not exists users_role_idx on public.users(role);
+create unique index if not exists users_center_email_uniq
+  on public.users (center_id, lower(email))
+  where email is not null;
+create unique index if not exists users_center_phone_uniq
+  on public.users (center_id, phone)
+  where phone is not null;
+create index if not exists users_phone_idx
+  on public.users (phone)
+  where phone is not null;
 
 create table if not exists public.classes (
   id uuid primary key default uuid_generate_v4(),
