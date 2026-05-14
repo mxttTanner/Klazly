@@ -153,7 +153,7 @@ export default async function HomePage() {
               return (
                 <div
                   key={a.title}
-                  className="bg-card rounded-xl border p-6 shadow-sm"
+                  className="bg-card rounded-xl border p-6 shadow-sm transition hover:border-primary/20 hover:shadow-md"
                 >
                   <div
                     className={`flex size-10 items-center justify-center rounded-lg ${a.tone}`}
@@ -183,7 +183,7 @@ export default async function HomePage() {
               return (
                 <div
                   key={f.label}
-                  className="bg-card flex items-start gap-3 rounded-lg border p-4"
+                  className="bg-card flex items-start gap-3 rounded-lg border p-4 transition hover:border-primary/20 hover:shadow-sm"
                 >
                   <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
                     <Icon className="size-4" />
@@ -215,7 +215,7 @@ export default async function HomePage() {
           <div className="mx-auto mt-10 grid max-w-5xl gap-6 lg:grid-cols-3">
             {/* 1 month — anchor tier, intentionally simple and unstyled
                 so the longer plans feel like the obvious choice. */}
-            <div className="bg-card flex flex-col rounded-2xl border p-6 shadow-sm sm:p-8">
+            <div className="bg-card group/tier flex flex-col rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg sm:p-8">
               <div className="text-muted-foreground text-sm font-medium uppercase tracking-wide">
                 {t("pricingMicroName")}
               </div>
@@ -242,7 +242,7 @@ export default async function HomePage() {
             </div>
 
             {/* 6 months — middle tier with a soft savings badge. */}
-            <div className="bg-card relative flex flex-col rounded-2xl border p-6 shadow-sm sm:p-8">
+            <div className="bg-card group/tier relative flex flex-col rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg sm:p-8">
               <div className="bg-emerald-100 text-emerald-800 absolute -top-3 right-6 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
                 {t("pricingMonthlyBadge")}
               </div>
@@ -272,7 +272,7 @@ export default async function HomePage() {
             </div>
 
             {/* 12 months — highlighted, the value play. */}
-            <div className="bg-card relative flex flex-col rounded-2xl border-2 border-primary p-6 shadow-xl shadow-primary/10 sm:p-8">
+            <div className="bg-card group/tier relative flex flex-col rounded-2xl border-2 border-primary p-6 shadow-xl shadow-primary/10 transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/20 sm:p-8">
               <div className="bg-primary text-primary-foreground absolute -top-3 right-6 inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
                 {t("pricingAnnualBadge")}
               </div>

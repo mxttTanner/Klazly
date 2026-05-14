@@ -444,99 +444,114 @@ export default async function ClassDetailPage({
                       </span>
                     </summary>
                     <ul className="space-y-3 px-3 pb-3">
-                      {monthLessons.map((l) => (
-                        <li
-                          key={l.id}
-                          className="rounded-lg border bg-card p-4 text-sm shadow-sm"
-                        >
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <p className="font-medium">
-                                {(() => {
-                                  const parts = [
-                                    l.unit,
-                                    l.lesson_number,
-                                    l.topic,
-                                  ].filter(Boolean);
-                                  return parts.length > 0
-                                    ? parts.join(" — ")
-                                    : parseDateOnly(
-                                        l.lesson_date,
-                                      )?.toLocaleDateString(dateLocale, {
-                                        weekday: "long",
-                                        day: "2-digit",
-                                        month: "2-digit",
-                                        year: "numeric",
-                                      }) ?? "";
-                                })()}
-                              </p>
-                              {l.unit || l.lesson_number || l.topic ? (
-                                <p className="text-muted-foreground text-xs">
-                                  {parseDateOnly(
-                                    l.lesson_date,
-                                  )?.toLocaleDateString(dateLocale, {
-                                    weekday: "long",
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                    year: "numeric",
+                      {monthLessons.map((l) => {
+                        const titleParts = [
+                          l.unit,
+                          l.lesson_number,
+                          l.topic,
+                        ].filter(Boolean);
+                        const hasTitle = titleParts.length > 0;
+                        const fullDate =
+                          parseDateOnly(l.lesson_date)?.toLocaleDateString(
+                            dateLocale,
+                            {
+                              weekday: "long",
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            },
+                          ) ?? "";
+                        const shortDate =
+                          parseDateOnly(l.lesson_date)?.toLocaleDateString(
+                            dateLocale,
+                            {
+                              weekday: "short",
+                              day: "2-digit",
+                              month: "2-digit",
+                            },
+                          ) ?? "";
+                        return (
+                          <li
+                            key={l.id}
+                            className="bg-card rounded-xl border p-4 shadow-sm transition hover:border-primary/30 hover:shadow-md sm:p-5"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1 space-y-1.5">
+                                <span className="bg-primary/10 text-primary inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide">
+                                  {shortDate}
+                                </span>
+                                <h3 className="text-base font-semibold leading-tight sm:text-lg">
+                                  {hasTitle ? titleParts.join(" — ") : fullDate}
+                                </h3>
+                                {hasTitle ? (
+                                  <p className="text-muted-foreground text-xs">
+                                    {fullDate}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="flex shrink-0 gap-1">
+                                <Link
+                                  href={`/teacher/classes/${cls.id}/lessons/${l.id}/edit`}
+                                  className={buttonVariants({
+                                    variant: "outline",
+                                    size: "sm",
                                   })}
-                                </p>
-                              ) : null}
-                            </div>
-                            <div className="flex gap-1">
-                              <Link
-                                href={`/teacher/classes/${cls.id}/lessons/${l.id}/edit`}
-                                className={buttonVariants({
-                                  variant: "outline",
-                                  size: "sm",
-                                })}
-                                aria-label={tForm("edit")}
-                              >
-                                <Pencil className="size-3.5" />
-                              </Link>
-                              <form action={deleteLesson}>
-                                <input
-                                  type="hidden"
-                                  name="lesson_id"
-                                  value={l.id}
-                                />
-                                <input
-                                  type="hidden"
-                                  name="class_id"
-                                  value={cls.id}
-                                />
-                                <ConfirmSubmitButton
-                                  confirmMessage={tForm("deleteConfirm")}
-                                  ariaLabel={tForm("delete")}
+                                  aria-label={tForm("edit")}
                                 >
-                                  <Trash2 className="size-3.5" />
-                                </ConfirmSubmitButton>
-                              </form>
+                                  <Pencil className="size-3.5" />
+                                </Link>
+                                <form action={deleteLesson}>
+                                  <input
+                                    type="hidden"
+                                    name="lesson_id"
+                                    value={l.id}
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="class_id"
+                                    value={cls.id}
+                                  />
+                                  <ConfirmSubmitButton
+                                    confirmMessage={tForm("deleteConfirm")}
+                                    ariaLabel={tForm("delete")}
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </ConfirmSubmitButton>
+                                </form>
+                              </div>
                             </div>
-                          </div>
-                          {l.vocabulary ? (
-                            <p className="text-muted-foreground mt-1">
-                              <span className="text-foreground font-medium">
-                                {t("vocabulary")}:
-                              </span>{" "}
-                              {l.vocabulary}
-                            </p>
-                          ) : null}
-                          {l.grammar_point ? (
-                            <p className="text-muted-foreground">
-                              <span className="text-foreground font-medium">
-                                {t("grammar")}:
-                              </span>{" "}
-                              {l.grammar_point}
-                            </p>
-                          ) : null}
-                          {l.general_note ? (
-                            <p className="text-muted-foreground mt-1">
-                              {l.general_note}
-                            </p>
-                          ) : null}
-                        </li>
-                      ))}
+                            {l.vocabulary || l.grammar_point || l.general_note ? (
+                              <div className="mt-4 space-y-2.5 text-sm">
+                                {l.vocabulary ? (
+                                  <div className="bg-muted/40 rounded-lg border-l-4 border-sky-400 p-3">
+                                    <p className="text-muted-foreground mb-0.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+                                      {t("vocabulary")}
+                                    </p>
+                                    <p className="text-foreground leading-relaxed">
+                                      {l.vocabulary}
+                                    </p>
+                                  </div>
+                                ) : null}
+                                {l.grammar_point ? (
+                                  <div className="bg-muted/40 rounded-lg border-l-4 border-violet-400 p-3">
+                                    <p className="text-muted-foreground mb-0.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+                                      {t("grammar")}
+                                    </p>
+                                    <p className="text-foreground leading-relaxed">
+                                      {l.grammar_point}
+                                    </p>
+                                  </div>
+                                ) : null}
+                                {l.general_note ? (
+                                  <p className="text-muted-foreground italic leading-relaxed">
+                                    {l.general_note}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </details>
                 ),
