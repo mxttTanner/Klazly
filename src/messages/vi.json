@@ -175,6 +175,12 @@
     "dashboard": {
       "title": "Bảng điều khiển",
       "subtitle": "Tổng quan trung tâm.",
+      "onboardingTitle": "Bắt đầu trong 5 phút",
+      "onboardingSubtitle": "Hoàn thành {done}/{total} bước để trung tâm sẵn sàng đón phụ huynh.",
+      "onboardingStep1": "Thêm giáo viên đầu tiên",
+      "onboardingStep2": "Tạo lớp học và phân giáo viên",
+      "onboardingStep3": "Thêm tài khoản phụ huynh",
+      "onboardingStep4": "Xếp học sinh vào lớp",
       "teachers": "Giáo viên",
       "parents": "Phụ huynh",
       "classes": "Lớp học",

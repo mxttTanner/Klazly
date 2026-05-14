@@ -175,6 +175,12 @@
     "dashboard": {
       "title": "Dashboard",
       "subtitle": "Center overview.",
+      "onboardingTitle": "Get started in 5 minutes",
+      "onboardingSubtitle": "Complete {done}/{total} steps to get your center ready for parents.",
+      "onboardingStep1": "Add your first teacher",
+      "onboardingStep2": "Create a class and assign a teacher",
+      "onboardingStep3": "Add parent accounts",
+      "onboardingStep4": "Enroll students in classes",
       "teachers": "Teachers",
       "parents": "Parents",
       "classes": "Classes",

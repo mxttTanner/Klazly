@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
+  ArrowRight,
   BookMarked,
   BookOpen,
   CalendarClock,
+  Check,
   ChevronRight,
   ClipboardList,
   Clock3,
   GraduationCap,
   Heart,
   ListChecks,
+  Rocket,
   Users,
   UserSquare2,
 } from "lucide-react";
@@ -249,12 +252,90 @@ export default async function AdminHomePage({
     },
   ];
 
+  const onboardingSteps = [
+    {
+      done: (teacherCount ?? 0) > 0,
+      label: t("onboardingStep1"),
+      href: "/admin/teachers",
+    },
+    {
+      done: (classCount ?? 0) > 0,
+      label: t("onboardingStep2"),
+      href: "/admin/classes",
+    },
+    {
+      done: (parentCount ?? 0) > 0,
+      label: t("onboardingStep3"),
+      href: "/admin/parents",
+    },
+    {
+      done: (studentCount ?? 0) > 0,
+      label: t("onboardingStep4"),
+      href: "/admin/students",
+    },
+  ];
+  const showOnboarding = onboardingSteps.some((s) => !s.done);
+  const completedCount = onboardingSteps.filter((s) => s.done).length;
+
   return (
     <div className="space-y-10">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
         <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
       </div>
+
+      {showOnboarding ? (
+        <section className="from-primary/5 to-primary/10 ring-primary/20 relative overflow-hidden rounded-xl bg-gradient-to-br p-5 ring-1 sm:p-6">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full shadow-sm">
+              <Rocket className="size-5" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight">
+                {t("onboardingTitle")}
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                {t("onboardingSubtitle", {
+                  done: completedCount,
+                  total: onboardingSteps.length,
+                })}
+              </p>
+            </div>
+          </div>
+          <ol className="space-y-2">
+            {onboardingSteps.map((step, i) => (
+              <li key={step.href}>
+                <Link
+                  href={step.href}
+                  className={`bg-background/80 group flex items-center gap-3 rounded-lg border p-3 transition hover:border-primary/40 hover:bg-background ${
+                    step.done ? "opacity-60" : ""
+                  }`}
+                >
+                  <div
+                    className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                      step.done
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-primary/10 text-primary"
+                    }`}
+                  >
+                    {step.done ? <Check className="size-4" /> : i + 1}
+                  </div>
+                  <span
+                    className={`flex-1 text-sm ${
+                      step.done ? "text-muted-foreground line-through" : ""
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  {!step.done ? (
+                    <ArrowRight className="text-muted-foreground group-hover:text-primary size-4 transition" />
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => {

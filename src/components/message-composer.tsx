@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useFormState } from "react-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { sendParentTeacherMessage } from "@/app/messages-actions";
 
 const initial: { error?: string; success?: boolean } = {};
+const MAX_BODY = 2000;
 
 export function MessageComposer({
   studentId,
@@ -22,12 +23,24 @@ export function MessageComposer({
   const [state, action] = useFormState(sendParentTeacherMessage, initial);
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [length, setLength] = useState(0);
 
   // After a successful send, clear the textarea and refocus so it feels
   // like a chat input — no full reload between messages.
   if (state.success && textareaRef.current && textareaRef.current.value) {
     textareaRef.current.value = "";
+    if (length !== 0) setLength(0);
   }
+
+  // Only show the counter once they're close to the cap so it doesn't
+  // clutter a typical short message.
+  const showCounter = length >= MAX_BODY * 0.75;
+  const counterTone =
+    length >= MAX_BODY
+      ? "text-destructive"
+      : length >= MAX_BODY * 0.9
+        ? "text-amber-600"
+        : "text-muted-foreground";
 
   return (
     <form
@@ -42,13 +55,19 @@ export function MessageComposer({
         placeholder={placeholder}
         rows={2}
         required
-        maxLength={2000}
+        maxLength={MAX_BODY}
+        onChange={(e) => setLength(e.target.value.length)}
         className="min-h-[2.5rem] resize-none border-0 px-0 shadow-none focus-visible:ring-0"
       />
       <div className="flex items-center justify-between gap-2">
-        <p className="text-destructive text-xs" role="alert">
+        <p className="text-destructive flex-1 text-xs" role="alert">
           {state.error ?? ""}
         </p>
+        {showCounter ? (
+          <span className={`text-xs tabular-nums ${counterTone}`}>
+            {length}/{MAX_BODY}
+          </span>
+        ) : null}
         <SubmitButton idleLabel={sendLabel} pendingLabel={sendingLabel} />
       </div>
     </form>
