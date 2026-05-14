@@ -6,6 +6,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
 import { CenterLogo } from "@/components/center-logo";
+import { Avatar } from "@/components/ui/avatar";
 import { SubscriptionBanner } from "@/components/subscription-banner";
 import { AdminSidebarNav } from "./admin-sidebar";
 import { buildAdminNavItems } from "./nav-config";
@@ -87,10 +88,17 @@ export default async function AdminLayout({
               </Link>
             </div>
             <div className="hidden md:block md:flex-1" />
+            {/* User cluster — avatar + name as one group, then a hairline
+                separator, then the language toggle + logout. Reads as a
+                single intentional zone instead of three floating items. */}
             <div className="flex shrink-0 items-center gap-3">
-              <span className="text-muted-foreground hidden max-w-[10rem] truncate text-sm sm:inline">
-                {user.full_name}
-              </span>
+              <div className="hidden items-center gap-2 sm:flex">
+                <Avatar name={user.full_name} seed={user.id} size="sm" />
+                <span className="text-foreground max-w-[10rem] truncate text-sm font-medium">
+                  {user.full_name}
+                </span>
+              </div>
+              <div className="bg-border hidden h-5 w-px sm:block" />
               <LanguageToggle />
               <LogoutButton />
             </div>

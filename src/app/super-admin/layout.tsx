@@ -4,6 +4,7 @@ import { requireSuperAdmin } from "@/lib/super-admin";
 import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandLogo } from "@/components/brand-logo";
+import { Avatar } from "@/components/ui/avatar";
 
 export default async function SuperAdminLayout({
   children,
@@ -33,6 +34,13 @@ export default async function SuperAdminLayout({
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-3">
+            <div className="hidden items-center gap-2 sm:flex">
+              <Avatar name={owner.email ?? "?"} seed={owner.id} size="sm" />
+              <span className="text-foreground max-w-[12rem] truncate text-sm font-medium">
+                {owner.email}
+              </span>
+            </div>
+            <div className="bg-border hidden h-5 w-px sm:block" />
             <LanguageToggle />
             <LogoutButton />
           </div>

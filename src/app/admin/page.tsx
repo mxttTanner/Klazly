@@ -19,7 +19,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { parseDateOnly } from "@/lib/utils";
 import { toneForProgram } from "@/lib/programs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -230,6 +229,8 @@ export default async function AdminHomePage({
       count: teacherCount ?? 0,
       icon: UserSquare2,
       tone: "text-sky-600",
+      iconBg: "bg-sky-50",
+      accent: "bg-sky-500",
     },
     {
       label: t("parents"),
@@ -237,6 +238,8 @@ export default async function AdminHomePage({
       count: parentCount ?? 0,
       icon: Heart,
       tone: "text-rose-600",
+      iconBg: "bg-rose-50",
+      accent: "bg-rose-500",
     },
     {
       label: t("classes"),
@@ -244,6 +247,8 @@ export default async function AdminHomePage({
       count: classCount ?? 0,
       icon: BookOpen,
       tone: "text-violet-600",
+      iconBg: "bg-violet-50",
+      accent: "bg-violet-500",
     },
     {
       label: t("students"),
@@ -251,6 +256,8 @@ export default async function AdminHomePage({
       count: studentCount ?? 0,
       icon: GraduationCap,
       tone: "text-amber-600",
+      iconBg: "bg-amber-50",
+      accent: "bg-amber-500",
     },
   ];
 
@@ -344,22 +351,31 @@ export default async function AdminHomePage({
           const Icon = c.icon;
           return (
             <Link key={c.href} href={c.href} className="group">
-              <Card className="transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    {c.label}
-                  </CardTitle>
-                  <Icon className={`size-4 ${c.tone}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-end justify-between">
+              <div className="bg-card relative h-full overflow-hidden rounded-xl border shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
+                {/* Colored top accent stripe — one per category. Subtle (1px)
+                    but tints the card so the four KPIs read as distinct
+                    categories at a glance. */}
+                <div className={`absolute inset-x-0 top-0 h-1 ${c.accent}`} />
+                <div className="flex items-start justify-between gap-3 p-5">
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      {c.label}
+                    </p>
                     <p className="text-3xl font-semibold tabular-nums">
                       {c.count}
                     </p>
-                    <ChevronRight className="text-muted-foreground/40 group-hover:text-primary size-4 transition-all group-hover:translate-x-0.5" />
                   </div>
-                </CardContent>
-              </Card>
+                  <span
+                    className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.iconBg} ${c.tone}`}
+                  >
+                    <Icon className="size-5" />
+                  </span>
+                </div>
+                <div className="border-border/60 flex items-center justify-end gap-1 border-t px-5 py-2.5 text-xs font-medium text-muted-foreground/70 group-hover:text-primary">
+                  <span>{t("seeAllShort")}</span>
+                  <ChevronRight className="size-3.5 transition-all group-hover:translate-x-0.5" />
+                </div>
+              </div>
             </Link>
           );
         })}
