@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type AppUser = {
   id: string;
@@ -43,6 +44,33 @@ export async function getCurrentUser(): Promise<AppUser | null> {
 export async function requireUser(): Promise<AppUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+
+  // Center lock-out: if the user's center has its trial expired (or
+  // was cancelled and past the grace period), bounce them to /locked
+  // before any authed page renders. Data is preserved; the lock just
+  // prevents access until the center pays. Uses the admin client so
+  // we can read centers regardless of the user's RLS context.
+  //
+  // We swallow errors quietly — better to let a transient DB blip pass
+  // through and render the dashboard than block legitimate users on
+  // every request.
+  try {
+    const supabase = createAdminClient();
+    const { data: center } = await supabase
+      .from("centers")
+      .select("subscription_status")
+      .eq("id", user.center_id)
+      .single();
+    if (
+      center?.subscription_status === "expired" ||
+      center?.subscription_status === "canceled"
+    ) {
+      redirect("/locked");
+    }
+  } catch {
+    // proceed
+  }
+
   return user;
 }
 

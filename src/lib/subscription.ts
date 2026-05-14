@@ -36,7 +36,7 @@ export type CenterSubscriptionInput = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const TRIAL_ENDING_SOON_DAYS = 3;
+const TRIAL_ENDING_SOON_DAYS = 7;
 
 /**
  * Compute the display status from raw DB columns.
@@ -164,10 +164,29 @@ export function statusTone(s: DerivedStatus): string {
     case "past_due":
       return "bg-rose-50 text-rose-800 ring-rose-300";
     case "canceled":
-      return "bg-slate-100 text-slate-700 ring-slate-300";
+      return "bg-slate-200 text-slate-700 ring-slate-400";
     case "expired":
-      return "bg-slate-200 text-slate-900 ring-slate-400";
+      return "bg-slate-100 text-rose-700 ring-rose-300";
   }
+}
+
+/**
+ * Refined trial-day tone: when the badge has a "X days left" tail, the
+ * tail itself can be coloured to indicate urgency. Spec:
+ *   8+      → blue/neutral (matches the base trial tone)
+ *   4–7     → amber (matches trial_ending_soon)
+ *   1–3     → red
+ *   ≤0      → dark red bold (expired)
+ */
+export function trialDaysToneAndUrgency(days: number | null): {
+  tone: string;
+  urgent: boolean;
+} {
+  if (days === null) return { tone: "text-muted-foreground", urgent: false };
+  if (days <= 0) return { tone: "text-rose-700 font-bold", urgent: true };
+  if (days <= 3) return { tone: "text-rose-600 font-semibold", urgent: true };
+  if (days <= 7) return { tone: "text-amber-700 font-medium", urgent: true };
+  return { tone: "text-sky-700", urgent: false };
 }
 
 /** i18n key for the status label. Caller translates via t(). */

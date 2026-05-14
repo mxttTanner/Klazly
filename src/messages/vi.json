@@ -28,6 +28,14 @@
     "authUpdateError": "Không thể cập nhật tài khoản đăng nhập: {message}",
     "saveError": "Không thể lưu hồ sơ: {message}"
   },
+  "locked": {
+    "title": "Tài khoản của trung tâm bị tạm khoá",
+    "subtitle": "Thời gian dùng thử đã kết thúc hoặc thuê bao đã hết hạn. Để tiếp tục sử dụng, vui lòng liên hệ với chúng tôi qua Zalo.",
+    "dataPreserved": "Dữ liệu của trung tâm (lớp, học sinh, phụ huynh, bài học) vẫn được bảo lưu nguyên vẹn. Khi bạn đăng ký thuê bao, mọi thứ sẽ trở lại y như trước.",
+    "contactLabel": "Liên hệ để mở lại",
+    "zaloButton": "Nhắn Zalo với chúng tôi",
+    "signOut": "Đăng xuất"
+  },
   "pricingPage": {
     "heroEyebrow": "GIÁ RA MẮT — CÓ THỜI HẠN",
     "heroTitle": "Bảng giá đơn giản. Không phát sinh.",

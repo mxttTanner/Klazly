@@ -28,6 +28,14 @@
     "authUpdateError": "Couldn't update login account: {message}",
     "saveError": "Couldn't save profile: {message}"
   },
+  "locked": {
+    "title": "Your center is paused",
+    "subtitle": "Your trial has ended or the subscription has lapsed. To continue using the platform, message us on Zalo.",
+    "dataPreserved": "Your center's data — classes, students, parents, lessons — is fully preserved. The moment you subscribe, everything comes back exactly as it was.",
+    "contactLabel": "Contact us to reactivate",
+    "zaloButton": "Talk to us on Zalo",
+    "signOut": "Sign out"
+  },
   "pricingPage": {
     "heroEyebrow": "LAUNCH PRICING — LIMITED TIME",
     "heroTitle": "Simple pricing. No surprises.",
