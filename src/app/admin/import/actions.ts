@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
@@ -105,7 +106,10 @@ export async function importParentsCsv(
       center_id: admin.center_id,
     });
     if (profileErr) {
-      await supabase.auth.admin.deleteUser(created.user.id);
+      const { error: rollbackErr } = await supabase.auth.admin.deleteUser(
+        created.user.id,
+      );
+      if (rollbackErr) Sentry.captureException(rollbackErr);
       result.errors.push({ row: rowNum, message: profileErr.message });
       continue;
     }

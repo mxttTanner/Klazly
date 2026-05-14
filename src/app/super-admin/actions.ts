@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -82,7 +83,11 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     email_confirm: true,
   });
   if (authErr || !created.user) {
-    await supabase.from("centers").delete().eq("id", center.id);
+    const { error: rollbackErr } = await supabase
+      .from("centers")
+      .delete()
+      .eq("id", center.id);
+    if (rollbackErr) Sentry.captureException(rollbackErr);
     return {
       error: t("createUserError", { message: authErr?.message ?? "" }),
     };
@@ -96,8 +101,15 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     center_id: center.id,
   });
   if (profileErr) {
-    await supabase.auth.admin.deleteUser(created.user.id);
-    await supabase.from("centers").delete().eq("id", center.id);
+    const { error: authRollbackErr } = await supabase.auth.admin.deleteUser(
+      created.user.id,
+    );
+    if (authRollbackErr) Sentry.captureException(authRollbackErr);
+    const { error: centerRollbackErr } = await supabase
+      .from("centers")
+      .delete()
+      .eq("id", center.id);
+    if (centerRollbackErr) Sentry.captureException(centerRollbackErr);
     return {
       error: t("createProfileError", { message: profileErr.message }),
     };

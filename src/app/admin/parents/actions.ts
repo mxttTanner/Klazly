@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
@@ -46,7 +47,13 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
     center_id: admin.center_id,
   });
   if (profileErr) {
-    await supabase.auth.admin.deleteUser(created.user!.id);
+    const { error: rollbackErr } = await supabase.auth.admin.deleteUser(
+      created.user!.id,
+    );
+    // Surface the original profile error; the rollback is best-effort.
+    // If it fails we've leaked an orphan auth.users row — log it so we can
+    // clean up manually, but don't override the admin's error message.
+    if (rollbackErr) Sentry.captureException(rollbackErr);
     return { error: t("saveProfileError", { message: profileErr.message }) };
   }
 
@@ -77,7 +84,8 @@ export async function removeParent(formData: FormData) {
     return;
   }
 
-  await supabase.auth.admin.deleteUser(id);
+  const { error } = await supabase.auth.admin.deleteUser(id);
+  if (error) throw new Error(`removeParent failed: ${error.message}`);
   revalidatePath("/admin/parents");
   revalidatePath("/admin/students");
 }

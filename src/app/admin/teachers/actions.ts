@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
@@ -48,7 +49,10 @@ export async function inviteTeacher(_prev: unknown, formData: FormData) {
     center_id: admin.center_id,
   });
   if (profileErr) {
-    await supabase.auth.admin.deleteUser(created.user!.id);
+    const { error: rollbackErr } = await supabase.auth.admin.deleteUser(
+      created.user!.id,
+    );
+    if (rollbackErr) Sentry.captureException(rollbackErr);
     return {
       error: t("saveProfileError", { message: profileErr.message }),
     };
@@ -81,7 +85,8 @@ export async function removeTeacher(formData: FormData) {
     return;
   }
 
-  await supabase.auth.admin.deleteUser(id);
+  const { error } = await supabase.auth.admin.deleteUser(id);
+  if (error) throw new Error(`removeTeacher failed: ${error.message}`);
   revalidatePath("/admin/teachers");
   revalidatePath("/admin");
 }
