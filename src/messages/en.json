@@ -28,6 +28,35 @@
     "authUpdateError": "Couldn't update login account: {message}",
     "saveError": "Couldn't save profile: {message}"
   },
+  "pricingCta": {
+    "buttons": {
+      "micro": "Start free trial",
+      "monthly": "Get started",
+      "annual": "Get started"
+    },
+    "trustLines": {
+      "micro": "14-day free trial · no card required",
+      "monthly": "Save 25% vs monthly",
+      "annual": "Save 31% vs monthly · Lock in launch pricing"
+    },
+    "modalTitles": {
+      "micro": "Start your free trial",
+      "monthly": "Subscribe — 6-month plan",
+      "annual": "Subscribe — 1-year plan"
+    },
+    "modalSubtitle": "Send this message to us on Zalo (+84 86 240 4036). We'll set up your account and onboard you within 24 hours.",
+    "templates": {
+      "micro": "Hi! I'd like to start a free trial of Cổng Phụ Huynh.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nPlease set up my account. Thanks!",
+      "monthly": "Hi! I'd like to subscribe to the 6-month plan for Cổng Phụ Huynh.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nPlease help me get started. Thanks!",
+      "annual": "Hi! I'd like to subscribe to the 1-year plan for Cổng Phụ Huynh.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nPlease help me get started. Thanks!"
+    },
+    "messageLabel": "Message",
+    "fillInHint": "Fill in your info after each colon, then copy and send via Zalo.",
+    "autoCopiedHint": "Copied — paste it into the Zalo chat and send.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "openZalo": "Open Zalo"
+  },
   "contact": {
     "phoneLabel": "Phone number",
     "orPhoneHint": "(or phone number)",

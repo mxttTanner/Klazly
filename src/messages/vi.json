@@ -28,6 +28,35 @@
     "authUpdateError": "Không thể cập nhật tài khoản đăng nhập: {message}",
     "saveError": "Không thể lưu hồ sơ: {message}"
   },
+  "pricingCta": {
+    "buttons": {
+      "micro": "Bắt đầu dùng thử miễn phí",
+      "monthly": "Bắt đầu ngay",
+      "annual": "Bắt đầu ngay"
+    },
+    "trustLines": {
+      "micro": "Dùng thử 14 ngày · không cần thẻ",
+      "monthly": "Tiết kiệm 25% so với trả theo tháng",
+      "annual": "Tiết kiệm 31% · Khoá giá ra mắt vĩnh viễn"
+    },
+    "modalTitles": {
+      "micro": "Bắt đầu dùng thử miễn phí",
+      "monthly": "Đăng ký gói 6 tháng",
+      "annual": "Đăng ký gói 1 năm"
+    },
+    "modalSubtitle": "Gửi tin nhắn này qua Zalo cho chúng tôi (+84 86 240 4036). Chúng tôi sẽ tạo tài khoản và hỗ trợ bạn trong vòng 24 giờ.",
+    "templates": {
+      "micro": "Chào bạn! Tôi muốn dùng thử miễn phí Cổng Phụ Huynh.\n\nThông tin của tôi:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nVui lòng tạo tài khoản giúp tôi. Cảm ơn!",
+      "monthly": "Chào bạn! Tôi muốn đăng ký gói 6 tháng của Cổng Phụ Huynh.\n\nThông tin của tôi:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nVui lòng hỗ trợ tôi bắt đầu. Cảm ơn!",
+      "annual": "Chào bạn! Tôi muốn đăng ký gói 1 năm của Cổng Phụ Huynh.\n\nThông tin của tôi:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nVui lòng hỗ trợ tôi bắt đầu. Cảm ơn!"
+    },
+    "messageLabel": "Nội dung tin nhắn",
+    "fillInHint": "Điền thông tin của bạn vào sau mỗi dấu hai chấm, sau đó sao chép và gửi qua Zalo.",
+    "autoCopiedHint": "Đã sao chép — dán vào cuộc trò chuyện Zalo và gửi.",
+    "copy": "Sao chép",
+    "copied": "Đã sao chép",
+    "openZalo": "Mở Zalo"
+  },
   "contact": {
     "phoneLabel": "Số điện thoại",
     "orPhoneHint": "(hoặc số điện thoại)",

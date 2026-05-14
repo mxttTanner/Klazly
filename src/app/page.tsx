@@ -26,6 +26,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandLogo } from "@/components/brand-logo";
+import { PricingCtaButton } from "@/components/pricing-cta-button";
 
 /**
  * Landing page — center-owner-focused redesign.
@@ -49,6 +50,7 @@ import { BrandLogo } from "@/components/brand-logo";
 export default async function HomePage() {
   const t = await getTranslations("landing");
   const tFaq = await getTranslations("landing.faq");
+  const tCta = await getTranslations("pricingCta");
   const year = new Date().getFullYear();
 
   const navLinks = [
@@ -604,7 +606,7 @@ export default async function HomePage() {
 
           <div className="mx-auto mt-12 grid max-w-6xl items-stretch gap-5 lg:grid-cols-12">
             {/* 1 month — quietest tier */}
-            <div className="bg-card group/tier flex flex-col rounded-2xl border p-6 opacity-90 shadow-sm transition-all hover:opacity-100 hover:shadow-md lg:col-span-3">
+            <div className="bg-card group/tier flex flex-col rounded-2xl border p-6 opacity-95 shadow-sm transition-all hover:opacity-100 hover:shadow-md lg:col-span-3">
               <div className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                 {t("pricingMicroName")}
               </div>
@@ -619,12 +621,19 @@ export default async function HomePage() {
               <p className="text-muted-foreground mt-3 text-sm">
                 {t("pricingMicroNote")}
               </p>
-              <Link
-                href="/demo"
-                className={`${buttonVariants({ variant: "outline", size: "sm" })} mt-auto w-full`}
-              >
-                {t("pricingCta")}
-              </Link>
+              {/* All three tier buttons share the same size + placement
+                  so the row reads as one decision; visual hierarchy
+                  comes from variant (outline vs solid-on-blue) not
+                  shape. mt-auto + w-full keep them bottom-aligned. */}
+              <div className="mt-auto pt-6">
+                <PricingCtaButton
+                  planKey="micro"
+                  buttonClassName={`${buttonVariants({ variant: "outline", size: "lg" })} w-full`}
+                />
+                <p className="text-muted-foreground mt-2 text-center text-xs">
+                  {tCta("trustLines.micro")}
+                </p>
+              </div>
             </div>
 
             {/* 6 months — middle tier */}
@@ -646,15 +655,15 @@ export default async function HomePage() {
               <p className="text-muted-foreground mt-3 text-sm">
                 {t("pricingMonthlyNote")}
               </p>
-              <Link
-                href="/demo"
-                className={`${buttonVariants({ variant: "outline" })} mt-auto w-full`}
-              >
-                {t("pricingCta")}
-              </Link>
-              <p className="text-muted-foreground mt-2 text-center text-xs">
-                {t("pricingTrialInline")}
-              </p>
+              <div className="mt-auto pt-6">
+                <PricingCtaButton
+                  planKey="monthly"
+                  buttonClassName={`${buttonVariants({ variant: "outline", size: "lg" })} w-full`}
+                />
+                <p className="text-muted-foreground mt-2 text-center text-xs">
+                  {tCta("trustLines.monthly")}
+                </p>
+              </div>
             </div>
 
             {/* 12 months — DOMINANT — brand blue background */}
@@ -680,20 +689,19 @@ export default async function HomePage() {
               <p className="text-primary-foreground/90 mt-3 text-sm leading-relaxed">
                 {t("pricingAnnualNote")}
               </p>
-              <div className="text-primary-foreground/90 mt-3 inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2.5 py-1 text-xs font-medium ring-1 ring-white/20">
-                <Lock className="size-3.5" />
-                {t("pricingLockInInline")}
+              {/* Lock-in pill moved into the trust line below the
+                  button per spec to avoid double-stating it. */}
+              <div className="mt-auto pt-6">
+                <PricingCtaButton
+                  planKey="annual"
+                  buttonClassName="bg-background text-primary hover:bg-background/90 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-md px-4 text-base font-semibold shadow-md transition"
+                  showArrow
+                />
+                <p className="text-primary-foreground/85 mt-2 inline-flex w-full items-center justify-center gap-1 text-center text-xs font-medium">
+                  <Lock className="size-3" />
+                  {tCta("trustLines.annual")}
+                </p>
               </div>
-              <Link
-                href="/demo"
-                className="bg-background text-primary hover:bg-background/90 mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-4 py-3 text-base font-semibold shadow-md transition"
-              >
-                {t("pricingCta")}
-                <ArrowRight className="size-4" />
-              </Link>
-              <p className="text-primary-foreground/80 mt-2 text-center text-xs font-medium">
-                {t("pricingTrialInline")}
-              </p>
             </div>
           </div>
 
