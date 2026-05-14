@@ -16,8 +16,13 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 do $$ begin
-  create type subscription_status as enum ('trial', 'active', 'past_due', 'canceled');
+  create type subscription_status as enum ('trial', 'active', 'past_due', 'canceled', 'expired');
 exception when duplicate_object then null; end $$;
+-- If the type existed before 'expired' was added, ensure it's present.
+-- ALTER TYPE ... ADD VALUE is idempotent with IF NOT EXISTS and must
+-- run outside any open transaction in older Postgres — Supabase Studio
+-- handles this fine when executed as a standalone statement.
+alter type subscription_status add value if not exists 'expired';
 
 -- ==========================================================================
 -- Tables

@@ -50,7 +50,15 @@ async function updateCenterPatchTolerant(
       .eq("id", centerId);
     if (!error) return { error: null, droppedCols };
 
-    if (/centers_subscription_status_check/i.test(error.message)) {
+    // Two known migration-not-applied signatures:
+    //   • The enum is missing the new value (e.g., 'expired'):
+    //       invalid input value for enum subscription_status: "expired"
+    //   • The legacy CHECK constraint was created instead of the enum
+    //     value:  centers_subscription_status_check (older migrations).
+    if (
+      /invalid input value for enum subscription_status/i.test(error.message) ||
+      /centers_subscription_status_check/i.test(error.message)
+    ) {
       return {
         error: "subscription_lifecycle.sql migration not applied",
         droppedCols,
