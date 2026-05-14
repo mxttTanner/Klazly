@@ -201,6 +201,8 @@
       "classCardNoTeacher": "Chưa có giáo viên",
       "classesEmpty": "Chưa có lớp nào.",
       "createFirstClass": "Tạo lớp đầu tiên →",
+      "activityHeader": "Hoạt động gần đây",
+      "seeAllTeachers": "Xem tất cả ({n}+ giáo viên khác)",
       "teacherActivityHeader": "Hoạt động giáo viên",
       "teacherClassesCol": "Số lớp",
       "teacherLessonsWeek": "Tuần này",

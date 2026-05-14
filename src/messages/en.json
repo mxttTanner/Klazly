@@ -201,6 +201,8 @@
       "classCardNoTeacher": "No teacher assigned",
       "classesEmpty": "No classes yet.",
       "createFirstClass": "Create your first class →",
+      "activityHeader": "Recent activity",
+      "seeAllTeachers": "See all ({n}+ more teachers)",
       "teacherActivityHeader": "Teacher activity",
       "teacherClassesCol": "Classes",
       "teacherLessonsWeek": "This week",

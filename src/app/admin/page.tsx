@@ -47,8 +47,10 @@ function weekAgoIsoDate(): string {
 export default async function AdminHomePage({
   searchParams,
 }: {
-  searchParams: { program?: string };
+  searchParams: { program?: string; activity?: string };
 }) {
+  const activeActivity: "teachers" | "lessons" =
+    searchParams.activity === "lessons" ? "lessons" : "teachers";
   const supabase = createClient();
   const t = await getTranslations("admin.dashboard");
   const tClasses = await getTranslations("admin.classes");
@@ -390,131 +392,216 @@ export default async function AdminHomePage({
         }}
       />
 
+      {/* Recent Activity — combined panel with sub-tabs so the dashboard
+          doesn't sprawl down with two separate full-width tables. Defaults
+          to teacher compliance (the actionable "who's slacking" view).
+          Each tab caps rows at 5 with a "see all" link, so the page stays
+          one screen-ish regardless of how many teachers or lessons exist. */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <ListChecks className="text-primary size-5" />
           <h2 className="text-xl font-semibold tracking-tight">
-            {t("teacherActivityHeader")}
+            {t("activityHeader")}
           </h2>
         </div>
-        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("teachers")}</TableHead>
-                <TableHead className="w-28 text-right">
-                  {t("teacherClassesCol")}
-                </TableHead>
-                <TableHead className="w-28 text-right">
-                  {t("teacherLessonsWeek")}
-                </TableHead>
-                <TableHead className="w-32 text-right">
-                  {t("teacherLessonsTotal")}
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teachers && teachers.length > 0 ? (
-                teachers.map((tr) => {
-                  const weekVal = lessonsByTeacherWeek.get(tr.id) ?? 0;
-                  return (
-                    <TableRow key={tr.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2 font-medium">
-                          <UserSquare2 className="text-muted-foreground size-4" />
-                          {tr.full_name}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {classesByTeacher.get(tr.id) ?? 0}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <span
-                          className={
-                            weekVal === 0
-                              ? "text-rose-600 font-medium"
-                              : "text-foreground"
-                          }
-                        >
-                          {weekVal}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {lessonsByTeacherTotal.get(tr.id) ?? 0}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-muted-foreground py-6 text-center text-sm"
-                  >
-                    —
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Clock3 className="text-primary size-5" />
-          <h2 className="text-xl font-semibold tracking-tight">
-            {t("recentLessonsHeader")}
-          </h2>
-        </div>
-        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-32">{t("lessonDateCol")}</TableHead>
-                <TableHead>{t("lessonClassCol")}</TableHead>
-                <TableHead>{t("lessonTeacherCol")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {recentLessons && recentLessons.length > 0 ? (
-                recentLessons.map((l) => {
-                  const cls = Array.isArray(l.class) ? l.class[0] : l.class;
-                  const tr = Array.isArray(l.teacher) ? l.teacher[0] : l.teacher;
-                  return (
-                    <TableRow key={l.id}>
-                      <TableCell className="text-muted-foreground">
-                        {parseDateOnly(l.lesson_date)?.toLocaleDateString(dateLocale, {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <ClipboardList className="text-muted-foreground size-4" />
-                          {cls?.name ?? "—"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {tr?.full_name ?? "—"}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
+        <nav className="border-b">
+          <div className="-mb-px flex gap-1 overflow-x-auto">
+            {(
+              [
+                {
+                  key: "teachers" as const,
+                  label: t("teacherActivityHeader"),
+                  icon: UserSquare2,
+                },
+                {
+                  key: "lessons" as const,
+                  label: t("recentLessonsHeader"),
+                  icon: Clock3,
+                },
+              ]
+            ).map((tab) => {
+              const Icon = tab.icon;
+              const active = activeActivity === tab.key;
+              const href =
+                tab.key === "teachers" ? "/admin" : "/admin?activity=lessons";
+              return (
+                <Link
+                  key={tab.key}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={
+                    "inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition " +
+                    (active
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground")
+                  }
+                >
+                  <Icon className="size-4" />
+                  {tab.label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+
+        {/* Teachers tab — top 5 by lessons-this-week, falling back to total.
+            'See all teachers' if there are more. The week column is the
+            primary signal: 0 lessons this week shows rose so the admin
+            sees compliance gaps immediately. */}
+        {activeActivity === "teachers" ? (
+          (() => {
+            const sortedTeachers = [...(teachers ?? [])].sort((a, b) => {
+              const wa = lessonsByTeacherWeek.get(a.id) ?? 0;
+              const wb = lessonsByTeacherWeek.get(b.id) ?? 0;
+              if (wa !== wb) return wb - wa;
+              const ta = lessonsByTeacherTotal.get(a.id) ?? 0;
+              const tb = lessonsByTeacherTotal.get(b.id) ?? 0;
+              if (ta !== tb) return tb - ta;
+              return a.full_name.localeCompare(b.full_name);
+            });
+            const visible = sortedTeachers.slice(0, 5);
+            const extra = sortedTeachers.length - visible.length;
+            return (
+              <div className="space-y-3">
+                <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("teachers")}</TableHead>
+                        <TableHead className="w-28 text-right">
+                          {t("teacherClassesCol")}
+                        </TableHead>
+                        <TableHead className="w-28 text-right">
+                          {t("teacherLessonsWeek")}
+                        </TableHead>
+                        <TableHead className="w-32 text-right">
+                          {t("teacherLessonsTotal")}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {visible.length > 0 ? (
+                        visible.map((tr) => {
+                          const weekVal = lessonsByTeacherWeek.get(tr.id) ?? 0;
+                          return (
+                            <TableRow key={tr.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2 font-medium">
+                                  <UserSquare2 className="text-muted-foreground size-4" />
+                                  {tr.full_name}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {classesByTeacher.get(tr.id) ?? 0}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <span
+                                  className={
+                                    "tabular-nums " +
+                                    (weekVal === 0
+                                      ? "text-rose-600 font-medium"
+                                      : "text-foreground")
+                                  }
+                                >
+                                  {weekVal}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums">
+                                {lessonsByTeacherTotal.get(tr.id) ?? 0}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
+                      ) : (
+                        <TableRow>
+                          <TableCell
+                            colSpan={4}
+                            className="text-muted-foreground py-6 text-center text-sm"
+                          >
+                            —
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                {extra > 0 ? (
+                  <div className="flex justify-end">
+                    <Link
+                      href="/admin/teachers"
+                      className="text-primary inline-flex items-center gap-1 text-sm font-medium hover:underline"
+                    >
+                      {t("seeAllTeachers", { n: extra })}
+                      <ChevronRight className="size-3.5" />
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()
+        ) : null}
+
+        {/* Recent lessons tab — 5 most recent across the center. Visual
+            pass: primary-tinted date pill instead of muted plain text. */}
+        {activeActivity === "lessons" ? (
+          <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={3}
-                    className="text-muted-foreground flex items-center justify-center gap-2 py-6 text-center text-sm"
-                  >
-                    <Users className="size-4 opacity-50" />—
-                  </TableCell>
+                  <TableHead className="w-32">{t("lessonDateCol")}</TableHead>
+                  <TableHead>{t("lessonClassCol")}</TableHead>
+                  <TableHead>{t("lessonTeacherCol")}</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {recentLessons && recentLessons.length > 0 ? (
+                  recentLessons.map((l) => {
+                    const cls = Array.isArray(l.class) ? l.class[0] : l.class;
+                    const tr = Array.isArray(l.teacher)
+                      ? l.teacher[0]
+                      : l.teacher;
+                    return (
+                      <TableRow key={l.id}>
+                        <TableCell>
+                          <span className="bg-primary/10 text-primary inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide tabular-nums">
+                            {parseDateOnly(l.lesson_date)?.toLocaleDateString(
+                              dateLocale,
+                              {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              },
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="text-muted-foreground size-4" />
+                            {cls?.name ?? "—"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {tr?.full_name ?? "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={3}
+                      className="text-muted-foreground py-6 text-center text-sm"
+                    >
+                      <Users className="mr-1 inline size-4 opacity-50" />
+                      —
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
       </section>
     </div>
   );
