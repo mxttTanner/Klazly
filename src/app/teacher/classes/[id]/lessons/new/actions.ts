@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -310,7 +311,15 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     uErr = retry.error;
   }
   if (uErr) {
-    await supabase.from("lessons").delete().eq("id", lesson.id);
+    // Roll back the lesson so we don't leave an empty shell. If the
+    // rollback itself fails the lesson is orphaned with no updates —
+    // capture it for manual cleanup but still report the original error
+    // so the teacher knows what to retry.
+    const { error: rollbackErr } = await supabase
+      .from("lessons")
+      .delete()
+      .eq("id", lesson.id);
+    if (rollbackErr) Sentry.captureException(rollbackErr);
     return { error: t("saveUpdatesError", { message: uErr.message }) };
   }
 
@@ -450,10 +459,13 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   // If the unique constraint hasn't been added yet (migration not run),
   // fall back to the legacy delete-then-insert so the action still works.
   if (uErr && /(student_lesson_updates_lesson_student_unique|on conflict|no unique)/i.test(uErr.message)) {
-    await supabase
+    const { error: delErr } = await supabase
       .from("student_lesson_updates")
       .delete()
       .eq("lesson_id", lessonId);
+    if (delErr) {
+      return { error: t("saveUpdatesError", { message: delErr.message }) };
+    }
     const fallback = await supabase
       .from("student_lesson_updates")
       .insert(updateRows);
@@ -490,6 +502,10 @@ export async function deleteLesson(formData: FormData) {
   if (!existing || !cls || cls.center_id !== user.center_id) return;
   if (user.role === "teacher" && cls.teacher_id !== user.id) return;
 
-  await supabase.from("lessons").delete().eq("id", lessonId);
+  const { error } = await supabase
+    .from("lessons")
+    .delete()
+    .eq("id", lessonId);
+  if (error) throw new Error(`deleteLesson failed: ${error.message}`);
   if (classId) revalidatePath(`/teacher/classes/${classId}`);
 }

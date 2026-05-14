@@ -127,10 +127,11 @@ export async function removeCenterLogo() {
     await supabase.storage.from("logos").remove([`${admin.center_id}.${ext}`]);
   }
 
-  await supabase
+  const { error } = await supabase
     .from("centers")
     .update({ logo_url: null })
     .eq("id", admin.center_id);
+  if (error) throw new Error(`removeCenterLogo failed: ${error.message}`);
 
   revalidatePath("/admin/settings");
   revalidatePath("/parent", "layout");

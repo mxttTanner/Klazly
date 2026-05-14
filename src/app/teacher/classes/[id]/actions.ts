@@ -36,10 +36,11 @@ export async function setStudentLevel(formData: FormData) {
     if (!cls || cls.teacher_id !== user.id) return;
   }
 
-  await supabase
+  const { error } = await supabase
     .from("students")
     .update({ overall_level: level })
     .eq("id", studentId);
+  if (error) throw new Error(`setStudentLevel failed: ${error.message}`);
 
   revalidatePath(`/teacher/classes/${student.class_id ?? ""}`);
   revalidatePath("/admin/students");
