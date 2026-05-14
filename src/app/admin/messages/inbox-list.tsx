@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
 import { MessageSquareText } from "lucide-react";
 
 type Thread = {
