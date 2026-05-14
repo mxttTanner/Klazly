@@ -4,12 +4,110 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
 import * as Sentry from "@sentry/nextjs";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
 
 const PLAN_VALUES = ["monthly", "six_months", "annual"] as const;
 type Plan = (typeof PLAN_VALUES)[number];
+
+/**
+ * Lifecycle columns added by db/subscription-lifecycle.sql. Treated as
+ * optional everywhere — if any are missing from the schema cache
+ * (migration not run, or PostgREST hasn't reloaded yet) we strip them
+ * and retry, so the core status change still goes through.
+ */
+const LIFECYCLE_COLS = [
+  "subscription_started_at",
+  "subscription_ends_at",
+  "last_payment_at",
+  "next_billing_at",
+] as const;
+type LifecycleCol = (typeof LIFECYCLE_COLS)[number];
+
+/**
+ * Apply a centers.update() patch with graceful degradation when
+ * lifecycle columns aren't visible to PostgREST yet. Retries the
+ * UPDATE with the offending column dropped from the patch — so a
+ * status flip lands even if (say) the schema cache hasn't refreshed
+ * after `subscription-lifecycle.sql`. Returns the final error, or
+ * null on success.
+ */
+async function updateCenterPatchTolerant(
+  supabase: SupabaseClient,
+  centerId: string,
+  patch: Record<string, string | null>,
+): Promise<{ error: string | null; droppedCols: LifecycleCol[] }> {
+  const droppedCols: LifecycleCol[] = [];
+  // Cap the retry loop at the number of optional columns we might
+  // need to drop. Each PostgREST "column not found" error names one
+  // column at a time, so worst case we burn one retry per column.
+  for (let attempt = 0; attempt <= LIFECYCLE_COLS.length; attempt++) {
+    const { error } = await supabase
+      .from("centers")
+      .update(patch)
+      .eq("id", centerId);
+    if (!error) return { error: null, droppedCols };
+
+    if (/centers_subscription_status_check/i.test(error.message)) {
+      return {
+        error: "subscription_lifecycle.sql migration not applied",
+        droppedCols,
+      };
+    }
+
+    const missing = LIFECYCLE_COLS.find((col) =>
+      new RegExp(`'${col}'|"${col}"|column ${col}`, "i").test(error.message),
+    );
+    if (!missing || !(missing in patch)) {
+      return { error: error.message, droppedCols };
+    }
+    delete patch[missing];
+    droppedCols.push(missing);
+  }
+  return { error: "exhausted lifecycle column retries", droppedCols };
+}
+
+/**
+ * Audit-log insert that won't blow up on FK violations.
+ *
+ * The super-admin lives only in auth.users — they have no row in
+ * public.users — so passing their auth id as user_id violates the
+ * audit_log.user_id FK. Set user_id to null for super-admin-initiated
+ * actions and put the actor email in metadata so the trail is still
+ * attributable.
+ *
+ * Failures are swallowed because losing one audit row should never
+ * block the visible operation. Anything systemic gets caught by
+ * Sentry on the way out.
+ */
+async function writeAuditLog(
+  supabase: SupabaseClient,
+  row: {
+    actorEmail: string | null;
+    centerId: string;
+    action: string;
+    entityType: string;
+    entityId: string;
+    metadata: Record<string, unknown>;
+  },
+): Promise<void> {
+  const { error } = await supabase.from("audit_log").insert({
+    user_id: null,
+    center_id: row.centerId,
+    action: row.action,
+    entity_type: row.entityType,
+    entity_id: row.entityId,
+    metadata: { ...row.metadata, actor_email: row.actorEmail },
+  });
+  if (error) {
+    Sentry.captureMessage(`audit_log insert failed: ${error.message}`, {
+      level: "warning",
+      extra: { action: row.action, center_id: row.centerId },
+    });
+  }
+}
 
 const createCenterSchema = z.object({
   center_name: z.string().min(1).max(120),
@@ -190,57 +288,77 @@ export async function updateSubscriptionStatus(formData: FormData) {
 
   // Read the previous status so the audit log can record the
   // transition (from → to). Plus, when moving to 'active' for the
-  // first time we set subscription_started_at; when moving away from
-  // 'active' we set subscription_ends_at.
-  const { data: existing } = await supabase
+  // first time we set subscription_started_at; when moving to
+  // 'expired' from 'active' we stamp subscription_ends_at.
+  //
+  // Fall back to a minimal select if the lifecycle columns aren't in
+  // the PostgREST schema cache yet — the status change should land
+  // either way.
+  type CenterReadRow = {
+    subscription_status?: string;
+    subscription_started_at?: string | null;
+  };
+  let existing: CenterReadRow | null = null;
+  const full = await supabase
     .from("centers")
     .select("subscription_status, subscription_started_at")
     .eq("id", id)
     .single();
+  if (!full.error) {
+    existing = full.data as CenterReadRow;
+  } else if (/subscription_started_at/i.test(full.error.message)) {
+    const fb = await supabase
+      .from("centers")
+      .select("subscription_status")
+      .eq("id", id)
+      .single();
+    if (!fb.error) existing = fb.data as CenterReadRow;
+  }
   const fromStatus = existing?.subscription_status ?? null;
 
   const patch: Record<string, string | null> = {
     subscription_status: status,
   };
+  // First-time activation stamps the start date so renewals / period
+  // math have an anchor. Don't overwrite an existing start.
   if (status === "active" && !existing?.subscription_started_at) {
     patch.subscription_started_at = new Date().toISOString();
   }
-  if (
-    fromStatus === "active" &&
-    (status === "canceled" || status === "expired") &&
-    // Don't overwrite an existing end timestamp.
-    !patch.subscription_ends_at
-  ) {
+  // 'expired' = immediate revocation. Stamp the end date as now so the
+  // lock screen activates and audit/reporting shows a real timestamp.
+  // 'canceled' is intentionally NOT here: cancellation preserves the
+  // existing paid-period end date so the center keeps access until
+  // that date (grace period). requireUser() checks ends_at < now on
+  // canceled rows to decide whether to lock.
+  if (status === "expired" && fromStatus === "active") {
     patch.subscription_ends_at = new Date().toISOString();
   }
 
-  const { error } = await supabase
-    .from("centers")
-    .update(patch)
-    .eq("id", id);
-  if (error) {
-    // Surface a clearer message when the CHECK constraint rejects an
-    // unexpected status value.
-    if (/centers_subscription_status_check/i.test(error.message)) {
-      return { error: "subscription_lifecycle.sql migration not applied" };
-    }
-    return { error: error.message };
-  }
+  const { error, droppedCols } = await updateCenterPatchTolerant(
+    supabase,
+    id,
+    patch,
+  );
+  if (error) return { error };
 
-  // Audit-log the transition. Best-effort: don't block the user's
-  // save if the audit insert fails.
   if (fromStatus !== status) {
-    await supabase.from("audit_log").insert({
-      user_id: owner.id,
-      center_id: id,
+    await writeAuditLog(supabase, {
+      actorEmail: owner.email,
+      centerId: id,
       action: "subscription_status_change",
-      entity_type: "center",
-      entity_id: id,
-      metadata: { from: fromStatus, to: status, auto: false },
+      entityType: "center",
+      entityId: id,
+      metadata: {
+        from: fromStatus,
+        to: status,
+        auto: false,
+        dropped_columns: droppedCols,
+      },
     });
   }
 
   revalidatePath("/super-admin");
+  revalidatePath(`/super-admin/centers/${id}`);
   return { success: true };
 }
 
@@ -286,18 +404,19 @@ export async function extendTrial(formData: FormData) {
   };
   if (wasExpired) patch.subscription_status = "trial";
 
-  const { error: updErr } = await supabase
-    .from("centers")
-    .update(patch)
-    .eq("id", id);
-  if (updErr) return { error: updErr.message };
+  const { error: updErr } = await updateCenterPatchTolerant(
+    supabase,
+    id,
+    patch,
+  );
+  if (updErr) return { error: updErr };
 
-  await supabase.from("audit_log").insert({
-    user_id: owner.id,
-    center_id: id,
+  await writeAuditLog(supabase, {
+    actorEmail: owner.email,
+    centerId: id,
     action: "trial_extended",
-    entity_type: "center",
-    entity_id: id,
+    entityType: "center",
+    entityId: id,
     metadata: {
       days,
       from_status: existing.subscription_status,
@@ -364,28 +483,25 @@ export async function convertCenterToPaid(formData: FormData) {
     next_billing_at: endsAt.toISOString(),
   };
 
-  const { error: updErr } = await supabase
-    .from("centers")
-    .update(patch)
-    .eq("id", id);
-  if (updErr) {
-    if (/centers_subscription_status_check/i.test(updErr.message)) {
-      return { error: "subscription_lifecycle.sql migration not applied" };
-    }
-    return { error: updErr.message };
-  }
+  const { error: updErr, droppedCols } = await updateCenterPatchTolerant(
+    supabase,
+    id,
+    patch,
+  );
+  if (updErr) return { error: updErr };
 
-  await supabase.from("audit_log").insert({
-    user_id: owner.id,
-    center_id: id,
+  await writeAuditLog(supabase, {
+    actorEmail: owner.email,
+    centerId: id,
     action: "subscription_converted",
-    entity_type: "center",
-    entity_id: id,
+    entityType: "center",
+    entityId: id,
     metadata: {
       plan,
       from_status: existing.subscription_status,
       to_status: "active",
       ends_at: endsAt.toISOString(),
+      dropped_columns: droppedCols,
     },
   });
 

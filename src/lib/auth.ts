@@ -45,31 +45,61 @@ export async function requireUser(): Promise<AppUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  // Center lock-out: if the user's center has its trial expired (or
-  // was cancelled and past the grace period), bounce them to /locked
-  // before any authed page renders. Data is preserved; the lock just
-  // prevents access until the center pays. Uses the admin client so
-  // we can read centers regardless of the user's RLS context.
+  // Center lock-out: bounce expired / past-grace-period centers to
+  // /locked before any authed page renders. Data is preserved; the
+  // lock just prevents access until the center pays. Uses the admin
+  // client so we can read centers regardless of the user's RLS
+  // context.
+  //
+  // Lock rules:
+  //   expired                         → always locked
+  //   canceled + ends_at <= now       → locked (grace expired)
+  //   canceled + ends_at > now / null → still allowed (within grace)
+  //   anything else                   → allowed
   //
   // We swallow errors quietly — better to let a transient DB blip pass
   // through and render the dashboard than block legitimate users on
-  // every request.
+  // every request. next/navigation's redirect() throws a special
+  // signal internally, so we only catch real Errors and let redirect
+  // propagate.
+  let shouldRedirect = false;
   try {
     const supabase = createAdminClient();
-    const { data: center } = await supabase
+    // Try the full select first; fall back if subscription_ends_at
+    // hasn't been migrated yet so older DBs still load.
+    const full = await supabase
       .from("centers")
-      .select("subscription_status")
+      .select("subscription_status, subscription_ends_at")
       .eq("id", user.center_id)
       .single();
-    if (
-      center?.subscription_status === "expired" ||
-      center?.subscription_status === "canceled"
-    ) {
-      redirect("/locked");
+    let status: string | null = null;
+    let endsAt: string | null = null;
+    if (!full.error && full.data) {
+      status = (full.data as { subscription_status: string }).subscription_status;
+      endsAt = (full.data as { subscription_ends_at: string | null })
+        .subscription_ends_at;
+    } else {
+      const fb = await supabase
+        .from("centers")
+        .select("subscription_status")
+        .eq("id", user.center_id)
+        .single();
+      if (!fb.error && fb.data) {
+        status = (fb.data as { subscription_status: string }).subscription_status;
+      }
+    }
+    if (status === "expired") {
+      shouldRedirect = true;
+    } else if (status === "canceled") {
+      // Past grace if no end date set, or end date already passed.
+      if (!endsAt || new Date(endsAt).getTime() <= Date.now()) {
+        shouldRedirect = true;
+      }
     }
   } catch {
-    // proceed
+    // proceed — transient DB blip shouldn't lock anyone out
   }
+  if (shouldRedirect) redirect("/locked");
 
   return user;
 }
