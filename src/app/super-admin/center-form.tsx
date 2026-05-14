@@ -13,6 +13,7 @@ const initialState: { error?: string; success?: string } = {};
 
 export function CenterForm() {
   const t = useTranslations("superAdmin");
+  const tco = useTranslations("contact");
   const [state, action] = useFormState(createCenter, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -69,26 +70,46 @@ export function CenterForm() {
             <Input id="admin_full_name" name="admin_full_name" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="admin_email">{t("adminEmail")}</Label>
+            <Label htmlFor="admin_password">{t("adminPassword")}</Label>
+            <Input
+              id="admin_password"
+              name="admin_password"
+              type="text"
+              minLength={8}
+              required
+              placeholder={t("adminPasswordPlaceholder")}
+            />
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="admin_email">
+              {t("adminEmail")}{" "}
+              <span className="text-muted-foreground text-xs font-normal">
+                {tco("orPhoneHint")}
+              </span>
+            </Label>
             <Input
               id="admin_email"
               name="admin_email"
               type="email"
-              required
+              autoComplete="email"
+              placeholder="ban@example.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="admin_phone">{tco("phoneLabel")}</Label>
+            <Input
+              id="admin_phone"
+              name="admin_phone"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              placeholder="0901 234 567"
             />
           </div>
         </div>
-        <div className="space-y-2 sm:max-w-md">
-          <Label htmlFor="admin_password">{t("adminPassword")}</Label>
-          <Input
-            id="admin_password"
-            name="admin_password"
-            type="text"
-            minLength={8}
-            required
-            placeholder={t("adminPasswordPlaceholder")}
-          />
-        </div>
+        <p className="text-muted-foreground text-xs">{tco("oneRequired")}</p>
       </div>
 
       <div className="flex items-center gap-3">

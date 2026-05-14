@@ -40,12 +40,15 @@ export default async function ParentLayout({
             />
           </Link>
           <div className="flex shrink-0 items-center gap-3">
-            <div className="hidden items-center gap-2 sm:flex">
+            <Link
+              href="/profile"
+              className="hover:bg-muted hidden items-center gap-2 rounded-md px-1.5 py-1 transition sm:flex"
+            >
               <Avatar name={user.full_name} seed={user.id} size="sm" />
               <span className="text-foreground max-w-[10rem] truncate text-sm font-medium">
                 {user.full_name}
               </span>
-            </div>
+            </Link>
             <div className="bg-border hidden h-5 w-px sm:block" />
             <LanguageToggle />
             <LogoutButton />

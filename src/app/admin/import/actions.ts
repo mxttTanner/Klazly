@@ -8,10 +8,25 @@ import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
 import { csvToRecords } from "@/lib/csv";
+import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
 
+// Parent rows now accept email and/or phone — at least one required.
+// CSV cells come in as "" not undefined when blank so .optional() alone
+// doesn't bypass .email() validation; preprocess empties to undefined.
 const parentRowSchema = z.object({
   full_name: z.string().trim().min(1).max(120),
-  email: z.string().email().transform((s) => s.trim().toLowerCase()),
+  email: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z
+      .string()
+      .email()
+      .transform((s) => s.trim().toLowerCase())
+      .optional(),
+  ),
+  phone: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.string().trim().optional(),
+  ),
   password: z.string().min(8).max(72).optional(),
 });
 
@@ -36,7 +51,8 @@ export type ImportResult = {
   skipped: number;
   errors: { row: number; message: string }[];
   /** Auto-generated passwords for parents that left the password column blank.
-      Admin must capture these before navigating away — they're not recoverable. */
+      Admin must capture these before navigating away — they're not recoverable.
+      `email` carries whichever contact method exists (real email or phone). */
   generated?: { email: string; full_name: string; password: string }[];
 };
 
@@ -61,12 +77,10 @@ export async function importParentsCsv(
   const supabase = createAdminClient();
   const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
 
-  // Track emails we've already seen in THIS file so a duplicated row
-  // doesn't slip through as a generic Supabase auth error ("User already
-  // registered") — that error reads like "the parent already exists in
-  // the system" when in fact the admin just listed them twice in the
-  // CSV. Map email → row number for a clearer message.
-  const seenEmailRow = new Map<string, number>();
+  // Track contact identifiers (email + phone) already seen in THIS file
+  // so a duplicated row doesn't slip through as a generic auth error.
+  // Map identifier → row number for a clearer message.
+  const seenIdentifierRow = new Map<string, number>();
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2; // +1 for 0-index, +1 for header line
@@ -76,34 +90,89 @@ export async function importParentsCsv(
       continue;
     }
 
-    const dupRow = seenEmailRow.get(parsed.data.email);
-    if (dupRow !== undefined) {
-      result.errors.push({
-        row: rowNum,
-        message: t("duplicateInFile", { row: dupRow }),
-      });
+    const rawEmail = parsed.data.email ?? null;
+    const rawPhone = parsed.data.phone ?? null;
+
+    // At least one contact method required per row.
+    if (!rawEmail && !rawPhone) {
+      result.errors.push({ row: rowNum, message: t("rowMissingContact") });
       continue;
     }
-    seenEmailRow.set(parsed.data.email, rowNum);
 
-    const { data: existing } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", parsed.data.email)
-      .maybeSingle();
-    if (existing) {
+    // Normalize phone (canonical +84…) and reject malformed VN mobile
+    // numbers with a clear per-row error rather than a generic auth fail.
+    let phone: string | null = null;
+    if (rawPhone) {
+      phone = normalizeVnPhone(rawPhone);
+      if (!phone) {
+        result.errors.push({ row: rowNum, message: t("rowInvalidPhone") });
+        continue;
+      }
+    }
+
+    // Check for in-file duplicates on either email or phone.
+    if (rawEmail) {
+      const dup = seenIdentifierRow.get(`email:${rawEmail}`);
+      if (dup !== undefined) {
+        result.errors.push({
+          row: rowNum,
+          message: t("duplicateInFile", { row: dup }),
+        });
+        continue;
+      }
+    }
+    if (phone) {
+      const dup = seenIdentifierRow.get(`phone:${phone}`);
+      if (dup !== undefined) {
+        result.errors.push({
+          row: rowNum,
+          message: t("duplicateInFile", { row: dup }),
+        });
+        continue;
+      }
+    }
+
+    // Skip if a user with this email or phone already exists in this
+    // center.
+    let existingHit = false;
+    if (rawEmail) {
+      const { data: existing } = await supabase
+        .from("users")
+        .select("id")
+        .eq("center_id", admin.center_id)
+        .ilike("email", rawEmail)
+        .maybeSingle();
+      if (existing) existingHit = true;
+    }
+    if (!existingHit && phone) {
+      const { data: existing } = await supabase
+        .from("users")
+        .select("id")
+        .eq("center_id", admin.center_id)
+        .eq("phone", phone)
+        .maybeSingle();
+      if (existing) existingHit = true;
+    }
+    if (existingHit) {
       result.skipped++;
       continue;
     }
+
+    if (rawEmail) seenIdentifierRow.set(`email:${rawEmail}`, rowNum);
+    if (phone) seenIdentifierRow.set(`phone:${phone}`, rowNum);
 
     const passwordWasGenerated = !parsed.data.password;
     const password =
       parsed.data.password ??
       Math.random().toString(36).slice(-10) + "Aa1!";
 
+    // Auth email is the real one if provided; otherwise the deterministic
+    // synthetic email tied to phone. See db/users-phone.sql.
+    const authEmail = rawEmail ?? syntheticEmailForPhone(phone!);
+
     const { data: created, error: authErr } =
       await supabase.auth.admin.createUser({
-        email: parsed.data.email,
+        email: authEmail,
         password,
         email_confirm: true,
       });
@@ -117,7 +186,8 @@ export async function importParentsCsv(
 
     const { error: profileErr } = await supabase.from("users").insert({
       id: created.user.id,
-      email: parsed.data.email,
+      email: rawEmail,
+      phone,
       full_name: parsed.data.full_name,
       role: "parent",
       center_id: admin.center_id,
@@ -133,7 +203,9 @@ export async function importParentsCsv(
 
     if (passwordWasGenerated) {
       (result.generated ??= []).push({
-        email: parsed.data.email,
+        // Show whichever identifier exists — phone preferred for
+        // VN-first display, falls back to email.
+        email: phone ?? rawEmail!,
         full_name: parsed.data.full_name,
         password,
       });
@@ -176,7 +248,7 @@ export async function importStudentsCsv(
       .eq("center_id", admin.center_id),
     supabase
       .from("users")
-      .select("id, email")
+      .select("id, email, phone")
       .eq("center_id", admin.center_id)
       .eq("role", "parent"),
   ]);
@@ -184,9 +256,15 @@ export async function importStudentsCsv(
   const classByName = new Map(
     (classes ?? []).map((c) => [c.name.toLowerCase(), c.id]),
   );
-  const parentByEmail = new Map(
-    (parents ?? []).map((p) => [p.email.toLowerCase(), p.id]),
-  );
+  // Parent lookup accepts either email or phone in the CSV's
+  // parent_email column. Skip parents with neither (shouldn't happen
+  // given the users_email_or_phone_required CHECK, but defensive).
+  const parentByContact = new Map<string, string>();
+  type ParentRow = { id: string; email: string | null; phone: string | null };
+  for (const p of (parents ?? []) as ParentRow[]) {
+    if (p.email) parentByContact.set(p.email.toLowerCase(), p.id);
+    if (p.phone) parentByContact.set(p.phone, p.id);
+  }
 
   const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
 
@@ -212,9 +290,18 @@ export async function importStudentsCsv(
       });
       continue;
     }
-    const parentId = parsed.data.parent_email
-      ? parentByEmail.get(parsed.data.parent_email.toLowerCase())
-      : null;
+    // parent_email column accepts email or phone (normalized) so the
+    // admin can reference parents however they were created.
+    let parentId: string | null = null;
+    if (parsed.data.parent_email) {
+      const raw = parsed.data.parent_email.trim();
+      if (raw.includes("@")) {
+        parentId = parentByContact.get(raw.toLowerCase()) ?? null;
+      } else {
+        const normalized = normalizeVnPhone(raw);
+        if (normalized) parentId = parentByContact.get(normalized) ?? null;
+      }
+    }
     if (parsed.data.parent_email && !parentId) {
       result.errors.push({
         row: rowNum,

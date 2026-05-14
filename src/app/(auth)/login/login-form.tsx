@@ -8,11 +8,13 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { resolveLoginEmail } from "./actions";
 
 export function LoginForm() {
   const t = useTranslations("login");
+  const tco = useTranslations("contact");
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -21,12 +23,21 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
+      // Resolve the user-typed identifier (email or phone) to the auth
+      // email server-side. Phone case needs a service-role DB lookup
+      // which can't happen in the browser.
+      const resolved = await resolveLoginEmail(identifier);
+      if ("error" in resolved) {
+        setError(
+          resolved.error === "invalidPhone"
+            ? tco("invalidPhone")
+            : t("invalidCredentials"),
+        );
+        return;
+      }
       const supabase = createClient();
-      // Normalise the email — accounts are invited and stored with lowercased
-      // emails, so a user who types "Jean@example.com" needs to match the
-      // "jean@example.com" record in auth.users.
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
+        email: resolved.email,
         password,
       });
       if (signInError) {
@@ -41,15 +52,17 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="email">{t("email")}</Label>
+        <Label htmlFor="identifier">{tco("emailOrPhoneLabel")}</Label>
         <Input
-          id="email"
-          type="email"
-          autoComplete="email"
+          id="identifier"
+          type="text"
+          inputMode="email"
+          autoComplete="username"
           required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
           disabled={pending}
+          placeholder={tco("emailOrPhonePlaceholder")}
         />
       </div>
       <div className="space-y-2">

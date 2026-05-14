@@ -6,6 +6,7 @@ import { getTranslations } from "next-intl/server";
 import * as Sentry from "@sentry/nextjs";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
 
 const PLAN_VALUES = ["monthly", "six_months", "annual"] as const;
 type Plan = (typeof PLAN_VALUES)[number];
@@ -13,12 +14,11 @@ type Plan = (typeof PLAN_VALUES)[number];
 const createCenterSchema = z.object({
   center_name: z.string().min(1).max(120),
   admin_full_name: z.string().min(1).max(120),
-  // Normalise: trim + lowercase so a center created with "Foo@Bar.com"
-  // matches the lowercased email Supabase Auth stores.
-  admin_email: z
-    .string()
-    .email()
-    .transform((s) => s.trim().toLowerCase()),
+  // Admin contact: email or phone or both. At-least-one is checked in
+  // code after parse (so the error can be i18n'd cleanly). Both are
+  // optional at the Zod level.
+  admin_email: z.string().optional(),
+  admin_phone: z.string().optional(),
   admin_password: z.string().min(8).max(72),
   contact_phone: z.string().max(40).optional().nullable(),
   subscription_plan: z.enum(PLAN_VALUES).optional().nullable(),
@@ -27,12 +27,14 @@ const createCenterSchema = z.object({
 export async function createCenter(_prev: unknown, formData: FormData) {
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
+  const tco = await getTranslations("contact");
 
   const planRaw = String(formData.get("subscription_plan") ?? "");
   const parsed = createCenterSchema.safeParse({
     center_name: formData.get("center_name"),
     admin_full_name: formData.get("admin_full_name"),
     admin_email: formData.get("admin_email"),
+    admin_phone: formData.get("admin_phone"),
     admin_password: formData.get("admin_password"),
     contact_phone: formData.get("contact_phone") || null,
     subscription_plan:
@@ -41,6 +43,25 @@ export async function createCenter(_prev: unknown, formData: FormData) {
         : null,
   });
   if (!parsed.success) return { error: t("validation") };
+
+  const rawEmail = (parsed.data.admin_email ?? "").trim().toLowerCase();
+  const rawPhone = (parsed.data.admin_phone ?? "").trim();
+
+  if (!rawEmail && !rawPhone) return { error: tco("required") };
+
+  let adminEmail: string | null = null;
+  if (rawEmail) {
+    if (!z.string().email().safeParse(rawEmail).success) {
+      return { error: tco("invalidEmail") };
+    }
+    adminEmail = rawEmail;
+  }
+  let adminPhone: string | null = null;
+  if (rawPhone) {
+    adminPhone = normalizeVnPhone(rawPhone);
+    if (!adminPhone) return { error: tco("invalidPhone") };
+  }
+  const authEmail = adminEmail ?? syntheticEmailForPhone(adminPhone!);
 
   const supabase = createAdminClient();
 
@@ -52,8 +73,8 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   // column doesn't exist yet (migration not run).
   const baseInsert = {
     name: parsed.data.center_name,
-    contact_email: parsed.data.admin_email,
-    contact_phone: parsed.data.contact_phone,
+    contact_email: adminEmail,
+    contact_phone: parsed.data.contact_phone ?? adminPhone,
     subscription_status: "trial",
     trial_ends_at: trialEnds.toISOString(),
   };
@@ -78,7 +99,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   }
 
   const { data: created, error: authErr } = await supabase.auth.admin.createUser({
-    email: parsed.data.admin_email,
+    email: authEmail,
     password: parsed.data.admin_password,
     email_confirm: true,
   });
@@ -95,7 +116,8 @@ export async function createCenter(_prev: unknown, formData: FormData) {
 
   const { error: profileErr } = await supabase.from("users").insert({
     id: created.user.id,
-    email: parsed.data.admin_email,
+    email: adminEmail,
+    phone: adminPhone,
     full_name: parsed.data.admin_full_name,
     role: "admin",
     center_id: center.id,
@@ -119,7 +141,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   return {
     success: t("createdHint", {
       center: parsed.data.center_name,
-      email: parsed.data.admin_email,
+      email: adminEmail ?? adminPhone ?? "",
     }),
   };
 }

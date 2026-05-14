@@ -27,14 +27,42 @@ export default async function TeachersPage({
 
   const q = searchParams.q?.trim() ?? "";
 
-  let query = supabase
+  // Try full select with phone; fall back if the db/users-phone.sql
+  // migration hasn't run yet so the page keeps rendering.
+  const withPhone = await supabase
     .from("users")
-    .select("id, full_name, email, created_at")
+    .select("id, full_name, email, phone, created_at")
     .eq("role", "teacher")
     .order("created_at", { ascending: true });
-  if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
-
-  const { data: teachers } = await query;
+  type TeacherRow = {
+    id: string;
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    created_at: string;
+  };
+  let teachers: TeacherRow[] | null = null;
+  if (!withPhone.error) {
+    teachers = (withPhone.data ?? []) as TeacherRow[];
+  } else {
+    const fallback = await supabase
+      .from("users")
+      .select("id, full_name, email, created_at")
+      .eq("role", "teacher")
+      .order("created_at", { ascending: true });
+    teachers = ((fallback.data ?? []) as Omit<TeacherRow, "phone">[]).map(
+      (t) => ({ ...t, phone: null }),
+    );
+  }
+  if (q) {
+    const needle = q.toLowerCase();
+    teachers = teachers.filter(
+      (t) =>
+        t.full_name.toLowerCase().includes(needle) ||
+        (t.email?.toLowerCase().includes(needle) ?? false) ||
+        (t.phone?.includes(needle) ?? false),
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -52,7 +80,7 @@ export default async function TeachersPage({
           <TableHeader>
             <TableRow>
               <TableHead>{t("fullName")}</TableHead>
-              <TableHead>{t("email")}</TableHead>
+              <TableHead>{t("contact")}</TableHead>
               <TableHead className="w-32 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -63,8 +91,24 @@ export default async function TeachersPage({
                   <TableCell className="font-medium">
                     {teacher.full_name}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {teacher.email}
+                  <TableCell className="text-muted-foreground text-sm">
+                    {/* VN-first: prefer phone, but show both when set. */}
+                    {teacher.phone || teacher.email ? (
+                      <div className="space-y-0.5">
+                        {teacher.phone ? (
+                          <div className="text-foreground">
+                            {teacher.phone}
+                          </div>
+                        ) : null}
+                        {teacher.email ? (
+                          <div className="text-muted-foreground text-xs">
+                            {teacher.email}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <form action={removeTeacher}>

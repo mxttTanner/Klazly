@@ -7,9 +7,14 @@ import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
+import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
 
+// Email and phone are both optional fields on the form; we enforce
+// "at least one of them" in code after parse. Reason: Zod's combined
+// validation gets clunky and the error messages need to be i18n'd.
 const inviteSchema = z.object({
-  email: z.string().email().transform((s) => s.trim().toLowerCase()),
+  email: z.string().optional(),
+  phone: z.string().optional(),
   full_name: z.string().trim().min(1).max(120),
   password: z.string().min(8).max(72),
 });
@@ -19,19 +24,73 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
   const t = await getTranslations("admin.parents");
   const tt = await getTranslations("admin.teachers");
   const tc = await getTranslations("common");
+  const tco = await getTranslations("contact");
   if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const parsed = inviteSchema.safeParse({
     email: formData.get("email"),
+    phone: formData.get("phone"),
     full_name: formData.get("full_name"),
     password: formData.get("password"),
   });
   if (!parsed.success) return { error: tt("validation") };
 
+  const rawEmail = (parsed.data.email ?? "").trim().toLowerCase();
+  const rawPhone = (parsed.data.phone ?? "").trim();
+
+  // At least one contact method required.
+  if (!rawEmail && !rawPhone) {
+    return { error: tco("required") };
+  }
+
+  // Validate email shape only if provided.
+  let email: string | null = null;
+  if (rawEmail) {
+    if (!z.string().email().safeParse(rawEmail).success) {
+      return { error: tco("invalidEmail") };
+    }
+    email = rawEmail;
+  }
+
+  // Normalize + validate phone only if provided.
+  let phone: string | null = null;
+  if (rawPhone) {
+    phone = normalizeVnPhone(rawPhone);
+    if (!phone) return { error: tco("invalidPhone") };
+  }
+
   const supabase = createAdminClient();
 
+  // Per-center uniqueness pre-check. The DB enforces this too via
+  // partial unique indexes, but we precheck so the admin sees a
+  // friendly "this email/phone is already used" message rather than a
+  // Supabase auth error or DB constraint code.
+  if (email) {
+    const dup = await supabase
+      .from("users")
+      .select("id")
+      .eq("center_id", admin.center_id)
+      .ilike("email", email)
+      .maybeSingle();
+    if (dup.data) return { error: tco("emailAlreadyUsed") };
+  }
+  if (phone) {
+    const dup = await supabase
+      .from("users")
+      .select("id")
+      .eq("center_id", admin.center_id)
+      .eq("phone", phone)
+      .maybeSingle();
+    if (dup.data) return { error: tco("phoneAlreadyUsed") };
+  }
+
+  // Determine Supabase Auth email: the real one if provided, else a
+  // synthetic one tied to the phone so auth.admin.createUser succeeds
+  // without an SMS provider. See db/users-phone.sql for the why.
+  const authEmail = email ?? syntheticEmailForPhone(phone!);
+
   const { data: created, error: authErr } = await supabase.auth.admin.createUser({
-    email: parsed.data.email,
+    email: authEmail,
     password: parsed.data.password,
     email_confirm: true,
   });
@@ -41,7 +100,8 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
 
   const { error: profileErr } = await supabase.from("users").insert({
     id: created.user!.id,
-    email: parsed.data.email,
+    email,
+    phone,
     full_name: parsed.data.full_name,
     role: "parent",
     center_id: admin.center_id,
@@ -50,9 +110,6 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
     const { error: rollbackErr } = await supabase.auth.admin.deleteUser(
       created.user!.id,
     );
-    // Surface the original profile error; the rollback is best-effort.
-    // If it fails we've leaked an orphan auth.users row — log it so we can
-    // clean up manually, but don't override the admin's error message.
     if (rollbackErr) Sentry.captureException(rollbackErr);
     return { error: t("saveProfileError", { message: profileErr.message }) };
   }

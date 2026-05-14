@@ -30,14 +30,41 @@ export default async function ParentsPage({
 
   const q = searchParams.q?.trim() ?? "";
 
-  let query = supabase
+  // Try full select with phone; fall back if migration not yet run.
+  const withPhone = await supabase
     .from("users")
-    .select("id, full_name, email, created_at")
+    .select("id, full_name, email, phone, created_at")
     .eq("role", "parent")
     .order("created_at", { ascending: true });
-  if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
-
-  const { data: parents } = await query;
+  type ParentRow = {
+    id: string;
+    full_name: string;
+    email: string | null;
+    phone: string | null;
+    created_at: string;
+  };
+  let parents: ParentRow[] | null = null;
+  if (!withPhone.error) {
+    parents = (withPhone.data ?? []) as ParentRow[];
+  } else {
+    const fallback = await supabase
+      .from("users")
+      .select("id, full_name, email, created_at")
+      .eq("role", "parent")
+      .order("created_at", { ascending: true });
+    parents = ((fallback.data ?? []) as Omit<ParentRow, "phone">[]).map(
+      (p) => ({ ...p, phone: null }),
+    );
+  }
+  if (q) {
+    const needle = q.toLowerCase();
+    parents = parents.filter(
+      (p) =>
+        p.full_name.toLowerCase().includes(needle) ||
+        (p.email?.toLowerCase().includes(needle) ?? false) ||
+        (p.phone?.includes(needle) ?? false),
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -52,9 +79,10 @@ export default async function ParentsPage({
         variant="parents"
         toggleLabel={tImport("inlineToggleParents")}
         helpText={tImport("parentsHelp")}
-        exampleCsv={`full_name,email,password
-Phạm Văn Bình,binh@parent.test,changeme123
-Nguyễn Thị Hoa,hoa@parent.test,changeme123`}
+        exampleCsv={`full_name,email,phone,password
+Phạm Văn Bình,binh@parent.test,0901234567,changeme123
+Nguyễn Thị Hoa,,0907654321,changeme123
+Lê Văn Long,long@parent.test,,`}
         noteText={tImport("parentsPasswordNote")}
       />
 
@@ -65,7 +93,7 @@ Nguyễn Thị Hoa,hoa@parent.test,changeme123`}
           <TableHeader>
             <TableRow>
               <TableHead>{tt("fullName")}</TableHead>
-              <TableHead>{tt("email")}</TableHead>
+              <TableHead>{tt("contact")}</TableHead>
               <TableHead className="w-32 text-right">{tc("actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -74,8 +102,21 @@ Nguyễn Thị Hoa,hoa@parent.test,changeme123`}
               parents.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.full_name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {p.email}
+                  <TableCell className="text-muted-foreground text-sm">
+                    {p.phone || p.email ? (
+                      <div className="space-y-0.5">
+                        {p.phone ? (
+                          <div className="text-foreground">{p.phone}</div>
+                        ) : null}
+                        {p.email ? (
+                          <div className="text-muted-foreground text-xs">
+                            {p.email}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <form action={removeParent}>
