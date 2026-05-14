@@ -244,6 +244,156 @@ export async function updateSubscriptionStatus(formData: FormData) {
   return { success: true };
 }
 
+/**
+ * Push a center's trial_ends_at out by N days.
+ *
+ * - days is clamped to [1, 90] so a misclick or stale form can't run
+ *   a trial out to absurd lengths.
+ * - The baseline is `max(now, current trial_ends_at)`: if the trial
+ *   already lapsed, the new end is N days from today, not N days from
+ *   the past expiry (which would silently no-op).
+ * - If the center has been auto-flipped to 'expired', extending also
+ *   restores the row to 'trial' status — that's the whole point of
+ *   "extend" vs the manual status select.
+ */
+export async function extendTrial(formData: FormData) {
+  const owner = await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  const daysRaw = Number(formData.get("days") ?? 0);
+  if (!id) return { error: "missing id" };
+  const days = Math.min(90, Math.max(1, Math.floor(daysRaw)));
+
+  const supabase = createAdminClient();
+  const { data: existing, error: readErr } = await supabase
+    .from("centers")
+    .select("subscription_status, trial_ends_at")
+    .eq("id", id)
+    .single();
+  if (readErr || !existing) {
+    return { error: readErr?.message ?? "center not found" };
+  }
+
+  const now = Date.now();
+  const currentEnd = existing.trial_ends_at
+    ? new Date(existing.trial_ends_at).getTime()
+    : 0;
+  const base = Math.max(now, currentEnd);
+  const newEnd = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
+
+  const wasExpired = existing.subscription_status === "expired";
+  const patch: Record<string, string | null> = {
+    trial_ends_at: newEnd,
+  };
+  if (wasExpired) patch.subscription_status = "trial";
+
+  const { error: updErr } = await supabase
+    .from("centers")
+    .update(patch)
+    .eq("id", id);
+  if (updErr) return { error: updErr.message };
+
+  await supabase.from("audit_log").insert({
+    user_id: owner.id,
+    center_id: id,
+    action: "trial_extended",
+    entity_type: "center",
+    entity_id: id,
+    metadata: {
+      days,
+      from_status: existing.subscription_status,
+      to_status: wasExpired ? "trial" : existing.subscription_status,
+      previous_end: existing.trial_ends_at,
+      new_end: newEnd,
+    },
+  });
+
+  revalidatePath("/super-admin");
+  revalidatePath(`/super-admin/centers/${id}`);
+  return { success: true };
+}
+
+/**
+ * Convert a center from trial / expired into a paid 'active'
+ * subscription on the given plan. Sets the lifecycle timestamps that
+ * the dashboard reads (started, ends, last payment, next billing) so
+ * the paid view renders with real data immediately.
+ *
+ * Plan → period:
+ *   monthly      → +1 month
+ *   six_months   → +6 months
+ *   annual       → +12 months
+ *
+ * If the center already had a subscription_started_at, we keep that
+ * date — this is for "extending" the lifetime, not erasing history.
+ */
+export async function convertCenterToPaid(formData: FormData) {
+  const owner = await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  const planRaw = String(formData.get("plan") ?? "");
+  if (!id) return { error: "missing id" };
+  if (!(PLAN_VALUES as readonly string[]).includes(planRaw)) {
+    return { error: "invalid plan" };
+  }
+  const plan = planRaw as Plan;
+
+  const supabase = createAdminClient();
+  const { data: existing, error: readErr } = await supabase
+    .from("centers")
+    .select(
+      "subscription_status, subscription_plan, subscription_started_at, subscription_ends_at",
+    )
+    .eq("id", id)
+    .single();
+  if (readErr || !existing) {
+    return { error: readErr?.message ?? "center not found" };
+  }
+
+  const now = new Date();
+  const endsAt = new Date(now);
+  if (plan === "monthly") endsAt.setMonth(endsAt.getMonth() + 1);
+  if (plan === "six_months") endsAt.setMonth(endsAt.getMonth() + 6);
+  if (plan === "annual") endsAt.setFullYear(endsAt.getFullYear() + 1);
+
+  const patch: Record<string, string | null> = {
+    subscription_status: "active",
+    subscription_plan: plan,
+    subscription_started_at:
+      existing.subscription_started_at ?? now.toISOString(),
+    subscription_ends_at: endsAt.toISOString(),
+    last_payment_at: now.toISOString(),
+    next_billing_at: endsAt.toISOString(),
+  };
+
+  const { error: updErr } = await supabase
+    .from("centers")
+    .update(patch)
+    .eq("id", id);
+  if (updErr) {
+    if (/centers_subscription_status_check/i.test(updErr.message)) {
+      return { error: "subscription_lifecycle.sql migration not applied" };
+    }
+    return { error: updErr.message };
+  }
+
+  await supabase.from("audit_log").insert({
+    user_id: owner.id,
+    center_id: id,
+    action: "subscription_converted",
+    entity_type: "center",
+    entity_id: id,
+    metadata: {
+      plan,
+      from_status: existing.subscription_status,
+      to_status: "active",
+      ends_at: endsAt.toISOString(),
+    },
+  });
+
+  revalidatePath("/super-admin");
+  revalidatePath(`/super-admin/centers/${id}`);
+  return { success: true };
+}
+
 export async function updateCenterNotes(formData: FormData) {
   await requireSuperAdmin();
   const id = String(formData.get("id") ?? "");

@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { Building2, Calendar, Mail, Phone, Trash2 } from "lucide-react";
+import { ArrowUpRight, Building2, Calendar, Mail, Phone, Trash2 } from "lucide-react";
 import { StatusSelect } from "./status-select";
 import { PlanSelect } from "./plan-select";
 import { NotesCell } from "./notes-cell";
@@ -61,9 +62,15 @@ export function CenterCard({ center }: { center: CenterCardData }) {
             <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
               <Building2 className="size-4" />
             </span>
-            <h3 className="truncate text-lg font-semibold tracking-tight">
-              {center.name}
-            </h3>
+            <Link
+              href={`/super-admin/centers/${center.id}`}
+              className="group/title inline-flex min-w-0 items-center gap-1.5"
+            >
+              <h3 className="group-hover/title:text-primary truncate text-lg font-semibold tracking-tight transition">
+                {center.name}
+              </h3>
+              <ArrowUpRight className="text-muted-foreground group-hover/title:text-primary size-4 opacity-0 transition group-hover/title:opacity-100" />
+            </Link>
           </div>
           {/* Status + plan combined badge — the primary at-a-glance
               signal. "Active · Yearly" / "Trial · 4 days left" / etc. */}

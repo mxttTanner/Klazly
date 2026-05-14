@@ -1,0 +1,573 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
+import {
+  ArrowLeft,
+  Building2,
+  Calendar,
+  CalendarClock,
+  ChevronRight,
+  CircleDollarSign,
+  Clock,
+  GraduationCap,
+  History,
+  Mail,
+  MessageCircle,
+  NotebookPen,
+  Phone,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { requireSuperAdmin } from "@/lib/super-admin";
+import {
+  deriveStatus,
+  planLabelKey,
+  statusLabelKey,
+  statusTone,
+  trialDaysLeft,
+  trialDaysSinceExpiry,
+  zaloDeeplinkFromPhone,
+  type CenterSubscriptionInput,
+  type DerivedStatus,
+} from "@/lib/subscription";
+import { NotesCell } from "../../notes-cell";
+import { CenterActionsBar } from "./center-actions-bar";
+
+export const dynamic = "force-dynamic";
+
+const PLAN_MONTHLY_VND: Record<string, number> = {
+  monthly: 1_200_000,
+  six_months: 900_000,
+  annual: 825_000,
+};
+
+/**
+ * Super-admin per-center detail view. Everything an operator needs to
+ * make a decision *now* (extend, convert, lock, reactivate) without
+ * digging through the admin app: subscription state with countdown,
+ * usage counts, contact info, notes, and a recent activity feed.
+ *
+ * Reads use the service-role client so an expired/cancelled center
+ * still renders here for follow-up — never gate the super-admin out
+ * of seeing their own customers.
+ */
+export default async function CenterDetailPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  await requireSuperAdmin();
+  const t = await getTranslations("superAdmin");
+  const locale = await getLocale();
+  const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
+
+  const supabase = createAdminClient();
+  const { data: center } = await supabase
+    .from("centers")
+    .select(
+      "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
+    )
+    .eq("id", params.id)
+    .single();
+  if (!center) notFound();
+
+  const derived: DerivedStatus = deriveStatus(
+    center as unknown as CenterSubscriptionInput,
+  );
+
+  // Per-center usage counts — every "head: true, count: exact" runs a
+  // separate query but they're all single-row COUNT scans against an
+  // indexed center_id, so they stay cheap. Fired in parallel.
+  const [teachers, parents, classes, students, lessons, audits] =
+    await Promise.all([
+      supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("center_id", params.id)
+        .eq("role", "teacher"),
+      supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("center_id", params.id)
+        .eq("role", "parent"),
+      supabase
+        .from("classes")
+        .select("id", { count: "exact", head: true })
+        .eq("center_id", params.id),
+      supabase
+        .from("students")
+        .select("id", { count: "exact", head: true })
+        .eq("center_id", params.id),
+      supabase
+        .from("lessons")
+        .select("id, class_id, classes!inner(center_id)", {
+          count: "exact",
+          head: true,
+        })
+        .eq("classes.center_id", params.id),
+      supabase
+        .from("audit_log")
+        .select("id, action, metadata, created_at, user_id")
+        .eq("center_id", params.id)
+        .order("created_at", { ascending: false })
+        .limit(15),
+    ]);
+
+  const teacherCount = teachers.count ?? 0;
+  const parentCount = parents.count ?? 0;
+  const classCount = classes.count ?? 0;
+  const studentCount = students.count ?? 0;
+  const lessonCount = lessons.count ?? 0;
+  const auditRows = (audits.data ?? []) as Array<{
+    id: string;
+    action: string;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+    user_id: string | null;
+  }>;
+
+  const planKey = planLabelKey(center.subscription_plan);
+  const planText = planKey ? t(planKey) : null;
+  const statusLabel = t(
+    statusLabelKey(derived) as Parameters<typeof t>[0],
+  );
+  const tone = statusTone(derived);
+
+  // Trial countdown card data (only meaningful for trial-family
+  // statuses). For 'expired' we show "expired N days ago" so the
+  // super-admin can decide whether a courtesy extension is worth it.
+  const isTrialFamily =
+    derived === "trial" || derived === "trial_ending_soon";
+  const trialDays = trialDaysLeft(center.trial_ends_at);
+  const daysSinceExpiry = trialDaysSinceExpiry(center.trial_ends_at);
+
+  // Trial total length is inferred from created_at → trial_ends_at if
+  // available, falling back to 14d. Used to draw the progress bar
+  // (so a 30-day extension shows mostly full, a 7-day grace shows
+  // nearly empty).
+  let trialTotalDays = 14;
+  if (center.trial_ends_at && center.created_at) {
+    const total = Math.max(
+      1,
+      Math.round(
+        (new Date(center.trial_ends_at).getTime() -
+          new Date(center.created_at).getTime()) /
+          (24 * 60 * 60 * 1000),
+      ),
+    );
+    trialTotalDays = total;
+  }
+  const daysUsed =
+    trialDays !== null
+      ? Math.max(0, Math.min(trialTotalDays, trialTotalDays - trialDays))
+      : trialTotalDays;
+  const progressPct = Math.min(
+    100,
+    Math.max(0, (daysUsed / trialTotalDays) * 100),
+  );
+
+  const trialCountdownTone =
+    trialDays === null
+      ? "text-muted-foreground"
+      : trialDays <= 0
+        ? "text-rose-700"
+        : trialDays <= 3
+          ? "text-rose-600"
+          : trialDays <= 7
+            ? "text-amber-700"
+            : "text-sky-700";
+
+  const formatDate = (iso: string | null | undefined) =>
+    iso
+      ? new Date(iso).toLocaleDateString(dateLocale, {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+      : "—";
+  const formatDateTime = (iso: string) =>
+    new Date(iso).toLocaleString(dateLocale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const planMrr =
+    center.subscription_status === "active" && center.subscription_plan
+      ? PLAN_MONTHLY_VND[center.subscription_plan] ?? null
+      : null;
+  const mrrFormatted = planMrr
+    ? new Intl.NumberFormat(dateLocale, {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      }).format(planMrr)
+    : null;
+
+  const zaloUrl = zaloDeeplinkFromPhone(center.contact_phone);
+
+  return (
+    <div className="space-y-8">
+      {/* Breadcrumb + back */}
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          href="/super-admin"
+          className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+        >
+          <ArrowLeft className="size-4" />
+          {t("backToCenters")}
+        </Link>
+        <div className="text-muted-foreground hidden items-center gap-1 text-xs sm:flex">
+          <span>{t("title")}</span>
+          <ChevronRight className="size-3" />
+          <span className="text-foreground">{center.name}</span>
+        </div>
+      </div>
+
+      {/* Header */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="bg-primary/10 text-primary inline-flex size-11 items-center justify-center rounded-xl">
+              <Building2 className="size-5" />
+            </span>
+            <h1 className="text-3xl font-semibold tracking-tight">
+              {center.name}
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${tone}`}
+            >
+              {statusLabel}
+            </span>
+            {planText ? (
+              <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium">
+                {planText}
+              </span>
+            ) : null}
+            <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+              <Calendar className="size-3" />
+              {t("createdShort", { date: formatDate(center.created_at) })}
+            </span>
+          </div>
+        </div>
+
+        <CenterActionsBar
+          centerId={center.id}
+          status={center.subscription_status}
+          plan={center.subscription_plan}
+        />
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Left column — countdown + subscription + contact + notes */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Trial countdown card */}
+          {isTrialFamily ? (
+            <section className="bg-card rounded-2xl border p-5 shadow-sm sm:p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+                    {t("trialCountdownLabel")}
+                  </p>
+                  <p className="mt-1.5 flex items-baseline gap-2">
+                    <span
+                      className={`text-4xl font-bold tabular-nums ${trialCountdownTone}`}
+                    >
+                      {trialDays !== null && trialDays > 0 ? trialDays : 0}
+                    </span>
+                    <span className="text-muted-foreground text-sm">
+                      {t("daysLeftSuffix")}
+                    </span>
+                  </p>
+                </div>
+                <span className="bg-sky-50 text-sky-700 ring-sky-200 inline-flex size-10 items-center justify-center rounded-full ring-1">
+                  <CalendarClock className="size-5" />
+                </span>
+              </div>
+
+              <div
+                className="bg-muted mt-5 h-2 w-full overflow-hidden rounded-full"
+                role="progressbar"
+                aria-valuenow={Math.round(progressPct)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={t("trialProgressAria")}
+              >
+                <div
+                  style={{ width: `${progressPct}%` }}
+                  className={`h-full rounded-full transition-all ${
+                    trialDays !== null && trialDays <= 3
+                      ? "bg-rose-500"
+                      : trialDays !== null && trialDays <= 7
+                        ? "bg-amber-500"
+                        : "bg-sky-500"
+                  }`}
+                />
+              </div>
+              <p className="text-muted-foreground mt-3 text-xs">
+                {t("trialEndsOn", {
+                  date: formatDate(center.trial_ends_at),
+                })}
+                {" · "}
+                {t("trialTotalDays", { n: trialTotalDays })}
+              </p>
+            </section>
+          ) : null}
+
+          {/* Recently expired courtesy card */}
+          {derived === "expired" && daysSinceExpiry !== null ? (
+            <section className="rounded-2xl border border-rose-200 bg-rose-50/40 p-5 shadow-sm sm:p-6">
+              <div className="flex items-start gap-3">
+                <span className="bg-rose-100 text-rose-700 ring-rose-200 mt-0.5 inline-flex size-10 items-center justify-center rounded-full ring-1">
+                  <Clock className="size-5" />
+                </span>
+                <div>
+                  <p className="text-rose-900 text-sm font-semibold">
+                    {t("expiredHeadline", { n: daysSinceExpiry })}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    {t("expiredHint")}
+                  </p>
+                </div>
+              </div>
+            </section>
+          ) : null}
+
+          {/* Paid subscription card */}
+          {derived === "active" || derived === "past_due" || derived === "canceled" ? (
+            <section className="bg-card rounded-2xl border p-5 shadow-sm sm:p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+                    {t("subscriptionDetails")}
+                  </p>
+                  {mrrFormatted ? (
+                    <p className="mt-1.5 flex items-baseline gap-2">
+                      <span className="text-3xl font-semibold tabular-nums text-emerald-700">
+                        {mrrFormatted}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        {t("perMonth")}
+                      </span>
+                    </p>
+                  ) : null}
+                </div>
+                <span className="bg-emerald-50 text-emerald-700 ring-emerald-200 inline-flex size-10 items-center justify-center rounded-full ring-1">
+                  <CircleDollarSign className="size-5" />
+                </span>
+              </div>
+              <dl className="mt-5 grid gap-3 sm:grid-cols-2">
+                <DetailRow
+                  label={t("planLabel")}
+                  value={planText ?? "—"}
+                />
+                <DetailRow
+                  label={t("subscriptionStartedAt")}
+                  value={formatDate(center.subscription_started_at)}
+                />
+                <DetailRow
+                  label={t("subscriptionEndsAtLabel")}
+                  value={formatDate(center.subscription_ends_at)}
+                />
+                <DetailRow
+                  label={t("lastPaymentAt")}
+                  value={formatDate(center.last_payment_at)}
+                />
+                <DetailRow
+                  label={t("nextBillingAt")}
+                  value={formatDate(center.next_billing_at)}
+                />
+              </dl>
+            </section>
+          ) : null}
+
+          {/* Contact card */}
+          <section className="bg-card rounded-2xl border p-5 shadow-sm sm:p-6">
+            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+              {t("contactSectionLabel")}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              {center.contact_email ? (
+                <a
+                  href={`mailto:${center.contact_email}`}
+                  className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm hover:bg-muted"
+                >
+                  <Mail className="size-4 text-emerald-600" />
+                  {center.contact_email}
+                </a>
+              ) : null}
+              {center.contact_phone ? (
+                <a
+                  href={`tel:${center.contact_phone}`}
+                  className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm hover:bg-muted"
+                >
+                  <Phone className="size-4 text-emerald-600" />
+                  {center.contact_phone}
+                </a>
+              ) : null}
+              {zaloUrl ? (
+                <a
+                  href={zaloUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500"
+                >
+                  <MessageCircle className="size-4" />
+                  {t("messageOnZalo")}
+                </a>
+              ) : null}
+              {!center.contact_email && !center.contact_phone ? (
+                <p className="text-muted-foreground text-sm italic">
+                  {t("noContactInfo")}
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          {/* Notes */}
+          <section className="bg-card rounded-2xl border p-5 shadow-sm sm:p-6">
+            <div className="flex items-center gap-2">
+              <NotebookPen className="text-muted-foreground size-4" />
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+                {t("notesLabel")}
+              </p>
+            </div>
+            <div className="mt-3">
+              <NotesCell centerId={center.id} initial={center.notes} />
+            </div>
+          </section>
+        </div>
+
+        {/* Right column — usage stats + activity */}
+        <div className="space-y-6">
+          <section className="bg-card rounded-2xl border p-5 shadow-sm">
+            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+              {t("usageLabel")}
+            </p>
+            <dl className="mt-4 space-y-3">
+              <StatRow
+                icon={Users}
+                label={t("statTeachers")}
+                value={teacherCount}
+              />
+              <StatRow
+                icon={GraduationCap}
+                label={t("statStudents")}
+                value={studentCount}
+              />
+              <StatRow
+                icon={Users}
+                label={t("statParents")}
+                value={parentCount}
+              />
+              <StatRow
+                icon={Sparkles}
+                label={t("statClasses")}
+                value={classCount}
+              />
+              <StatRow
+                icon={NotebookPen}
+                label={t("statLessons")}
+                value={lessonCount}
+              />
+            </dl>
+          </section>
+
+          <section className="bg-card rounded-2xl border p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <History className="text-muted-foreground size-4" />
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+                {t("activityLabel")}
+              </p>
+            </div>
+            {auditRows.length === 0 ? (
+              <p className="text-muted-foreground mt-3 text-sm italic">
+                {t("activityEmpty")}
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-3">
+                {auditRows.map((row) => (
+                  <li
+                    key={row.id}
+                    className="border-l-2 border-slate-200 pl-3 text-sm"
+                  >
+                    <p className="font-medium">
+                      {renderAuditAction(row.action, row.metadata, t)}
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {formatDateTime(row.created_at)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-0.5">
+      <dt className="text-muted-foreground text-xs">{label}</dt>
+      <dd className="text-sm font-medium tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+function StatRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="text-muted-foreground inline-flex items-center gap-2 text-sm">
+        <Icon className="size-4" />
+        {label}
+      </div>
+      <span className="text-base font-semibold tabular-nums">{value}</span>
+    </div>
+  );
+}
+
+/**
+ * Map a raw audit_log row to a short human sentence. Translation keys
+ * are intentionally narrow — anything we don't have a friendly label
+ * for falls back to the raw action string so nothing gets silently
+ * dropped from the history.
+ */
+function renderAuditAction(
+  action: string,
+  metadata: Record<string, unknown> | null,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
+  if (action === "subscription_status_change") {
+    const from = String(metadata?.from ?? "");
+    const to = String(metadata?.to ?? "");
+    const auto = metadata?.auto === true;
+    return auto
+      ? t("auditStatusChangedAuto", { from, to })
+      : t("auditStatusChanged", { from, to });
+  }
+  if (action === "trial_extended") {
+    return t("auditTrialExtended", { days: Number(metadata?.days ?? 0) });
+  }
+  if (action === "subscription_converted") {
+    return t("auditSubscriptionConverted", {
+      plan: String(metadata?.plan ?? ""),
+    });
+  }
+  return action;
+}

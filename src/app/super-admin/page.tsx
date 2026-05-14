@@ -684,9 +684,12 @@ function ActionGroup({
             className="flex items-center justify-between gap-3 rounded-md border border-slate-200/80 bg-slate-50/60 px-3 py-2"
           >
             <div className="min-w-0">
-              {/* Center name will become a link to the detail page once
-                  the next phase ships /super-admin/centers/[id]. */}
-              <p className="block truncate text-sm font-medium">{c.name}</p>
+              <Link
+                href={`/super-admin/centers/${c.id}`}
+                className="hover:text-primary block truncate text-sm font-medium"
+              >
+                {c.name}
+              </Link>
               <p className={"mt-0.5 text-xs tabular-nums " + toneClasses.days}>
                 {kind === "left"
                   ? t("daysLeftShort", { n: c.days })
