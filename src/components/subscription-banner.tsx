@@ -1,8 +1,21 @@
 import { AlertTriangle, Clock, XCircle } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoEmail } from "@/lib/demo";
 
-export async function SubscriptionBanner({ centerId }: { centerId: string }) {
+export async function SubscriptionBanner({
+  centerId,
+  userEmail,
+}: {
+  centerId: string;
+  userEmail?: string | null;
+}) {
+  // Demo users already get a yellow "BẢN DEMO" banner from DemoBanner.
+  // Stacking a second blue/red trial bar on top of it makes the page
+  // look broken — "this is a demo but also a real trial?". Show only
+  // the demo banner.
+  if (isDemoEmail(userEmail)) return null;
+
   const supabase = createClient();
   const { data: center } = await supabase
     .from("centers")

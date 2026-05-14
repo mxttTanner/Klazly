@@ -31,7 +31,7 @@ export default async function AdminLayout({
   return (
     <div className="bg-muted/20 min-h-dvh">
       <DemoBanner email={user.email} />
-      <SubscriptionBanner centerId={user.center_id} />
+      <SubscriptionBanner centerId={user.center_id} userEmail={user.email} />
 
       <div className="flex">
         {/* Desktop sidebar */}
