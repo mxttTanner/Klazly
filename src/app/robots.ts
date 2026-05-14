@@ -10,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: ["/", "/legal/", "/login", "/forgot-password", "/demo"],
+      allow: ["/", "/legal/", "/login", "/forgot-password", "/demo", "/pricing"],
       disallow: [
         "/admin",
         "/admin/",
@@ -22,6 +22,7 @@ export default function robots(): MetadataRoute.Robots {
         "/super-admin/",
         "/post-login",
         "/reset-password",
+        "/locked",
       ],
     },
     sitemap: "https://parent-portal-nine.vercel.app/sitemap.xml",

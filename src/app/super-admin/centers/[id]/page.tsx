@@ -178,12 +178,17 @@ export default async function CenterDetailPage({
             ? "text-amber-700"
             : "text-sky-700";
 
+  // Pin formatters to Asia/Ho_Chi_Minh so subscription dates render in
+  // Vietnam time even if the Vercel runtime is UTC. Belt-and-suspenders
+  // alongside the TZ env var documented in .env.local.example.
+  const VN_TZ = "Asia/Ho_Chi_Minh";
   const formatDate = (iso: string | null | undefined) =>
     iso
       ? new Date(iso).toLocaleDateString(dateLocale, {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
+          timeZone: VN_TZ,
         })
       : "—";
   const formatDateTime = (iso: string) =>
@@ -193,6 +198,7 @@ export default async function CenterDetailPage({
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: VN_TZ,
     });
 
   const planMrr =

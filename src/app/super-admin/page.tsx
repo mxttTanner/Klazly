@@ -366,6 +366,7 @@ export default async function SuperAdminHomePage({
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
+          timeZone: "Asia/Ho_Chi_Minh",
         }),
       });
     }
@@ -383,6 +384,7 @@ export default async function SuperAdminHomePage({
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
+          timeZone: "Asia/Ho_Chi_Minh",
         }),
       }),
       // Legacy field still consumed by the card; superseded by statusBadge.
