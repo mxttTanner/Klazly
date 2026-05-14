@@ -14,7 +14,9 @@
     "languageVi": "Tiếng Việt",
     "languageEn": "English",
     "appName": "Parent Portal",
-    "demoReadOnly": "Demo mode — changes aren't saved. Sign up your center to use this for real."
+    "demoReadOnly": "Demo mode — changes aren't saved. Sign up your center to use this for real.",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "landing": {
     "title": "Parent Portal",
@@ -316,6 +318,7 @@
       "deleteConfirm": "Delete this lesson?",
       "summary": "Class {className} • {count} students",
       "noStudents": "This class has no students yet. Please ask the admin to enroll students.",
+      "noStudentsAddCta": "Add students",
       "generalHeader": "Class-wide info",
       "generalSubtitle": "Applies to the whole {className} class.",
       "lessonDate": "Lesson date",

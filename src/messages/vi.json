@@ -14,7 +14,9 @@
     "languageVi": "Tiếng Việt",
     "languageEn": "English",
     "appName": "Cổng Phụ Huynh",
-    "demoReadOnly": "Chế độ demo — thay đổi không được lưu. Đăng ký trung tâm của bạn để dùng thật."
+    "demoReadOnly": "Chế độ demo — thay đổi không được lưu. Đăng ký trung tâm của bạn để dùng thật.",
+    "copy": "Sao chép",
+    "copied": "Đã sao chép"
   },
   "landing": {
     "title": "Cổng Phụ Huynh",
@@ -316,6 +318,7 @@
       "deleteConfirm": "Xoá bài học này?",
       "summary": "Lớp {className} • {count} học sinh",
       "noStudents": "Lớp chưa có học sinh nào. Vui lòng yêu cầu quản trị viên xếp học sinh vào lớp.",
+      "noStudentsAddCta": "Thêm học sinh",
       "generalHeader": "Thông tin chung",
       "generalSubtitle": "Áp dụng cho cả lớp {className}.",
       "lessonDate": "Ngày học",

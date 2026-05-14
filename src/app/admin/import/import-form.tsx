@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useFormState } from "react-dom";
 import { useTranslations } from "next-intl";
-import { CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { CheckCircle2, AlertCircle, Info, KeyRound, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/submit-button";
 import { importParentsCsv, importStudentsCsv, type ImportResult } from "./actions";
 
@@ -19,7 +21,27 @@ const ACTIONS = {
 
 export function ImportForm({ variant }: { variant: Variant }) {
   const t = useTranslations("import");
+  const tc = useTranslations("common");
   const [state, action] = useFormState(ACTIONS[variant], initialState);
+  const [copied, setCopied] = useState(false);
+
+  async function copyGenerated() {
+    if (!state.result?.generated) return;
+    const tsv = [
+      [t("generatedColName"), t("generatedColEmail"), t("generatedColPassword")].join("\t"),
+      ...state.result.generated.map((g) =>
+        [g.full_name, g.email, g.password].join("\t"),
+      ),
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(tsv);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard API blocked (insecure context, permissions) — the user
+      // can still select the table manually.
+    }
+  }
 
   return (
     <form action={action} className="space-y-4">
@@ -78,6 +100,65 @@ export function ImportForm({ variant }: { variant: Variant }) {
               </ul>
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {state.result?.generated && state.result.generated.length > 0 ? (
+        <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
+          <div className="flex items-start gap-2 text-amber-900">
+            <KeyRound className="mt-0.5 size-4 shrink-0" />
+            <div className="flex-1 space-y-1">
+              <p className="font-semibold">
+                {t("generatedHeader", { n: state.result.generated.length })}
+              </p>
+              <p className="text-amber-900/80">{t("generatedHelp")}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={copyGenerated}
+              className="shrink-0 border-amber-300 bg-white hover:bg-amber-100"
+            >
+              {copied ? (
+                <>
+                  <Check className="size-3.5" />
+                  {tc("copied")}
+                </>
+              ) : (
+                <>
+                  <Copy className="size-3.5" />
+                  {tc("copy")}
+                </>
+              )}
+            </Button>
+          </div>
+          <div className="overflow-x-auto rounded-md border border-amber-200 bg-white">
+            <table className="w-full text-xs">
+              <thead className="bg-amber-100/50 text-amber-900">
+                <tr>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("generatedColName")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("generatedColEmail")}
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium">
+                    {t("generatedColPassword")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-amber-100">
+                {state.result.generated.map((g, i) => (
+                  <tr key={i}>
+                    <td className="px-3 py-1.5">{g.full_name}</td>
+                    <td className="px-3 py-1.5 font-mono">{g.email}</td>
+                    <td className="px-3 py-1.5 font-mono">{g.password}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
     </form>

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { Users } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { LessonForm, type LessonDefaults } from "./lesson-form";
@@ -141,9 +143,22 @@ export default async function NewLessonPage({
           defaults={duplicateDefaults}
         />
       ) : (
-        <p className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
-          {t("noStudents")}
-        </p>
+        <div className="bg-muted/30 flex flex-col items-center gap-4 rounded-lg border border-dashed p-10 text-center">
+          <div className="bg-background flex size-12 items-center justify-center rounded-full border">
+            <Users className="text-muted-foreground size-5" />
+          </div>
+          <p className="text-muted-foreground max-w-sm text-sm">
+            {t("noStudents")}
+          </p>
+          {user.role === "admin" ? (
+            <Link
+              href="/admin/students"
+              className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium hover:opacity-90"
+            >
+              {t("noStudentsAddCta")}
+            </Link>
+          ) : null}
+        </div>
       )}
     </div>
   );

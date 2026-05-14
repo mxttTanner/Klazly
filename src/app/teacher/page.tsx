@@ -119,9 +119,11 @@ export default async function TeacherHomePage() {
           })}
         </div>
       ) : (
-        <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-12 text-center text-sm">
-          <BookOpen className="size-8 opacity-50" />
-          <p>{t("empty")}</p>
+        <div className="bg-muted/30 flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed p-12 text-center">
+          <div className="bg-background flex size-14 items-center justify-center rounded-full border">
+            <BookOpen className="text-muted-foreground size-6" />
+          </div>
+          <p className="text-muted-foreground max-w-sm text-sm">{t("empty")}</p>
         </div>
       )}
     </div>
