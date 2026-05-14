@@ -31,8 +31,8 @@ export function AdminMobileSidebar({
         <Menu className="size-5" />
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0">
-        <SheetHeader className="border-b p-4">
-          <SheetTitle>{brandLabel}</SheetTitle>
+        <SheetHeader className="border-b border-border p-4">
+          <SheetTitle className="truncate">{brandLabel}</SheetTitle>
         </SheetHeader>
         <div className="p-3" onClick={() => setOpen(false)}>
           <AdminSidebarNav items={items} />

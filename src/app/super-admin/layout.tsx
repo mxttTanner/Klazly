@@ -20,17 +20,19 @@ export default async function SuperAdminLayout({
           {t("ownerStrip", { email: owner.email })}
         </div>
       </div>
-      <header className="border-b">
+      <header className="bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 border-b border-border backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
           <Link
             href="/super-admin"
-            className="inline-flex items-center gap-2.5"
+            className="flex min-w-0 flex-1 items-center gap-2.5"
             aria-label={t("navTitle")}
           >
             <BrandLogo size="sm" showText={false} />
-            <span className="text-base font-semibold">{t("navTitle")}</span>
+            <span className="min-w-0 truncate text-base font-semibold">
+              {t("navTitle")}
+            </span>
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
             <LanguageToggle />
             <LogoutButton />
           </div>

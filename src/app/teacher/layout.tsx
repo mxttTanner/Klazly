@@ -25,11 +25,11 @@ export default async function TeacherLayout({
   return (
     <div className="min-h-dvh">
       <DemoBanner email={user.email} />
-      <header className="border-b">
+      <header className="bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 border-b border-border backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
           <Link
             href="/teacher"
-            className="inline-flex items-center gap-2.5"
+            className="flex min-w-0 flex-1 items-center gap-2.5"
             aria-label={t("navTitle")}
           >
             <CenterLogo
@@ -38,8 +38,8 @@ export default async function TeacherLayout({
               size="sm"
             />
           </Link>
-          <div className="flex items-center gap-3">
-            <span className="text-muted-foreground hidden text-sm sm:inline">
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="text-muted-foreground hidden max-w-[10rem] truncate text-sm sm:inline">
               {user.full_name}
             </span>
             <LanguageToggle />

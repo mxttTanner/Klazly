@@ -14,10 +14,12 @@ export function BrandLogo({
   }[size];
 
   return (
-    <div className="inline-flex items-center gap-2.5">
-      <BrandMark className={`text-primary ${dimensions.mark}`} />
+    <div className="flex min-w-0 items-center gap-2.5">
+      <BrandMark className={`shrink-0 text-primary ${dimensions.mark}`} />
       {showText ? (
-        <span className={`font-semibold tracking-tight ${dimensions.text}`}>
+        <span
+          className={`min-w-0 truncate font-semibold tracking-tight ${dimensions.text}`}
+        >
           Cổng Phụ Huynh
         </span>
       ) : null}

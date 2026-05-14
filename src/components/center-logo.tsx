@@ -22,7 +22,11 @@ export function CenterLogo({
   }[size];
 
   return (
-    <div className="inline-flex items-center gap-2.5">
+    // `flex min-w-0` instead of `inline-flex` so the text span can actually
+    // shrink and truncate when the center name is long. Without min-w-0,
+    // flex items refuse to shrink below their content width and the layout
+    // overflows into adjacent elements (logout button, language toggle).
+    <div className="flex min-w-0 items-center gap-2.5">
       {logoUrl ? (
         <div
           className={`bg-background flex shrink-0 items-center justify-center overflow-hidden rounded-lg border ${dimensions.box}`}
@@ -41,7 +45,10 @@ export function CenterLogo({
           <GraduationCap className={dimensions.icon} />
         </div>
       )}
-      <span className={`truncate font-semibold tracking-tight ${dimensions.text}`}>
+      <span
+        className={`min-w-0 truncate font-semibold tracking-tight ${dimensions.text}`}
+        title={centerName ?? undefined}
+      >
         {centerName ?? "Cổng Phụ Huynh"}
       </span>
     </div>

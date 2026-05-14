@@ -34,12 +34,15 @@ export default async function AdminLayout({
       <SubscriptionBanner centerId={user.center_id} userEmail={user.email} />
 
       <div className="flex">
-        {/* Desktop sidebar */}
-        <aside className="bg-background sticky top-0 hidden h-dvh w-60 shrink-0 border-r md:flex md:flex-col">
-          <div className="border-b p-4">
+        {/* Desktop sidebar — uses bg-card so the panel reads as its own
+            surface against the bg-muted/20 page background. Border is the
+            same token as the topbar; together they form a coherent frame
+            around the content. */}
+        <aside className="bg-card sticky top-0 hidden h-dvh w-60 shrink-0 border-r border-border md:flex md:flex-col">
+          <div className="border-b border-border p-4">
             <Link
               href="/admin"
-              className="inline-flex max-w-full items-center gap-2.5"
+              className="flex min-w-0 max-w-full items-center gap-2.5"
               aria-label={t("navTitle")}
             >
               <CenterLogo
@@ -56,15 +59,21 @@ export default async function AdminLayout({
 
         {/* Main column */}
         <div className="min-w-0 flex-1">
-          {/* Top bar */}
-          <header className="bg-background sticky top-0 z-10 flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
-            <div className="flex items-center gap-2 md:hidden">
+          {/* Top bar — frosted-glass effect: semi-transparent background +
+              backdrop-blur so scrolled content faintly bleeds through,
+              giving the bar visual depth instead of looking like a flat
+              divider line. */}
+          <header className="bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border px-4 py-3 backdrop-blur-md sm:px-6">
+            <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
               <AdminMobileSidebar
                 items={items}
                 brandLabel={t("navTitle")}
                 triggerLabel={t("openMenu")}
               />
-              <Link href="/admin" className="inline-flex items-center gap-2">
+              <Link
+                href="/admin"
+                className="flex min-w-0 items-center gap-2"
+              >
                 <CenterLogo
                   centerName={center?.name ?? t("navTitle")}
                   logoUrl={center?.logo_url ?? null}
@@ -72,9 +81,9 @@ export default async function AdminLayout({
                 />
               </Link>
             </div>
-            <div className="hidden md:block" />
-            <div className="flex items-center gap-3">
-              <span className="text-muted-foreground hidden text-sm sm:inline">
+            <div className="hidden md:block md:flex-1" />
+            <div className="flex shrink-0 items-center gap-3">
+              <span className="text-muted-foreground hidden max-w-[10rem] truncate text-sm sm:inline">
                 {user.full_name}
               </span>
               <LanguageToggle />
