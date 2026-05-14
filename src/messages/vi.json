@@ -300,7 +300,10 @@
       "recentTrend": "Gần đây",
       "vocabulary": "Từ vựng",
       "grammar": "Ngữ pháp",
-      "noLessons": "Chưa có bài học nào được ghi nhận."
+      "noLessons": "Chưa có bài học nào được ghi nhận.",
+      "tabStudents": "Học sinh",
+      "tabLessons": "Buổi học",
+      "tabMessages": "Tin nhắn"
     },
     "templates": {
       "pickerLabel": "Dùng mẫu có sẵn:",

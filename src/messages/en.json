@@ -300,7 +300,10 @@
       "recentTrend": "Recent",
       "vocabulary": "Vocabulary",
       "grammar": "Grammar",
-      "noLessons": "No lessons recorded yet."
+      "noLessons": "No lessons recorded yet.",
+      "tabStudents": "Students",
+      "tabLessons": "Lessons",
+      "tabMessages": "Messages"
     },
     "templates": {
       "pickerLabel": "Use a saved template:",

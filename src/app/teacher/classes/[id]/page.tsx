@@ -32,10 +32,18 @@ export const dynamic = "force-dynamic";
 
 export default async function ClassDetailPage({
   params,
+  searchParams,
 }: {
   params: { id: string };
+  searchParams: { tab?: string };
 }) {
   const user = await requireRole(["teacher", "admin"]);
+  const activeTab: "students" | "lessons" | "messages" =
+    searchParams.tab === "lessons"
+      ? "lessons"
+      : searchParams.tab === "messages"
+        ? "messages"
+        : "students";
   const supabase = createClient();
   const t = await getTranslations("teacher.class");
   const tHome = await getTranslations("teacher.home");
@@ -233,297 +241,420 @@ export default async function ClassDetailPage({
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
-      {/* Messages section — first thing below the header so teacher sees
-          new parent activity without scrolling. On PC, sits as a sticky
-          sidebar on the right so it's always visible while reviewing the
-          roster or lessons. On mobile, appears first (order-1). */}
-      {(() => {
-        const messageableStudents = (students ?? []).filter(
-          (s) => s.parent_user_id,
-        );
-        if (messageableStudents.length === 0) return null;
+      {/* Compute message stats once so the tab badge and the Messages
+          tab body share the same data. */}
+      {(() => null)()}
 
-        const sorted = [...messageableStudents].sort((a, b) => {
-          const sa = messageStats.get(a.id);
-          const sb = messageStats.get(b.id);
-          const ua = sa?.unread ?? 0;
-          const ub = sb?.unread ?? 0;
-          if (ua !== ub) return ub - ua;
-          const ta = sa?.lastAt ? new Date(sa.lastAt).getTime() : 0;
-          const tb = sb?.lastAt ? new Date(sb.lastAt).getTime() : 0;
-          if (ta !== tb) return tb - ta;
-          return a.full_name.localeCompare(b.full_name);
-        });
-
-        const totalUnread = sorted.reduce(
-          (sum, s) => sum + (messageStats.get(s.id)?.unread ?? 0),
-          0,
-        );
-
-        return (
-          <aside className="order-1 space-y-3 lg:order-2 lg:sticky lg:top-20 lg:self-start">
-            <div className="flex items-center gap-2">
-              <MessageSquareText className="text-primary size-5" />
-              <h2 className="text-xl font-semibold tracking-tight">
-                {tMessages("classHeading")}
-              </h2>
-              {totalUnread > 0 ? (
-                <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold">
-                  {totalUnread}
-                </span>
-              ) : null}
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {tMessages("teacherSectionHelp")}
-            </p>
-            <ul className="max-h-[20rem] space-y-2 overflow-y-auto rounded-lg border bg-muted/20 p-2 sm:max-h-[24rem]">
-              {sorted.map((s) => {
-                const stats = messageStats.get(s.id);
-                const lastWhen = stats?.lastAt
-                  ? new Date(stats.lastAt).toLocaleString(dateLocale, {
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
-                  : null;
-                const parent = Array.isArray(s.parent)
-                  ? s.parent[0]
-                  : s.parent;
-                const hasMessages = (stats?.total ?? 0) > 0;
-                const unread = stats?.unread ?? 0;
+      {/* Top tabs — Students / Lessons / Messages. The previous layout
+          floated messages as a sidebar; that worked but meant students
+          and lessons crammed into one column with a long scroll. Tabs
+          give each surface the full width and match the parent page
+          pattern so teachers and parents have the same mental model. */}
+      <nav className="border-b">
+        {(() => {
+          const totalUnread = (students ?? []).reduce(
+            (sum, s) => sum + (messageStats.get(s.id)?.unread ?? 0),
+            0,
+          );
+          const tabs = [
+            {
+              key: "students" as const,
+              label: t("tabStudents"),
+              icon: GraduationCap,
+              count: students?.length ?? 0,
+              showCount: true,
+            },
+            {
+              key: "lessons" as const,
+              label: t("tabLessons"),
+              icon: ClipboardList,
+              count: lessons?.length ?? 0,
+              showCount: true,
+            },
+            {
+              key: "messages" as const,
+              label: t("tabMessages"),
+              icon: MessageSquareText,
+              count: totalUnread,
+              showCount: totalUnread > 0,
+              urgent: totalUnread > 0,
+            },
+          ];
+          return (
+            <div className="-mb-px flex gap-1 overflow-x-auto">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.key;
+                const href =
+                  tab.key === "students"
+                    ? `/teacher/classes/${cls.id}`
+                    : `/teacher/classes/${cls.id}?tab=${tab.key}`;
                 return (
-                  <li key={s.id}>
-                    <Link
-                      href={`/teacher/classes/${cls.id}/messages/${s.id}`}
-                      className={`bg-card hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border p-3 transition ${
-                        unread > 0 ? "border-rose-200" : ""
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1 space-y-0.5">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate font-medium">
-                            {s.full_name}
-                          </p>
-                          {unread > 0 ? (
-                            <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
-                              {unread}
-                            </span>
-                          ) : null}
-                          {parent ? (
-                            <span className="text-muted-foreground text-xs">
-                              {tMessages("teacherSectionParent", {
-                                name: parent.full_name,
-                              })}
-                            </span>
-                          ) : null}
-                        </div>
-                        {hasMessages && stats?.lastBody ? (
-                          <p className="text-muted-foreground truncate text-xs">
-                            {stats.lastBody}
-                          </p>
-                        ) : (
-                          <p className="text-muted-foreground truncate text-xs italic">
-                            {tMessages("teacherSectionStart")}
-                          </p>
-                        )}
-                      </div>
-                      {lastWhen ? (
-                        <span className="text-muted-foreground whitespace-nowrap text-xs">
-                          {lastWhen}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </li>
+                  <Link
+                    key={tab.key}
+                    href={href}
+                    aria-current={active ? "page" : undefined}
+                    className={
+                      "inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition " +
+                      (active
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground")
+                    }
+                  >
+                    <Icon className="size-4" />
+                    {tab.label}
+                    {tab.showCount ? (
+                      <span
+                        className={
+                          "tabular-nums rounded-full px-1.5 text-[10px] font-semibold " +
+                          (tab.urgent
+                            ? "bg-rose-500 text-white"
+                            : active
+                              ? "bg-primary/15 text-primary"
+                              : "bg-muted text-muted-foreground")
+                        }
+                      >
+                        {tab.count}
+                      </span>
+                    ) : null}
+                  </Link>
                 );
               })}
-            </ul>
-          </aside>
-        );
-      })()}
+            </div>
+          );
+        })()}
+      </nav>
 
-      <div className="order-2 space-y-8 lg:order-1 lg:min-w-0">
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="text-primary size-5" />
-          <h2 className="text-xl font-semibold tracking-tight">
-            {t("studentsHeader", { count: students?.length ?? 0 })}
-          </h2>
-        </div>
-        <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{tStudent("fullName")}</TableHead>
-                <TableHead className="w-20">{tStudent("age")}</TableHead>
-                <TableHead className="w-44">{tLevel("header")}</TableHead>
-                <TableHead className="w-32">{t("recentTrend")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {students && students.length > 0 ? (
-                students.map((s) => {
-                  const trend = trendByStudent.get(s.id) ?? [];
-                  return (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-medium">
-                        {s.full_name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {s.age ?? "—"}
-                      </TableCell>
-                      <TableCell>
-                        <LevelSelect
-                          studentId={s.id}
-                          currentLevel={s.overall_level ?? null}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {trend.length > 0 ? (
-                          <span
-                            className="inline-flex items-center gap-1"
-                            title={trend
-                              .map((r) =>
-                                r ? tBehavior(r as "great") : "—",
-                              )
-                              .join(" • ")}
-                          >
-                            {trend.map((r, i) => (
-                              <span
-                                key={i}
-                                className={`size-2.5 rounded-full ${
-                                  r && TREND_DOT_TONES[r]
-                                    ? TREND_DOT_TONES[r]
-                                    : "bg-muted-foreground/30"
-                                }`}
-                              />
-                            ))}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">
-                            —
-                          </span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
+      {/* Students tab */}
+      {activeTab === "students" ? (
+        <section className="space-y-3">
+          <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="text-muted-foreground py-6 text-center text-sm"
-                  >
-                    {t("noStudents")}
-                  </TableCell>
+                  <TableHead>{tStudent("fullName")}</TableHead>
+                  <TableHead className="w-20">{tStudent("age")}</TableHead>
+                  <TableHead className="w-44">{tLevel("header")}</TableHead>
+                  <TableHead className="w-32">{t("recentTrend")}</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
+              </TableHeader>
+              <TableBody>
+                {students && students.length > 0 ? (
+                  students.map((s) => {
+                    const trend = trendByStudent.get(s.id) ?? [];
+                    return (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">
+                          {s.full_name}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {s.age ?? "—"}
+                        </TableCell>
+                        <TableCell>
+                          <LevelSelect
+                            studentId={s.id}
+                            currentLevel={s.overall_level ?? null}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {trend.length > 0 ? (
+                            <span
+                              className="inline-flex items-center gap-1"
+                              title={trend
+                                .map((r) =>
+                                  r ? tBehavior(r as "great") : "—",
+                                )
+                                .join(" • ")}
+                            >
+                              {trend.map((r, i) => (
+                                <span
+                                  key={i}
+                                  className={`size-2.5 rounded-full ${
+                                    r && TREND_DOT_TONES[r]
+                                      ? TREND_DOT_TONES[r]
+                                      : "bg-muted-foreground/30"
+                                  }`}
+                                />
+                              ))}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">
+                              —
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="text-muted-foreground py-6 text-center text-sm"
+                    >
+                      {t("noStudents")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      ) : null}
 
-      <section className="space-y-3">
-        <div className="flex items-center gap-2">
-          <ClipboardList className="text-primary size-5" />
-          <h2 className="text-xl font-semibold tracking-tight">
-            {t("recentLessonsHeader")}
-          </h2>
-        </div>
-        {lessons && lessons.length > 0 ? (
-          <ul className="space-y-3">
-            {lessons.map((l) => (
-              <li
-                key={l.id}
-                className="rounded-lg border bg-card p-4 text-sm shadow-sm"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
-                    <p className="font-medium">
-                      {(() => {
-                        const parts = [l.unit, l.lesson_number, l.topic].filter(
-                          Boolean,
-                        );
-                        return parts.length > 0
-                          ? parts.join(" — ")
-                          : parseDateOnly(l.lesson_date)?.toLocaleDateString(
-                              dateLocale,
-                              {
-                                weekday: "long",
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                              },
-                            ) ?? "";
-                      })()}
-                    </p>
-                    {l.unit || l.lesson_number || l.topic ? (
-                      <p className="text-muted-foreground text-xs">
-                        {parseDateOnly(l.lesson_date)?.toLocaleDateString(dateLocale, {
-                          weekday: "long",
+      {/* Lessons tab — grouped by month, most recent open. */}
+      {activeTab === "lessons" ? (
+        <section className="space-y-4">
+          {lessons && lessons.length > 0 ? (
+            (() => {
+              const byMonth = new Map<string, typeof lessons>();
+              for (const l of lessons) {
+                const d = parseDateOnly(l.lesson_date);
+                if (!d) continue;
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                if (!byMonth.has(key)) byMonth.set(key, []);
+                byMonth.get(key)!.push(l);
+              }
+              const monthLabel = (key: string) => {
+                const [y, m] = key.split("-").map(Number);
+                return new Date(y, m - 1).toLocaleDateString(dateLocale, {
+                  year: "numeric",
+                  month: "long",
+                });
+              };
+              return Array.from(byMonth.entries()).map(
+                ([monthKey, monthLessons], monthIdx) => (
+                  <details
+                    key={monthKey}
+                    open={monthIdx === 0}
+                    className="bg-card group rounded-xl border shadow-sm"
+                  >
+                    <summary className="hover:bg-muted/40 flex cursor-pointer items-center justify-between gap-3 rounded-xl px-4 py-3 [&::-webkit-details-marker]:hidden">
+                      <span className="inline-flex items-center gap-2">
+                        <ClipboardList className="text-primary size-4" />
+                        <span className="text-base font-semibold capitalize tracking-tight">
+                          {monthLabel(monthKey)}
+                        </span>
+                        <span className="text-muted-foreground text-xs">
+                          ({monthLessons.length})
+                        </span>
+                      </span>
+                      <span className="text-muted-foreground text-xs transition group-open:rotate-180">
+                        ▾
+                      </span>
+                    </summary>
+                    <ul className="space-y-3 px-3 pb-3">
+                      {monthLessons.map((l) => (
+                        <li
+                          key={l.id}
+                          className="rounded-lg border bg-card p-4 text-sm shadow-sm"
+                        >
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="font-medium">
+                                {(() => {
+                                  const parts = [
+                                    l.unit,
+                                    l.lesson_number,
+                                    l.topic,
+                                  ].filter(Boolean);
+                                  return parts.length > 0
+                                    ? parts.join(" — ")
+                                    : parseDateOnly(
+                                        l.lesson_date,
+                                      )?.toLocaleDateString(dateLocale, {
+                                        weekday: "long",
+                                        day: "2-digit",
+                                        month: "2-digit",
+                                        year: "numeric",
+                                      }) ?? "";
+                                })()}
+                              </p>
+                              {l.unit || l.lesson_number || l.topic ? (
+                                <p className="text-muted-foreground text-xs">
+                                  {parseDateOnly(
+                                    l.lesson_date,
+                                  )?.toLocaleDateString(dateLocale, {
+                                    weekday: "long",
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    year: "numeric",
+                                  })}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="flex gap-1">
+                              <Link
+                                href={`/teacher/classes/${cls.id}/lessons/${l.id}/edit`}
+                                className={buttonVariants({
+                                  variant: "outline",
+                                  size: "sm",
+                                })}
+                                aria-label={tForm("edit")}
+                              >
+                                <Pencil className="size-3.5" />
+                              </Link>
+                              <form action={deleteLesson}>
+                                <input
+                                  type="hidden"
+                                  name="lesson_id"
+                                  value={l.id}
+                                />
+                                <input
+                                  type="hidden"
+                                  name="class_id"
+                                  value={cls.id}
+                                />
+                                <ConfirmSubmitButton
+                                  confirmMessage={tForm("deleteConfirm")}
+                                  ariaLabel={tForm("delete")}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </ConfirmSubmitButton>
+                              </form>
+                            </div>
+                          </div>
+                          {l.vocabulary ? (
+                            <p className="text-muted-foreground mt-1">
+                              <span className="text-foreground font-medium">
+                                {t("vocabulary")}:
+                              </span>{" "}
+                              {l.vocabulary}
+                            </p>
+                          ) : null}
+                          {l.grammar_point ? (
+                            <p className="text-muted-foreground">
+                              <span className="text-foreground font-medium">
+                                {t("grammar")}:
+                              </span>{" "}
+                              {l.grammar_point}
+                            </p>
+                          ) : null}
+                          {l.general_note ? (
+                            <p className="text-muted-foreground mt-1">
+                              {l.general_note}
+                            </p>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ),
+              );
+            })()
+          ) : (
+            <div className="bg-muted/30 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
+              <div className="bg-background flex size-12 items-center justify-center rounded-full border">
+                <ClipboardList className="text-muted-foreground size-5" />
+              </div>
+              <p className="text-muted-foreground text-sm">{t("noLessons")}</p>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {/* Messages tab — per-student thread list (was the sidebar). */}
+      {activeTab === "messages"
+        ? (() => {
+            const messageableStudents = (students ?? []).filter(
+              (s) => s.parent_user_id,
+            );
+            if (messageableStudents.length === 0) {
+              return (
+                <div className="bg-muted/30 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
+                  <div className="bg-background flex size-12 items-center justify-center rounded-full border">
+                    <MessageSquareText className="text-muted-foreground size-5" />
+                  </div>
+                  <p className="text-muted-foreground max-w-sm text-sm">
+                    {tMessages("teacherSectionHelp")}
+                  </p>
+                </div>
+              );
+            }
+
+            const sorted = [...messageableStudents].sort((a, b) => {
+              const sa = messageStats.get(a.id);
+              const sb = messageStats.get(b.id);
+              const ua = sa?.unread ?? 0;
+              const ub = sb?.unread ?? 0;
+              if (ua !== ub) return ub - ua;
+              const ta = sa?.lastAt ? new Date(sa.lastAt).getTime() : 0;
+              const tb = sb?.lastAt ? new Date(sb.lastAt).getTime() : 0;
+              if (ta !== tb) return tb - ta;
+              return a.full_name.localeCompare(b.full_name);
+            });
+
+            return (
+              <section className="space-y-3">
+                <p className="text-muted-foreground text-sm">
+                  {tMessages("teacherSectionHelp")}
+                </p>
+                <ul className="space-y-2">
+                  {sorted.map((s) => {
+                    const stats = messageStats.get(s.id);
+                    const lastWhen = stats?.lastAt
+                      ? new Date(stats.lastAt).toLocaleString(dateLocale, {
                           day: "2-digit",
                           month: "2-digit",
-                          year: "numeric",
-                        })}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex gap-1">
-                    <Link
-                      href={`/teacher/classes/${cls.id}/lessons/${l.id}/edit`}
-                      className={buttonVariants({
-                        variant: "outline",
-                        size: "sm",
-                      })}
-                      aria-label={tForm("edit")}
-                    >
-                      <Pencil className="size-3.5" />
-                    </Link>
-                    <form action={deleteLesson}>
-                      <input type="hidden" name="lesson_id" value={l.id} />
-                      <input type="hidden" name="class_id" value={cls.id} />
-                      <ConfirmSubmitButton
-                        confirmMessage={tForm("deleteConfirm")}
-                        ariaLabel={tForm("delete")}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </ConfirmSubmitButton>
-                    </form>
-                  </div>
-                </div>
-                {l.vocabulary ? (
-                  <p className="text-muted-foreground mt-1">
-                    <span className="text-foreground font-medium">
-                      {t("vocabulary")}:
-                    </span>{" "}
-                    {l.vocabulary}
-                  </p>
-                ) : null}
-                {l.grammar_point ? (
-                  <p className="text-muted-foreground">
-                    <span className="text-foreground font-medium">
-                      {t("grammar")}:
-                    </span>{" "}
-                    {l.grammar_point}
-                  </p>
-                ) : null}
-                {l.general_note ? (
-                  <p className="text-muted-foreground mt-1">{l.general_note}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm">
-            <ClipboardList className="size-8 opacity-50" />
-            <p>{t("noLessons")}</p>
-          </div>
-        )}
-      </section>
-      </div>{/* end main column */}
-      </div>{/* end 2-col grid */}
-
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : null;
+                    const parent = Array.isArray(s.parent)
+                      ? s.parent[0]
+                      : s.parent;
+                    const hasMessages = (stats?.total ?? 0) > 0;
+                    const unread = stats?.unread ?? 0;
+                    return (
+                      <li key={s.id}>
+                        <Link
+                          href={`/teacher/classes/${cls.id}/messages/${s.id}`}
+                          className={`bg-card hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border p-3 transition ${
+                            unread > 0 ? "border-rose-200" : ""
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1 space-y-0.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="truncate font-medium">
+                                {s.full_name}
+                              </p>
+                              {unread > 0 ? (
+                                <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                                  {unread}
+                                </span>
+                              ) : null}
+                              {parent ? (
+                                <span className="text-muted-foreground text-xs">
+                                  {tMessages("teacherSectionParent", {
+                                    name: parent.full_name,
+                                  })}
+                                </span>
+                              ) : null}
+                            </div>
+                            {hasMessages && stats?.lastBody ? (
+                              <p className="text-muted-foreground truncate text-xs">
+                                {stats.lastBody}
+                              </p>
+                            ) : (
+                              <p className="text-muted-foreground truncate text-xs italic">
+                                {tMessages("teacherSectionStart")}
+                              </p>
+                            )}
+                          </div>
+                          {lastWhen ? (
+                            <span className="text-muted-foreground whitespace-nowrap text-xs">
+                              {lastWhen}
+                            </span>
+                          ) : null}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            );
+          })()
+        : null}
     </div>
   );
 }
