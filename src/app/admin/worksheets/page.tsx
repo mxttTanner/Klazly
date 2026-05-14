@@ -14,14 +14,33 @@ export default async function WorksheetsPage() {
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
   const supabase = createClient();
-  const { data: rows } = await supabase
-    .from("worksheets")
-    .select(
-      "id, name, file_type, size_bytes, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
-    )
-    .order("created_at", { ascending: false });
 
-  const worksheets = (rows ?? []).map((w) => {
+  // Pull the library + every lesson's worksheet_id in parallel. Counting
+  // attachments client-side beats two roundtrips per row.
+  const [worksheetsRes, lessonsRes] = await Promise.all([
+    supabase
+      .from("worksheets")
+      .select(
+        "id, name, file_type, size_bytes, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
+      )
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("lessons")
+      .select("worksheet_id")
+      .not("worksheet_id", "is", null),
+  ]);
+
+  // Build a usage map: worksheet_id → number of lessons that reference it.
+  const usageByWorksheet = new Map<string, number>();
+  for (const l of (lessonsRes.data ?? []) as { worksheet_id: string | null }[]) {
+    if (!l.worksheet_id) continue;
+    usageByWorksheet.set(
+      l.worksheet_id,
+      (usageByWorksheet.get(l.worksheet_id) ?? 0) + 1,
+    );
+  }
+
+  const worksheets = (worksheetsRes.data ?? []).map((w) => {
     const uploader = Array.isArray(w.uploader) ? w.uploader[0] : w.uploader;
     return {
       id: w.id,
@@ -31,6 +50,7 @@ export default async function WorksheetsPage() {
       public_url: w.public_url,
       created_at: w.created_at,
       uploader_name: uploader?.full_name ?? null,
+      usage_count: usageByWorksheet.get(w.id) ?? 0,
     };
   });
 

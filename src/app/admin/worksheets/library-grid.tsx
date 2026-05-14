@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ExternalLink, FileText, ImageIcon } from "lucide-react";
+import {
+  ExternalLink,
+  FileText,
+  ImageIcon,
+  Link2,
+  Search,
+  X,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
 import { deleteWorksheet } from "./actions";
 
@@ -14,6 +22,7 @@ type Worksheet = {
   public_url: string;
   created_at: string;
   uploader_name: string | null;
+  usage_count: number;
 };
 
 type Filter = "all" | "images" | "pdfs";
@@ -34,6 +43,7 @@ export function WorksheetsLibraryGrid({
   const t = useTranslations("worksheets");
   const tc = useTranslations("common");
   const [filter, setFilter] = useState<Filter>("all");
+  const [query, setQuery] = useState("");
 
   const counts = useMemo(() => {
     let images = 0;
@@ -46,11 +56,16 @@ export function WorksheetsLibraryGrid({
   }, [worksheets]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return worksheets;
-    if (filter === "images")
-      return worksheets.filter((w) => w.file_type.startsWith("image/"));
-    return worksheets.filter((w) => !w.file_type.startsWith("image/"));
-  }, [worksheets, filter]);
+    const typeFiltered =
+      filter === "all"
+        ? worksheets
+        : filter === "images"
+          ? worksheets.filter((w) => w.file_type.startsWith("image/"))
+          : worksheets.filter((w) => !w.file_type.startsWith("image/"));
+    const q = query.trim().toLowerCase();
+    if (!q) return typeFiltered;
+    return typeFiltered.filter((w) => w.name.toLowerCase().includes(q));
+  }, [worksheets, filter, query]);
 
   const chips: { value: Filter; label: string; count: number }[] = [
     { value: "all", label: t("filterAll"), count: counts.all },
@@ -60,6 +75,27 @@ export function WorksheetsLibraryGrid({
 
   return (
     <div className="space-y-4">
+      <div className="relative">
+        <Search className="text-muted-foreground pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2" />
+        <Input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("searchPlaceholder")}
+          className="pl-9 pr-9"
+        />
+        {query ? (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label={t("clearSearch")}
+            className="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md hover:bg-muted"
+          >
+            <X className="size-3.5" />
+          </button>
+        ) : null}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         {chips.map((c) => {
           const active = filter === c.value;
@@ -93,7 +129,9 @@ export function WorksheetsLibraryGrid({
 
       {filtered.length === 0 ? (
         <div className="bg-muted/30 rounded-lg border border-dashed p-10 text-center">
-          <p className="text-muted-foreground text-sm">{t("empty")}</p>
+          <p className="text-muted-foreground text-sm">
+            {query ? t("searchEmpty", { q: query }) : t("empty")}
+          </p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -147,6 +185,23 @@ export function WorksheetsLibraryGrid({
                   >
                     {w.name}
                   </a>
+                  {/* Usage chip — the admin's signal for "is this worksheet
+                      pulling weight?". Emerald if attached, muted if not. */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span
+                      className={
+                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                        (w.usage_count > 0
+                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                          : "bg-muted text-muted-foreground")
+                      }
+                    >
+                      <Link2 className="size-2.5" />
+                      {w.usage_count === 0
+                        ? t("usageUnused")
+                        : t("usageInLessons", { n: w.usage_count })}
+                    </span>
+                  </div>
                   <div className="text-muted-foreground mt-auto flex items-center justify-between text-[11px]">
                     <span>
                       {new Date(w.created_at).toLocaleDateString(dateLocale, {
