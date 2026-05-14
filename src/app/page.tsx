@@ -61,7 +61,7 @@ export default async function HomePage() {
   return (
     <div className="min-h-dvh bg-background">
       {/* Top bar */}
-      <header className="bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 border-b border-border backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/85 shadow-[0_1px_3px_-1px_rgb(0_0_0/0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link
             href="/"

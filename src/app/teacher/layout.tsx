@@ -23,9 +23,9 @@ export default async function TeacherLayout({
     .single();
 
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh bg-zinc-50 dark:bg-zinc-950/40">
       <DemoBanner email={user.email} />
-      <header className="bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 border-b border-border backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/85 shadow-[0_1px_3px_-1px_rgb(0_0_0/0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
           <Link
             href="/teacher"

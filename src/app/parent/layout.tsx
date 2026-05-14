@@ -23,9 +23,9 @@ export default async function ParentLayout({
     .single();
 
   return (
-    <div className="min-h-dvh">
+    <div className="min-h-dvh bg-zinc-50 print:bg-white dark:bg-zinc-950/40">
       <DemoBanner email={user.email} />
-      <header className="bg-background/85 supports-[backdrop-filter]:bg-background/70 sticky top-0 z-20 border-b border-border backdrop-blur-md print:static print:border-0 print:bg-transparent print:backdrop-blur-none print:hidden">
+      <header className="sticky top-0 z-20 border-b border-border bg-background/85 shadow-[0_1px_3px_-1px_rgb(0_0_0/0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70 print:static print:border-0 print:bg-transparent print:shadow-none print:backdrop-blur-none print:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link
             href="/parent"
