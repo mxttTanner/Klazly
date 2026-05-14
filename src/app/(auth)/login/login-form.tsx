@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ export function LoginForm() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -75,16 +77,47 @@ export function LoginForm() {
             {t("forgot")}
           </Link>
         </div>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={pending}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={pending}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+            className="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md hover:bg-muted"
+          >
+            {showPassword ? (
+              <EyeOff className="size-4" />
+            ) : (
+              <Eye className="size-4" />
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Remember-me — cosmetic. Supabase sessions persist by default in
+          localStorage; flipping to session-only would require a different
+          createClient configuration we don't expose yet. Showing it
+          gives users the expected affordance; behaviour is "always
+          persistent". TODO(remember-me): wire to a session-only client
+          when we add a "log me out on close" preference. */}
+      <label className="text-muted-foreground inline-flex cursor-pointer items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          defaultChecked
+          className="border-input size-4 rounded border accent-primary"
+        />
+        {t("rememberMe")}
+      </label>
+
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
