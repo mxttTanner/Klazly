@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
@@ -94,8 +95,19 @@ export async function deleteWorksheet(formData: FormData) {
     .single();
   if (!ws || ws.center_id !== admin.center_id) return;
 
-  await supabase.from("worksheets").delete().eq("id", id);
-  await supabase.storage.from("worksheets").remove([ws.storage_path]);
+  const { error: delErr } = await supabase
+    .from("worksheets")
+    .delete()
+    .eq("id", id);
+  if (delErr) throw new Error(`deleteWorksheet failed: ${delErr.message}`);
+
+  // Storage cleanup is best-effort: the row is gone, so the file is already
+  // unreachable from the app. A leftover orphan blob is wasted bytes, not a
+  // bug we should error-boundary the admin over.
+  const { error: storageErr } = await supabase.storage
+    .from("worksheets")
+    .remove([ws.storage_path]);
+  if (storageErr) Sentry.captureException(storageErr);
 
   revalidatePath("/admin/worksheets");
   revalidatePath("/teacher/classes", "layout");

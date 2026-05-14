@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Root error boundary. Server-component throws (Supabase timeout, bad UUID
@@ -17,8 +18,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // In production this is where Sentry / Vercel logs would capture it.
-    console.error("[global error]", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (

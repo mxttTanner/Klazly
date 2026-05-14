@@ -120,7 +120,11 @@ export async function updateClassBook(formData: FormData) {
     .single();
   if (!cls || cls.center_id !== admin.center_id) return;
 
-  await supabase.from("classes").update({ book }).eq("id", id);
+  const { error } = await supabase
+    .from("classes")
+    .update({ book })
+    .eq("id", id);
+  if (error) throw new Error(`updateClassBook failed: ${error.message}`);
   revalidatePath("/admin/classes");
   revalidatePath("/admin");
 }
@@ -143,7 +147,11 @@ export async function updateClassProgram(formData: FormData) {
     .single();
   if (!cls || cls.center_id !== admin.center_id) return;
 
-  await supabase.from("classes").update({ program }).eq("id", id);
+  const { error } = await supabase
+    .from("classes")
+    .update({ program })
+    .eq("id", id);
+  if (error) throw new Error(`updateClassProgram failed: ${error.message}`);
   revalidatePath("/admin/classes");
   revalidatePath("/admin");
 }
@@ -176,11 +184,13 @@ export async function updateClassTeacher(formData: FormData) {
       return;
   }
 
-  await supabase.from("classes").update({ teacher_id }).eq("id", id);
+  const { error } = await supabase
+    .from("classes")
+    .update({ teacher_id })
+    .eq("id", id);
+  if (error) throw new Error(`updateClassTeacher failed: ${error.message}`);
   revalidatePath("/admin/classes");
   revalidatePath("/admin");
-  // Teacher's home + class detail need to refresh since the assignment
-  // affects what classes they see and which they own.
   revalidatePath("/teacher", "layout");
 }
 
@@ -199,7 +209,8 @@ export async function deleteClass(formData: FormData) {
     .single();
   if (!cls || cls.center_id !== admin.center_id) return;
 
-  await supabase.from("classes").delete().eq("id", id);
+  const { error } = await supabase.from("classes").delete().eq("id", id);
+  if (error) throw new Error(`deleteClass failed: ${error.message}`);
   revalidatePath("/admin/classes");
   revalidatePath("/admin");
 }

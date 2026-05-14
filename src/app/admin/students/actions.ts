@@ -109,7 +109,11 @@ export async function updateStudent(formData: FormData) {
     if (!p || p.center_id !== admin.center_id || p.role !== "parent") return;
   }
 
-  await supabase.from("students").update({ [field]: value }).eq("id", id);
+  const { error } = await supabase
+    .from("students")
+    .update({ [field]: value })
+    .eq("id", id);
+  if (error) throw new Error(`updateStudent failed: ${error.message}`);
   revalidatePath("/admin/students");
 }
 
@@ -128,7 +132,8 @@ export async function deleteStudent(formData: FormData) {
     .single();
   if (!student || student.center_id !== admin.center_id) return;
 
-  await supabase.from("students").delete().eq("id", id);
+  const { error } = await supabase.from("students").delete().eq("id", id);
+  if (error) throw new Error(`deleteStudent failed: ${error.message}`);
   revalidatePath("/admin/students");
   revalidatePath("/admin");
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -180,12 +181,16 @@ export async function markThreadRead(formData: FormData) {
   if (isDemoUser(user)) return; // don't pollute demo read-state either
 
   const supabase = createClient();
-  await supabase
+  // Best-effort: this runs every time someone opens a thread. A transient
+  // failure shouldn't error-boundary the user. Capture for ops visibility
+  // and let the next thread visit retry.
+  const { error } = await supabase
     .from("parent_teacher_messages")
     .update({ read_at: new Date().toISOString() })
     .eq("student_id", studentId)
     .neq("sender_user_id", user.id)
     .is("read_at", null);
+  if (error) Sentry.captureException(error);
 
   revalidatePath(`/parent/students/${studentId}`);
   revalidatePath("/teacher/classes/[id]/messages/[studentId]", "page");

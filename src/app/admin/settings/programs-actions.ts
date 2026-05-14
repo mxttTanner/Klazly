@@ -88,7 +88,8 @@ export async function seedSuggestedPrograms() {
   }
   if (rows.length === 0) return;
 
-  await supabase.from("center_programs").insert(rows);
+  const { error } = await supabase.from("center_programs").insert(rows);
+  if (error) throw new Error(`seedSuggestedPrograms failed: ${error.message}`);
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
   revalidatePath("/admin/classes");
@@ -136,11 +137,16 @@ export async function renameProgram(_prev: unknown, formData: FormData) {
   }
 
   // Cascade rename across classes that referenced the old label.
-  await supabase
+  const { error: cascadeErr } = await supabase
     .from("classes")
     .update({ program: parsedLabel.data })
     .eq("center_id", admin.center_id)
     .eq("program", oldLabel);
+  if (cascadeErr) {
+    // Program rename succeeded but classes still point at the old label.
+    // Surface this — leaving it silent means the UI shows mismatched labels.
+    return { error: t("programsSaveError", { message: cascadeErr.message }) };
+  }
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
@@ -166,13 +172,20 @@ export async function deleteProgram(formData: FormData) {
     .single();
   if (!prog || prog.center_id !== admin.center_id) return;
 
-  await supabase
+  const { error: cascadeErr } = await supabase
     .from("classes")
     .update({ program: null })
     .eq("center_id", admin.center_id)
     .eq("program", prog.label as string);
+  if (cascadeErr)
+    throw new Error(`deleteProgram cascade failed: ${cascadeErr.message}`);
 
-  await supabase.from("center_programs").delete().eq("id", id);
+  const { error: delErr } = await supabase
+    .from("center_programs")
+    .delete()
+    .eq("id", id);
+  if (delErr) throw new Error(`deleteProgram failed: ${delErr.message}`);
+
   revalidatePath("/admin/settings");
   revalidatePath("/admin");
   revalidatePath("/admin/classes");
