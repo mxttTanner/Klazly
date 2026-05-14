@@ -13,6 +13,7 @@ import {
   Heart,
   Languages,
   Lock,
+  Mail,
   MessageCircle,
   Phone,
   Printer,
@@ -761,32 +762,89 @@ export default async function HomePage() {
           aria-hidden="true"
           className="from-primary/20 absolute -top-20 left-1/2 size-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-br to-transparent blur-3xl"
         />
-        <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-24">
-          <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-5xl">
-            {t("finalCtaTitle")}
-          </h2>
-          <p className="text-slate-300 mx-auto mt-4 max-w-xl text-balance text-lg">
-            {t("finalCtaSubtitle")}
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/demo"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-md px-6 py-3 text-base font-semibold shadow-lg shadow-primary/30 transition"
-            >
-              {t("ctaStartTrial")}
-              <ArrowRight className="size-4" />
-            </Link>
-            <a
-              href="https://zalo.me/matthewstadlers14"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="border-white/20 bg-white/5 hover:bg-white/10 inline-flex items-center gap-2 rounded-md border px-6 py-3 text-base font-medium backdrop-blur-sm transition"
-            >
-              <MessageCircle className="size-4" />
-              {t("ctaZalo")}
-            </a>
+        <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
+          <div className="grid items-center gap-10 lg:grid-cols-[1fr_auto]">
+            <div className="text-center lg:text-left">
+              <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-5xl">
+                {t("finalCtaTitle")}
+              </h2>
+              <p className="text-slate-300 mt-4 max-w-xl text-balance text-lg lg:max-w-md">
+                {t("finalCtaSubtitle")}
+              </p>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                <Link
+                  href="/demo"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-md px-6 py-3 text-base font-semibold shadow-lg shadow-primary/30 transition"
+                >
+                  {t("ctaStartTrial")}
+                  <ArrowRight className="size-4" />
+                </Link>
+                <a
+                  href="https://zalo.me/84862404036"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="border-white/20 bg-white/5 hover:bg-white/10 inline-flex items-center gap-2 rounded-md border px-6 py-3 text-base font-medium backdrop-blur-sm transition"
+                >
+                  <MessageCircle className="size-4" />
+                  {t("ctaZalo")}
+                </a>
+              </div>
+              <p className="text-slate-400 mt-6 text-sm">
+                {t("finalCtaTrust")}
+              </p>
+            </div>
+
+            {/* Contact card — all three channels, Zalo prominent with
+                its QR code. Zalo is the primary channel in Vietnam, so
+                it gets the largest visual weight (QR + button); phone
+                + email are listed beneath. */}
+            <aside className="bg-white/5 ring-white/10 mx-auto w-full max-w-sm rounded-2xl p-6 backdrop-blur-sm ring-1">
+              <p className="text-slate-300 text-xs font-semibold uppercase tracking-widest">
+                {t("contactCardLabel")}
+              </p>
+              <div className="mt-4 flex flex-col items-center text-center">
+                {/* QR image — drop the JPG at public/zalo-qr.jpg.
+                    eslint-disable: next/image isn't worth it for one
+                    decorative static QR. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/zalo-qr.jpg"
+                  alt={t("zaloQrAlt")}
+                  width={220}
+                  height={220}
+                  className="bg-white h-[220px] w-[220px] rounded-xl object-contain p-2 shadow-lg"
+                />
+                <p className="text-slate-200 mt-3 text-sm font-medium">
+                  {t("contactCardScanHint")}
+                </p>
+                <a
+                  href="https://zalo.me/84862404036"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-emerald-500 text-white hover:bg-emerald-400 mt-3 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold shadow-md transition"
+                >
+                  <MessageCircle className="size-4" />
+                  {t("contactCardOpenZalo")}
+                </a>
+              </div>
+              <div className="border-white/10 mt-5 space-y-2 border-t pt-4 text-sm">
+                <a
+                  href="tel:+84862404036"
+                  className="text-slate-200 hover:text-white flex items-center gap-2"
+                >
+                  <Phone className="size-4 text-emerald-400" />
+                  +84 86 240 4036
+                </a>
+                <a
+                  href="mailto:matthewstadlers14@gmail.com"
+                  className="text-slate-200 hover:text-white flex items-center gap-2 break-all"
+                >
+                  <Mail className="size-4 text-emerald-400" />
+                  matthewstadlers14@gmail.com
+                </a>
+              </div>
+            </aside>
           </div>
-          <p className="text-slate-400 mt-6 text-sm">{t("finalCtaTrust")}</p>
         </div>
       </section>
 
@@ -803,26 +861,44 @@ export default async function HomePage() {
               <p className="text-slate-400 max-w-sm text-sm leading-relaxed">
                 {t("footerTagline")}
               </p>
-              <a
-                href="https://zalo.me/matthewstadlers14"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-200 border-slate-700 bg-slate-800/60 hover:bg-slate-800 inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition"
-              >
-                <MessageCircle className="size-4 text-emerald-400" />
-                {t("footerZalo")}
-              </a>
+              {/* Zalo QR + button. The QR is small (120px) here — the
+                  large version lives in the final-CTA contact card. */}
+              <div className="flex items-start gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/zalo-qr.jpg"
+                  alt={t("zaloQrAlt")}
+                  width={120}
+                  height={120}
+                  className="bg-white h-[120px] w-[120px] shrink-0 rounded-lg object-contain p-1.5"
+                />
+                <div className="flex flex-col gap-2">
+                  <a
+                    href="https://zalo.me/84862404036"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-200 border-slate-700 bg-slate-800/60 hover:bg-slate-800 inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition"
+                  >
+                    <MessageCircle className="size-4 text-emerald-400" />
+                    {t("footerZalo")}
+                  </a>
+                  <p className="text-slate-500 text-[11px] leading-snug">
+                    {t("footerZaloScan")}
+                  </p>
+                </div>
+              </div>
               <div className="text-slate-400 space-y-1 text-xs">
                 <p className="inline-flex items-center gap-1.5">
                   <Phone className="size-3.5" />
                   <a
-                    href="tel:+84901234567"
+                    href="tel:+84862404036"
                     className="hover:text-white"
                   >
-                    +84 90 123 4567
+                    +84 86 240 4036
                   </a>
                 </p>
-                <p>
+                <p className="inline-flex items-center gap-1.5">
+                  <Mail className="size-3.5" />
                   <a
                     href="mailto:matthewstadlers14@gmail.com"
                     className="hover:text-white"
