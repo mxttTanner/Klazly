@@ -6,6 +6,7 @@ import { ArrowUpRight, Building2, Calendar, Mail, Phone, Trash2 } from "lucide-r
 import { StatusSelect } from "./status-select";
 import { PlanSelect } from "./plan-select";
 import { NotesCell } from "./notes-cell";
+import { TierBadge } from "./tier-badge";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
 import { deleteCenterCascade } from "./actions";
 
@@ -16,6 +17,7 @@ export type CenterCardData = {
   contact_phone: string | null;
   subscription_status: string;
   subscription_plan: string | null;
+  plan_tier: string | null;
   notes: string | null;
   trial_ends_at: string | null;
   created_at: string;
@@ -71,6 +73,7 @@ export function CenterCard({ center }: { center: CenterCardData }) {
               </h3>
               <ArrowUpRight className="text-muted-foreground group-hover/title:text-primary size-4 opacity-0 transition group-hover/title:opacity-100" />
             </Link>
+            <TierBadge tier={center.plan_tier} />
           </div>
           {/* Status + plan combined badge — the primary at-a-glance
               signal. "Active · Yearly" / "Trial · 4 days left" / etc. */}

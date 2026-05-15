@@ -27,6 +27,9 @@ import {
 import { CenterForm } from "./center-form";
 import { CenterCard, type CenterCardData } from "./center-card";
 import { SuperAdminTabs } from "./super-admin-tabs";
+import { TierBadge } from "./tier-badge";
+import { FoundingCenterWidget } from "./founding-widget";
+import { SourceAnalytics } from "./source-analytics";
 
 // Per-month VND contribution of each paid plan. Six-month and annual are
 // amortised so MRR is comparable across tiers.
@@ -75,6 +78,8 @@ export default async function SuperAdminHomePage({
     contact_phone: string | null;
     subscription_status: string;
     subscription_plan: string | null;
+    plan_tier: string | null;
+    signup_source: string | null;
     notes: string | null;
     trial_ends_at: string | null;
     subscription_started_at: string | null;
@@ -83,6 +88,8 @@ export default async function SuperAdminHomePage({
     next_billing_at: string | null;
     created_at: string;
   };
+  const withTierSelect =
+    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, plan_tier, signup_source, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
   const fullSelect =
     "id, name, contact_email, contact_phone, subscription_status, subscription_plan, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
   const preLifecycleSelect =
@@ -93,13 +100,26 @@ export default async function SuperAdminHomePage({
     "id, name, contact_email, contact_phone, subscription_status, trial_ends_at, created_at";
 
   let centers: CenterRow[] | null = null;
-  const res1 = await supabase
+  // Attempt 0 — full select including plan_tier + signup_source.
+  // Falls through if the founding-center migration hasn't run yet.
+  const res0 = await supabase
     .from("centers")
-    .select(fullSelect)
+    .select(withTierSelect)
     .order("created_at", { ascending: false });
-  if (!res1.error) {
-    centers = (res1.data ?? []) as CenterRow[];
-  } else if (/subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
+  if (!res0.error) {
+    centers = (res0.data ?? []) as CenterRow[];
+  }
+  const res1 = centers
+    ? { error: null, data: null }
+    : await supabase
+        .from("centers")
+        .select(fullSelect)
+        .order("created_at", { ascending: false });
+  if (!centers && !res1.error) {
+    centers = ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source">[]).map(
+      (c) => ({ ...c, plan_tier: null, signup_source: null }),
+    );
+  } else if (!centers && res1.error && /subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
     const r = await supabase
       .from("centers")
       .select(preLifecycleSelect)
@@ -112,14 +132,18 @@ export default async function SuperAdminHomePage({
           | "subscription_ends_at"
           | "last_payment_at"
           | "next_billing_at"
+          | "plan_tier"
+          | "signup_source"
         >),
         subscription_started_at: null,
         subscription_ends_at: null,
         last_payment_at: null,
         next_billing_at: null,
+        plan_tier: null,
+        signup_source: null,
       }));
     }
-  } else if (/notes/i.test(res1.error.message)) {
+  } else if (!centers && res1.error && /notes/i.test(res1.error.message)) {
     const r = await supabase
       .from("centers")
       .select(noNotesSelect)
@@ -133,15 +157,19 @@ export default async function SuperAdminHomePage({
           | "subscription_ends_at"
           | "last_payment_at"
           | "next_billing_at"
+          | "plan_tier"
+          | "signup_source"
         >),
         notes: null,
         subscription_started_at: null,
         subscription_ends_at: null,
         last_payment_at: null,
         next_billing_at: null,
+        plan_tier: null,
+        signup_source: null,
       }));
     }
-  } else if (/subscription_plan/i.test(res1.error.message)) {
+  } else if (!centers && res1.error && /subscription_plan/i.test(res1.error.message)) {
     const r = await supabase
       .from("centers")
       .select(basicSelect)
@@ -162,6 +190,8 @@ export default async function SuperAdminHomePage({
       subscription_ends_at: null,
       last_payment_at: null,
       next_billing_at: null,
+      plan_tier: null,
+      signup_source: null,
     }));
   }
 
@@ -207,6 +237,7 @@ export default async function SuperAdminHomePage({
     id: string;
     name: string;
     contactPhone: string | null;
+    planTier: string | null;
     days: number; // positive = days left; for expired bucket = days since expiry
     zaloUrl: string | null;
   };
@@ -222,6 +253,7 @@ export default async function SuperAdminHomePage({
           id: c.id,
           name: c.name,
           contactPhone: c.contact_phone,
+          planTier: c.plan_tier,
           days,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -230,6 +262,7 @@ export default async function SuperAdminHomePage({
           id: c.id,
           name: c.name,
           contactPhone: c.contact_phone,
+          planTier: c.plan_tier,
           days,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -241,6 +274,7 @@ export default async function SuperAdminHomePage({
           id: c.id,
           name: c.name,
           contactPhone: c.contact_phone,
+          planTier: c.plan_tier,
           days: since,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -252,6 +286,46 @@ export default async function SuperAdminHomePage({
   recentlyExpired.sort((a, b) => a.days - b.days);
   const hasActionRequired =
     urgentTrials.length + warningTrials.length + recentlyExpired.length > 0;
+
+  // Founding Center cohort tracking — pulls the cap from
+  // public.app_settings (managed by updateFoundingCenterCap) and
+  // counts active+trial centers on plan_tier='founding'. Falls back
+  // gracefully when the founding-center migration hasn't run yet so
+  // the widget just hides.
+  let foundingCap = 5;
+  let foundingWidgetEnabled = false;
+  try {
+    const { data: setting } = await supabase
+      .from("app_settings")
+      .select("value")
+      .eq("key", "founding_center_cap")
+      .maybeSingle();
+    if (setting) {
+      const v = (setting as { value: unknown }).value;
+      if (typeof v === "number") foundingCap = v;
+      else if (typeof v === "string") foundingCap = Number(v) || 5;
+    }
+    foundingWidgetEnabled = true;
+  } catch {
+    // Migration not applied — widget stays hidden.
+  }
+  const foundingFilled = withDerived.filter(
+    (c) =>
+      c.plan_tier === "founding" &&
+      (c.derived === "trial" ||
+        c.derived === "trial_ending_soon" ||
+        c.derived === "active"),
+  ).length;
+
+  // Source breakdown counts — null-safe; old centers without
+  // signup_source just don't contribute.
+  const sourceCounts: Record<string, number> = {};
+  for (const c of withDerived) {
+    const s = c.signup_source ?? null;
+    if (!s) continue;
+    sourceCounts[s] = (sourceCounts[s] ?? 0) + 1;
+  }
+  const sourceTotal = Object.values(sourceCounts).reduce((a, b) => a + b, 0);
 
   // KPIs use the derived status so the dashboard reflects what the
   // admin actually sees, not the raw DB value.
@@ -534,6 +608,30 @@ export default async function SuperAdminHomePage({
         </section>
       ) : null}
 
+      {/* Founding Center cohort + source-attribution. Internal-only.
+          Render side-by-side at small screens too — both are compact. */}
+      {foundingWidgetEnabled || sourceTotal > 0 ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {foundingWidgetEnabled ? (
+            <FoundingCenterWidget
+              filled={foundingFilled}
+              initialCap={foundingCap}
+            />
+          ) : null}
+          <SourceAnalytics
+            counts={sourceCounts}
+            total={sourceTotal}
+            labels={{
+              zalo_cold: t("source_zalo_cold"),
+              landing_cta: t("source_landing_cta"),
+              referral: t("source_referral"),
+              in_person: t("source_in_person"),
+              other: t("source_other"),
+            }}
+          />
+        </div>
+      ) : null}
+
       {/* Stats — always visible. The business-glance snapshot. */}
       <div className="space-y-3">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -628,6 +726,7 @@ function ActionGroup({
     id: string;
     name: string;
     contactPhone: string | null;
+    planTier: string | null;
     days: number;
     zaloUrl: string | null;
   }[];
@@ -694,12 +793,15 @@ function ActionGroup({
             className="flex items-center justify-between gap-3 rounded-md border border-slate-200/80 bg-slate-50/60 px-3 py-2"
           >
             <div className="min-w-0">
-              <Link
-                href={`/super-admin/centers/${c.id}`}
-                className="hover:text-primary block truncate text-sm font-medium"
-              >
-                {c.name}
-              </Link>
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href={`/super-admin/centers/${c.id}`}
+                  className="hover:text-primary truncate text-sm font-medium"
+                >
+                  {c.name}
+                </Link>
+                <TierBadge tier={c.planTier} />
+              </div>
               <p className={"mt-0.5 text-xs tabular-nums " + toneClasses.days}>
                 {kind === "left"
                   ? t("daysLeftShort", { n: c.days })

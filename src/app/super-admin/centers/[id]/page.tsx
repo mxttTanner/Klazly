@@ -32,6 +32,7 @@ import {
   type DerivedStatus,
 } from "@/lib/subscription";
 import { NotesCell } from "../../notes-cell";
+import { TierBadge } from "../../tier-badge";
 import { CenterActionsBar } from "./center-actions-bar";
 
 export const dynamic = "force-dynamic";
@@ -63,13 +64,57 @@ export default async function CenterDetailPage({
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
   const supabase = createAdminClient();
-  const { data: center } = await supabase
+  // Try the full select including the founding-center columns; fall
+  // back to the legacy shape when the migration hasn't been applied
+  // yet so the detail page still renders.
+  type CenterRow = {
+    id: string;
+    name: string;
+    contact_email: string | null;
+    contact_phone: string | null;
+    notes: string | null;
+    subscription_status: string;
+    subscription_plan: string | null;
+    plan_tier: string | null;
+    signup_source: string | null;
+    referral_note: string | null;
+    trial_ends_at: string | null;
+    subscription_started_at: string | null;
+    subscription_ends_at: string | null;
+    last_payment_at: string | null;
+    next_billing_at: string | null;
+    created_at: string;
+  };
+  let center: CenterRow | null = null;
+  const full = await supabase
     .from("centers")
     .select(
-      "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
+      "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, plan_tier, signup_source, referral_note, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
     )
     .eq("id", params.id)
     .single();
+  if (!full.error) {
+    center = full.data as CenterRow;
+  } else if (/plan_tier|signup_source|referral_note/i.test(full.error.message)) {
+    const fb = await supabase
+      .from("centers")
+      .select(
+        "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
+      )
+      .eq("id", params.id)
+      .single();
+    if (!fb.error && fb.data) {
+      center = {
+        ...(fb.data as Omit<
+          CenterRow,
+          "plan_tier" | "signup_source" | "referral_note"
+        >),
+        plan_tier: null,
+        signup_source: null,
+        referral_note: null,
+      };
+    }
+  }
   if (!center) notFound();
 
   const derived: DerivedStatus = deriveStatus(
@@ -243,6 +288,7 @@ export default async function CenterDetailPage({
             <h1 className="text-3xl font-semibold tracking-tight">
               {center.name}
             </h1>
+            <TierBadge tier={center.plan_tier} size="full" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -259,6 +305,16 @@ export default async function CenterDetailPage({
               <Calendar className="size-3" />
               {t("createdShort", { date: formatDate(center.created_at) })}
             </span>
+            {center.signup_source ? (
+              <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                · {t(`source_${center.signup_source}` as Parameters<typeof t>[0])}
+                {center.referral_note ? (
+                  <span className="text-foreground font-medium">
+                    {" "}({center.referral_note})
+                  </span>
+                ) : null}
+              </span>
+            ) : null}
           </div>
         </div>
 

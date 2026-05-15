@@ -24,6 +24,14 @@ exception when duplicate_object then null; end $$;
 -- handles this fine when executed as a standalone statement.
 alter type subscription_status add value if not exists 'expired';
 
+-- Internal-only tier tracking (see db/founding-center.sql for full
+-- context). 'standard' is everyone; 'founding' is the hand-picked
+-- pilot cohort at a discounted lifetime rate; 'design_partner' is
+-- free-forever in exchange for ongoing product input.
+do $$ begin
+  create type plan_tier as enum ('standard', 'founding', 'design_partner');
+exception when duplicate_object then null; end $$;
+
 -- ==========================================================================
 -- Tables
 -- ==========================================================================

@@ -117,6 +117,51 @@ async function writeAuditLog(
   }
 }
 
+/**
+ * Composite plan-type values from the super-admin create form. Each
+ * value here decomposes to (status, plan, plan_tier, trial_days)
+ * via PLAN_TYPE_DECOMPOSITION below.
+ */
+const PLAN_TYPE_VALUES = [
+  "trial_standard",
+  "trial_founding",
+  "active_monthly",
+  "active_six_months",
+  "active_annual",
+  "active_founding",
+  "active_design_partner",
+] as const;
+type PlanType = (typeof PLAN_TYPE_VALUES)[number];
+
+type Tier = "standard" | "founding" | "design_partner";
+type ActiveStatus = "trial" | "active";
+
+const PLAN_TYPE_DECOMPOSITION: Record<
+  PlanType,
+  {
+    status: ActiveStatus;
+    plan: Plan | null;
+    tier: Tier;
+    trialDays: number | null;
+  }
+> = {
+  trial_standard: { status: "trial", plan: null, tier: "standard", trialDays: 14 },
+  trial_founding: { status: "trial", plan: null, tier: "founding", trialDays: 30 },
+  active_monthly: { status: "active", plan: "monthly", tier: "standard", trialDays: null },
+  active_six_months: { status: "active", plan: "six_months", tier: "standard", trialDays: null },
+  active_annual: { status: "active", plan: "annual", tier: "standard", trialDays: null },
+  active_founding: { status: "active", plan: "monthly", tier: "founding", trialDays: null },
+  active_design_partner: { status: "active", plan: null, tier: "design_partner", trialDays: null },
+};
+
+const SIGNUP_SOURCE_VALUES = [
+  "zalo_cold",
+  "in_person",
+  "referral",
+  "landing_cta",
+  "other",
+] as const;
+
 const createCenterSchema = z.object({
   center_name: z.string().min(1).max(120),
   admin_full_name: z.string().min(1).max(120),
@@ -127,7 +172,9 @@ const createCenterSchema = z.object({
   admin_phone: z.string().optional(),
   admin_password: z.string().min(8).max(72),
   contact_phone: z.string().max(40).optional().nullable(),
-  subscription_plan: z.enum(PLAN_VALUES).optional().nullable(),
+  plan_type: z.enum(PLAN_TYPE_VALUES).default("trial_standard"),
+  signup_source: z.enum(SIGNUP_SOURCE_VALUES).default("zalo_cold"),
+  referral_note: z.string().max(280).optional().nullable(),
 });
 
 export async function createCenter(_prev: unknown, formData: FormData) {
@@ -135,7 +182,8 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   const t = await getTranslations("superAdmin");
   const tco = await getTranslations("contact");
 
-  const planRaw = String(formData.get("subscription_plan") ?? "");
+  const planTypeRaw = String(formData.get("plan_type") ?? "trial_standard");
+  const sourceRaw = String(formData.get("signup_source") ?? "zalo_cold");
   const parsed = createCenterSchema.safeParse({
     center_name: formData.get("center_name"),
     admin_full_name: formData.get("admin_full_name"),
@@ -143,12 +191,18 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     admin_phone: formData.get("admin_phone"),
     admin_password: formData.get("admin_password"),
     contact_phone: formData.get("contact_phone") || null,
-    subscription_plan:
-      planRaw && (PLAN_VALUES as readonly string[]).includes(planRaw)
-        ? (planRaw as Plan)
-        : null,
+    plan_type: (PLAN_TYPE_VALUES as readonly string[]).includes(planTypeRaw)
+      ? planTypeRaw
+      : "trial_standard",
+    signup_source: (SIGNUP_SOURCE_VALUES as readonly string[]).includes(sourceRaw)
+      ? sourceRaw
+      : "zalo_cold",
+    referral_note:
+      String(formData.get("referral_note") ?? "").trim() || null,
   });
   if (!parsed.success) return { error: t("validation") };
+
+  const decomposed = PLAN_TYPE_DECOMPOSITION[parsed.data.plan_type];
 
   const rawEmail = (parsed.data.admin_email ?? "").trim().toLowerCase();
   const rawPhone = (parsed.data.admin_phone ?? "").trim();
@@ -171,32 +225,93 @@ export async function createCenter(_prev: unknown, formData: FormData) {
 
   const supabase = createAdminClient();
 
-  // Default trial: 14 days from creation.
-  const trialEnds = new Date();
-  trialEnds.setDate(trialEnds.getDate() + 14);
+  // Trial expiry: only set when the plan_type is itself a trial.
+  // Active plans (paid or design-partner) don't get a trial_ends_at.
+  let trialEndsAt: string | null = null;
+  if (decomposed.trialDays !== null) {
+    const trialEnds = new Date();
+    trialEnds.setDate(trialEnds.getDate() + decomposed.trialDays);
+    trialEndsAt = trialEnds.toISOString();
+  }
 
-  // Try inserting with subscription_plan; fall back without it if the
-  // column doesn't exist yet (migration not run).
-  const baseInsert = {
+  // Active plans need subscription_started_at/ends_at populated so the
+  // dashboard's paid-plan card has real data. For founding/design-
+  // partner active plans we still set started_at = now; ends_at is
+  // computed from the plan length (founding = monthly so we set one
+  // month; design partner has no billing cycle so ends_at stays null).
+  const now = new Date();
+  let subscriptionStartedAt: string | null = null;
+  let subscriptionEndsAt: string | null = null;
+  let nextBillingAt: string | null = null;
+  if (decomposed.status === "active") {
+    subscriptionStartedAt = now.toISOString();
+    if (decomposed.plan === "monthly") {
+      const e = new Date(now);
+      e.setMonth(e.getMonth() + 1);
+      subscriptionEndsAt = e.toISOString();
+      nextBillingAt = e.toISOString();
+    } else if (decomposed.plan === "six_months") {
+      const e = new Date(now);
+      e.setMonth(e.getMonth() + 6);
+      subscriptionEndsAt = e.toISOString();
+      nextBillingAt = e.toISOString();
+    } else if (decomposed.plan === "annual") {
+      const e = new Date(now);
+      e.setFullYear(e.getFullYear() + 1);
+      subscriptionEndsAt = e.toISOString();
+      nextBillingAt = e.toISOString();
+    }
+  }
+
+  // Try inserting with the full Founding-Center column set; fall back
+  // progressively for older DBs.
+  const baseInsert: Record<string, string | null> = {
     name: parsed.data.center_name,
     contact_email: adminEmail,
     contact_phone: parsed.data.contact_phone ?? adminPhone,
-    subscription_status: "trial",
-    trial_ends_at: trialEnds.toISOString(),
+    subscription_status: decomposed.status,
+    trial_ends_at: trialEndsAt,
+  };
+  const fullInsert = {
+    ...baseInsert,
+    subscription_plan: decomposed.plan,
+    plan_tier: decomposed.tier,
+    signup_source: parsed.data.signup_source,
+    referral_note: parsed.data.referral_note ?? null,
+    subscription_started_at: subscriptionStartedAt,
+    subscription_ends_at: subscriptionEndsAt,
+    next_billing_at: nextBillingAt,
   };
   let { data: center, error: centerErr } = await supabase
     .from("centers")
-    .insert({ ...baseInsert, subscription_plan: parsed.data.subscription_plan })
+    .insert(fullInsert)
     .select()
     .single();
-  if (centerErr && /subscription_plan/i.test(centerErr.message)) {
-    const retry = await supabase
-      .from("centers")
-      .insert(baseInsert)
-      .select()
-      .single();
-    center = retry.data;
-    centerErr = retry.error;
+  // Strip columns the DB doesn't have yet, one error at a time.
+  if (centerErr) {
+    const stripped: Record<string, unknown> = { ...fullInsert };
+    const optional = [
+      "plan_tier",
+      "signup_source",
+      "referral_note",
+      "subscription_started_at",
+      "subscription_ends_at",
+      "next_billing_at",
+      "subscription_plan",
+    ];
+    for (const col of optional) {
+      if (centerErr && new RegExp(col, "i").test(centerErr.message)) {
+        delete stripped[col];
+        const retry = await supabase
+          .from("centers")
+          .insert(stripped)
+          .select()
+          .single();
+        center = retry.data;
+        centerErr = retry.error;
+        if (!centerErr) break;
+      }
+    }
   }
   if (centerErr || !center) {
     return {
@@ -595,4 +710,33 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/super-admin");
+}
+
+/**
+ * Update the Founding Center cap shown on the overview widget. Backed
+ * by public.app_settings (db/founding-center.sql). Returns silently if
+ * the table isn't migrated yet so the rest of the page still works.
+ */
+export async function updateFoundingCenterCap(formData: FormData) {
+  await requireSuperAdmin();
+  const raw = Number(formData.get("cap") ?? 0);
+  if (!Number.isFinite(raw)) return { error: "invalid" };
+  const cap = Math.min(100, Math.max(1, Math.floor(raw)));
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("app_settings")
+    .upsert(
+      { key: "founding_center_cap", value: cap, updated_at: new Date().toISOString() },
+      { onConflict: "key" },
+    );
+  if (error) {
+    if (/app_settings/i.test(error.message)) {
+      return { error: "founding-center.sql migration not applied" };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/super-admin");
+  return { success: true };
 }
