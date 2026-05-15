@@ -465,9 +465,17 @@ export default async function SuperAdminHomePage({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
+        </div>
+        <Link
+          href="/super-admin/feedback"
+          className="bg-card text-foreground border-border hover:bg-muted/60 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium shadow-sm"
+        >
+          Feedback inbox
+        </Link>
       </div>
 
       {/* Action required — trials about to lapse + recently expired

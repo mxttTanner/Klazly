@@ -7,6 +7,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
 import { CenterLogo } from "@/components/center-logo";
 import { Avatar } from "@/components/ui/avatar";
+import { FeedbackWidget } from "@/components/feedback-widget";
 
 export default async function ParentLayout({
   children,
@@ -58,6 +59,7 @@ export default async function ParentLayout({
       <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8 print:max-w-full print:p-0">
         {children}
       </div>
+      <FeedbackWidget />
     </div>
   );
 }

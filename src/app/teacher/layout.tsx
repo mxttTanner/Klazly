@@ -7,6 +7,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { DemoBanner } from "@/components/demo-banner";
 import { CenterLogo } from "@/components/center-logo";
 import { Avatar } from "@/components/ui/avatar";
+import { FeedbackWidget } from "@/components/feedback-widget";
 
 export default async function TeacherLayout({
   children,
@@ -56,6 +57,7 @@ export default async function TeacherLayout({
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+      <FeedbackWidget />
     </div>
   );
 }

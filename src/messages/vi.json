@@ -1,4 +1,47 @@
 {
+  "errorPage": {
+    "title": "Đã có sự cố",
+    "body": "Chúng tôi đang khắc phục. Vui lòng thử lại trong giây lát, hoặc liên hệ nếu vẫn không được.",
+    "dataSafe": "Dữ liệu của bạn vẫn an toàn.",
+    "retry": "Thử lại",
+    "zalo": "Nhắn Zalo",
+    "status": "Xem trạng thái",
+    "incidentId": "Mã sự cố:"
+  },
+  "statusPage": {
+    "systemStatus": "Trạng thái hệ thống",
+    "stateOperational": "Mọi hệ thống đang hoạt động",
+    "stateDegraded": "Hiệu năng giảm",
+    "statePartial": "Gián đoạn một phần",
+    "stateMajor": "Gián đoạn lớn",
+    "updatedAt": "Cập nhật {date}",
+    "components": "Dịch vụ",
+    "componentAuth": "Đăng nhập & xác thực",
+    "componentDatabase": "Cơ sở dữ liệu",
+    "componentPdf": "Báo cáo PDF",
+    "componentNotifications": "Thông báo qua email",
+    "componentReports": "Báo cáo bài học",
+    "incidentHistory": "7 ngày gần nhất",
+    "noIncidents": "Không có sự cố nào.",
+    "resolved": "đã xử lý",
+    "ongoing": "đang xử lý",
+    "contact": "Cần hỗ trợ?",
+    "contactBody": "Nếu bạn đang gặp sự cố mà trang trạng thái chưa ghi nhận, hãy liên hệ — thà nghe hai lần còn hơn bỏ sót.",
+    "zaloButton": "Nhắn Zalo"
+  },
+  "feedback": {
+    "buttonLabel": "Góp ý",
+    "title": "Trải nghiệm hiện tại của bạn thế nào?",
+    "ratingSad": "Chưa ổn",
+    "ratingMeh": "Bình thường",
+    "ratingHappy": "Tốt",
+    "promptIfLow": "Điều gì chưa ổn? (không bắt buộc)",
+    "promptIfHigh": "Điều gì đang chạy tốt? (không bắt buộc)",
+    "submit": "Gửi góp ý",
+    "submitting": "Đang gửi…",
+    "thanks": "Cảm ơn — mọi phản hồi đều được đọc.",
+    "errorGeneric": "Chưa gửi được. Vui lòng thử lại trong giây lát."
+  },
   "common": {
     "logout": "Đăng xuất",
     "save": "Lưu",

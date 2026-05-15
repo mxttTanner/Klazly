@@ -8,6 +8,7 @@ import { DemoBanner } from "@/components/demo-banner";
 import { CenterLogo } from "@/components/center-logo";
 import { Avatar } from "@/components/ui/avatar";
 import { SubscriptionBanner } from "@/components/subscription-banner";
+import { FeedbackWidget } from "@/components/feedback-widget";
 import { AdminSidebarNav } from "./admin-sidebar";
 import { buildAdminNavItems } from "./nav-config";
 import { AdminMobileSidebar } from "./mobile-sidebar";
@@ -111,6 +112,7 @@ export default async function AdminLayout({
           <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
         </div>
       </div>
+      <FeedbackWidget />
     </div>
   );
 }

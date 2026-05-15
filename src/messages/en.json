@@ -1,4 +1,47 @@
 {
+  "errorPage": {
+    "title": "Something went wrong",
+    "body": "We're working on it. Please try again in a moment, or contact us if it keeps happening.",
+    "dataSafe": "Your data is safe.",
+    "retry": "Try again",
+    "zalo": "Message on Zalo",
+    "status": "Check status",
+    "incidentId": "Reference ID:"
+  },
+  "statusPage": {
+    "systemStatus": "System status",
+    "stateOperational": "All systems operational",
+    "stateDegraded": "Degraded performance",
+    "statePartial": "Partial outage",
+    "stateMajor": "Major outage",
+    "updatedAt": "Updated {date}",
+    "components": "Services",
+    "componentAuth": "Login & authentication",
+    "componentDatabase": "Database",
+    "componentPdf": "PDF reports",
+    "componentNotifications": "Email notifications",
+    "componentReports": "Lesson reports",
+    "incidentHistory": "Last 7 days",
+    "noIncidents": "No incidents reported.",
+    "resolved": "resolved",
+    "ongoing": "ongoing",
+    "contact": "Need help?",
+    "contactBody": "If you're seeing something the status page doesn't reflect, reach out — we'd rather hear it twice than miss it.",
+    "zaloButton": "Message us on Zalo"
+  },
+  "feedback": {
+    "buttonLabel": "Feedback",
+    "title": "How's your experience right now?",
+    "ratingSad": "Frustrating",
+    "ratingMeh": "OK",
+    "ratingHappy": "Great",
+    "promptIfLow": "What's not working? (optional)",
+    "promptIfHigh": "What's working well? (optional)",
+    "submit": "Send feedback",
+    "submitting": "Sending…",
+    "thanks": "Thanks — we read every reply.",
+    "errorGeneric": "Couldn't send right now. Try again in a moment."
+  },
   "common": {
     "logout": "Log out",
     "save": "Save",

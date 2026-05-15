@@ -5,6 +5,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandLogo } from "@/components/brand-logo";
 import { Avatar } from "@/components/ui/avatar";
+import { FeedbackWidget } from "@/components/feedback-widget";
 
 export default async function SuperAdminLayout({
   children,
@@ -47,6 +48,7 @@ export default async function SuperAdminLayout({
         </div>
       </header>
       <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+      <FeedbackWidget />
     </div>
   );
 }
