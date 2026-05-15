@@ -89,6 +89,15 @@ export async function generateMetadata(): Promise<Metadata> {
       email: false,
       address: false,
     },
+    // Cross-platform PWA capability flag. Chrome deprecated the
+    // Apple-specific 'apple-mobile-web-app-capable' meta in favour
+    // of 'mobile-web-app-capable'; Next's appleWebApp config only
+    // emits the legacy Apple variant, so we add the standard one
+    // here. Keeps the Apple flag too — older iOS Safari still
+    // honours it.
+    other: {
+      "mobile-web-app-capable": "yes",
+    },
     openGraph: {
       type: "website",
       url,
