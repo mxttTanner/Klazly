@@ -1087,9 +1087,9 @@ function LaptopMock() {
                 Hoạt động gần đây
               </div>
               {[
-                "Lê Thị Hương · Senior B · Unit 5 — KET Practice",
-                "Lê Thị Hương · Junior A · Unit 4 — Animals",
-                "Lê Thị Hương · Senior B · Unit 4 — Books & Films",
+                "Cô Linh · Senior B · Unit 5 — KET Practice",
+                "Cô Linh · Junior A · Unit 4 — Animals",
+                "Cô Linh · Senior B · Unit 4 — Books & Films",
               ].map((line, i) => (
                 <div
                   key={i}
@@ -1263,7 +1263,7 @@ function AnalyticsMock() {
       </div>
       <div className="mt-5 space-y-2.5">
         {[
-          { name: "Lê Thị Hương", week: 6, total: 24, ok: true },
+          { name: "Cô Linh", week: 6, total: 24, ok: true },
           { name: "Trần Văn Tú", week: 4, total: 18, ok: true },
           { name: "Phạm Quốc Anh", week: 2, total: 9, ok: true },
           { name: "Nguyễn Thanh Hà", week: 0, total: 12, ok: false },

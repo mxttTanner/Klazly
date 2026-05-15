@@ -83,8 +83,8 @@ export async function LoginBrandPanel() {
                   <span className="text-foreground">Hoạt động gần đây</span>
                 </div>
                 {[
-                  "Cô Hương · Senior B · Unit 5",
-                  "Cô Hương · Junior A · Unit 4",
+                  "Cô Linh · Senior B · Unit 5",
+                  "Cô Linh · Junior A · Unit 4",
                 ].map((line) => (
                   <div
                     key={line}

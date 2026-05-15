@@ -420,11 +420,11 @@ async function main() {
   ]);
 
   console.log("Creating users...");
-  void (await createUser("admin@hoamai.test", "Nguyễn Thị Lan", "admin", centerId));
+  void (await createUser("admin@hoamai.test", "Cô Trang", "admin", centerId));
   // Hương is the demo teacher and teaches BOTH classes (matches demo.ts).
   const huong = await createUser(
     "huong@hoamai.test",
-    "Lê Thị Hương",
+    "Cô Linh",
     "teacher",
     centerId,
   );
@@ -824,8 +824,8 @@ async function main() {
   console.log("\nSeed complete!\n");
   console.log("Login at http://localhost:3000/login");
   console.log("Password for ALL accounts: " + SHARED_PASSWORD + "\n");
-  console.log("  Admin:    admin@hoamai.test     (Nguyễn Thị Lan)");
-  console.log("  Teacher:  huong@hoamai.test      (Lê Thị Hương — teaches both classes)");
+  console.log("  Admin:    admin@hoamai.test     (Cô Trang)");
+  console.log("  Teacher:  huong@hoamai.test      (Cô Linh — teaches both classes)");
   console.log("  Teacher:  tu@hoamai.test         (Trần Văn Tú — bench, no class assigned)");
   console.log("  Parent:   binh@parent.test       (Phạm Văn Bình → An)");
   console.log("  Parent:   hoa@parent.test        (Nguyễn Thị Hoa → Ngọc)");
