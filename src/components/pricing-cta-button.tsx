@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { ZALO_URL } from "@/lib/zalo";
 
 /** Owner's Zalo deep link — plain chat, no ?message=. The pre-filled
  *  message lives in the modal so the user can edit before sending;
@@ -26,7 +27,6 @@ import { Textarea } from "@/components/ui/textarea";
  *  considered the ?message= query param but it's flaky across Zalo
  *  Web vs the mobile app, especially with URL-encoded newlines and
  *  Vietnamese diacritics — modal-first is reliable. */
-const ZALO_URL = "https://zalo.me/84862404036";
 
 export type PlanKey = "micro" | "monthly" | "annual";
 

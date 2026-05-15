@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ClarityScript } from "@/components/clarity-script";
+import { InAppBrowserHint } from "@/components/in-app-browser-hint";
 import "./globals.css";
 
 /**
@@ -121,6 +122,7 @@ export default async function RootLayout({
     <html lang={locale}>
       <body className={`${beVietnamPro.variable} antialiased`}>
         <NextIntlClientProvider messages={messages} locale={locale}>
+          <InAppBrowserHint />
           {children}
         </NextIntlClientProvider>
         <ClarityScript />

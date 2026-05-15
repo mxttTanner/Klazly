@@ -1,4 +1,8 @@
 {
+  "inAppHint": {
+    "body": "Tap the menu (⋮) in your browser and choose 'Open in browser' to open Zalo properly.",
+    "dismiss": "Dismiss"
+  },
   "founder": {
     "eyebrow": "Founder note",
     "title": "Built by a founder, for Vietnamese centers",

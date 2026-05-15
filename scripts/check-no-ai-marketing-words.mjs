@@ -22,6 +22,19 @@ const ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"
 
 const TARGETS = ["src/messages/en.json", "src/messages/vi.json"];
 
+/** Wider-scope guard for the one real silent-failure bug we've hit:
+ *  hand-writing 'https://zalo.me/+84...' with a leading '+'. iOS
+ *  Safari + Zalo Web both refuse to open that. The fix is to use
+ *  the ZALO_URL helper from src/lib/zalo.ts, which builds digit-only
+ *  URLs. Centralisation handles 'wrong phone number entirely' — we
+ *  don't grep for that here because the false-positive rate is high
+ *  (test data, dummy numbers in comments) and the helper makes it
+ *  unlikely. */
+const SRC_TARGETS_GLOB = "src";
+const SRC_PATTERNS = [
+  { rx: /zalo\.me\/\+/i, label: "zalo.me/+ (drop the leading '+')" },
+];
+
 const BAD_PATTERNS = [
   // EN marketing-AI vocabulary
   { rx: /\bleverage(s|d|ing)?\b/i, label: "leverage" },
@@ -102,4 +115,64 @@ if (offenders.length > 0) {
   process.exit(1);
 }
 
+// --- Zalo URL audit across all of src/ ---
+// Recursively walk src/, then test every .ts/.tsx/.js/.mjs file for
+// the two malformed-Zalo patterns. Skips node_modules + comments
+// that mention the bug intentionally (this script itself, plus the
+// header doc-comment in src/lib/zalo.ts).
+import { readdirSync, statSync } from "node:fs";
+const SAFE_FILES = new Set([
+  "src/lib/zalo.ts", // documents the bug in a comment on purpose
+]);
+
+function walkSrc(dir) {
+  const files = [];
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    const s = statSync(p);
+    if (s.isDirectory()) files.push(...walkSrc(p));
+    else if (/\.(ts|tsx|js|mjs)$/.test(entry)) files.push(p);
+  }
+  return files;
+}
+
+const srcRoot = join(ROOT, SRC_TARGETS_GLOB);
+const zaloOffenders = [];
+for (const abs of walkSrc(srcRoot)) {
+  const rel = abs.slice(ROOT.length + 1).replace(/\\/g, "/");
+  if (SAFE_FILES.has(rel)) continue;
+  const text = readFileSync(abs, "utf8");
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
+    for (const { rx, label } of SRC_PATTERNS) {
+      if (rx.test(line)) {
+        zaloOffenders.push({
+          file: rel,
+          line: i + 1,
+          label,
+          text: line.trim().slice(0, 160),
+        });
+        break;
+      }
+    }
+  }
+}
+
+if (zaloOffenders.length > 0) {
+  console.error("\n❌ Malformed Zalo / phone URL in src/:");
+  for (const o of zaloOffenders) {
+    console.error(`  ${o.file}:${o.line}  [${o.label}]\n    ${o.text}`);
+  }
+  console.error(
+    "\nUse the helpers in src/lib/zalo.ts (ZALO_URL, ZALO_TEL_URL, " +
+      "buildZaloUrl) instead of hand-writing URLs. Personal-chat URLs " +
+      "must be https://zalo.me/<digits-only> with no '+'.",
+  );
+  process.exit(1);
+}
+
 console.log("✓ no AI-marketing tells in translation files");
+console.log("✓ no malformed Zalo / phone URLs in src/");

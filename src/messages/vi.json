@@ -1,4 +1,8 @@
 {
+  "inAppHint": {
+    "body": "Nhấn menu (⋮) ở trình duyệt và chọn 'Mở trong trình duyệt' để mở Zalo đúng cách.",
+    "dismiss": "Đóng"
+  },
   "founder": {
     "eyebrow": "Lời từ người sáng lập",
     "title": "Được xây dựng bởi người sáng lập, dành cho trung tâm Việt Nam",

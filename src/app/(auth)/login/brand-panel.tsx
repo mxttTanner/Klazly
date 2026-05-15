@@ -2,8 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { ClipboardList, Sparkles, MessageCircle } from "lucide-react";
 import { getFoundingStatus } from "@/lib/founding";
 
-const ZALO_URL = "https://zalo.me/84862404036";
-const PHONE_DISPLAY = "+84 86 240 4036";
+import { ZALO_URL, ZALO_PHONE_DISPLAY as PHONE_DISPLAY } from "@/lib/zalo";
 
 /**
  * Right-side brand panel on /login. Dark navy gradient with a small

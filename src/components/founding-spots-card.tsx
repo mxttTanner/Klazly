@@ -1,9 +1,11 @@
 import { getTranslations } from "next-intl/server";
 import { MessageCircle, Phone, Sparkles } from "lucide-react";
 import type { FoundingStatus } from "@/lib/founding";
-
-const ZALO_URL = "https://zalo.me/84862404036";
-const PHONE_DISPLAY = "+84 86 240 4036";
+import {
+  ZALO_URL,
+  ZALO_TEL_URL,
+  ZALO_PHONE_DISPLAY as PHONE_DISPLAY,
+} from "@/lib/zalo";
 
 /**
  * Public-facing "Founding Center spots remaining" card. Rendered on
@@ -122,7 +124,7 @@ export async function FoundingSpotsCard({
           {isFull ? t("waitlistCta") : t("zaloCta")}
         </a>
         <a
-          href="tel:+84862404036"
+          href={ZALO_TEL_URL}
           className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs"
         >
           <Phone className="size-3.5" />
