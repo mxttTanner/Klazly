@@ -71,6 +71,15 @@ const reportSettingsSchema = z.object({
   show_signatures: z.boolean(),
   sig_left: z.string().max(60).optional().nullable(),
   sig_right: z.string().max(60).optional().nullable(),
+  // Branding additions (see db/center-branding.sql). brand_color
+  // accepts an empty string (= reset to default) or a strict
+  // #RRGGBB hex. Anything else is rejected with the i18n'd error.
+  brand_color: z
+    .string()
+    .regex(/^(#[0-9A-Fa-f]{6})?$/)
+    .optional()
+    .nullable(),
+  show_pdf_credit: z.boolean(),
 });
 
 function nullableTrim(v: FormDataEntryValue | null): string | null {
@@ -97,21 +106,45 @@ export async function updateReportSettings(
     show_signatures: formData.get("show_signatures") === "on",
     sig_left: nullableTrim(formData.get("sig_left")),
     sig_right: nullableTrim(formData.get("sig_right")),
+    brand_color: nullableTrim(formData.get("brand_color")),
+    show_pdf_credit: formData.get("show_pdf_credit") === "on",
   });
   if (!parsed.success) return { error: t("reportValidation") };
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  // Build the patch in two passes so an unmigrated DB (no
+  // brand_color / show_pdf_credit columns yet) still saves the
+  // legacy fields successfully. We attempt the full patch first,
+  // and on a recognisable column-missing error, retry without the
+  // branding-only columns.
+  const fullPatch = {
+    report_intro_text: parsed.data.intro,
+    report_footer_text: parsed.data.footer,
+    report_show_summary: parsed.data.show_summary,
+    report_show_signatures: parsed.data.show_signatures,
+    report_signature_label_left: parsed.data.sig_left,
+    report_signature_label_right: parsed.data.sig_right,
+    brand_color: parsed.data.brand_color || null,
+    show_pdf_credit: parsed.data.show_pdf_credit,
+  };
+  let { error } = await supabase
     .from("centers")
-    .update({
-      report_intro_text: parsed.data.intro,
-      report_footer_text: parsed.data.footer,
-      report_show_summary: parsed.data.show_summary,
-      report_show_signatures: parsed.data.show_signatures,
-      report_signature_label_left: parsed.data.sig_left,
-      report_signature_label_right: parsed.data.sig_right,
-    })
+    .update(fullPatch)
     .eq("id", user.center_id);
+  if (error && /brand_color|show_pdf_credit/i.test(error.message)) {
+    const legacy = await supabase
+      .from("centers")
+      .update({
+        report_intro_text: parsed.data.intro,
+        report_footer_text: parsed.data.footer,
+        report_show_summary: parsed.data.show_summary,
+        report_show_signatures: parsed.data.show_signatures,
+        report_signature_label_left: parsed.data.sig_left,
+        report_signature_label_right: parsed.data.sig_right,
+      })
+      .eq("id", user.center_id);
+    error = legacy.error;
+  }
   if (error) return { error: t("reportSaveError", { message: error.message }) };
 
   revalidatePath("/admin/settings");

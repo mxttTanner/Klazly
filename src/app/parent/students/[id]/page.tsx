@@ -36,6 +36,14 @@ type LessonRow = {
   unit: string | null;
   lesson_number: string | null;
   topic: string | null;
+  /** Vocabulary, grammar, and the teacher's general note are pulled
+   *  in for the printable PDF redesign. They're hidden from the
+   *  on-screen lesson list (parents only need their child's
+   *  individual feedback) but show up on the PDF as vocab chips,
+   *  grammar callouts, and the teacher's monthly message. */
+  vocabulary: string | null;
+  grammar_point: string | null;
+  general_note: string | null;
   worksheet:
     | { id: string; name: string; public_url: string }
     | { id: string; name: string; public_url: string }[]
@@ -91,8 +99,12 @@ export default async function StudentProgressPage({
     report_show_signatures: boolean | null;
     report_signature_label_left: string | null;
     report_signature_label_right: string | null;
+    brand_color: string | null;
+    show_pdf_credit: boolean | null;
   };
   const centerSelectFull =
+    "name, logo_url, contact_email, contact_phone, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right, brand_color, show_pdf_credit";
+  const centerSelectFallback =
     "name, logo_url, contact_email, contact_phone, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right";
   const centerSelectBasic = "name, logo_url, contact_email, contact_phone";
 
@@ -114,28 +126,48 @@ export default async function StudentProgressPage({
 
   let center: CenterRow | null = (centerFullRes.data as CenterRow | null) ?? null;
   if (centerFullRes.error) {
-    console.warn(
-      "[parent/student] center select with report columns failed, falling back:",
-      centerFullRes.error.message,
-    );
-    const basic = await supabase
-      .from("centers")
-      .select(centerSelectBasic)
-      .eq("id", user.center_id)
-      .single();
-    if (basic.data) {
-      center = {
-        ...(basic.data as Pick<
-          CenterRow,
-          "name" | "logo_url" | "contact_email" | "contact_phone"
-        >),
-        report_intro_text: null,
-        report_footer_text: null,
-        report_show_summary: true,
-        report_show_signatures: true,
-        report_signature_label_left: null,
-        report_signature_label_right: null,
-      };
+    // If brand_color / show_pdf_credit columns aren't migrated yet
+    // (center-branding.sql), retry with the prior column set so the
+    // existing report customisation still works.
+    if (/brand_color|show_pdf_credit/i.test(centerFullRes.error.message)) {
+      const fb = await supabase
+        .from("centers")
+        .select(centerSelectFallback)
+        .eq("id", user.center_id)
+        .single();
+      if (fb.data) {
+        center = {
+          ...(fb.data as Omit<CenterRow, "brand_color" | "show_pdf_credit">),
+          brand_color: null,
+          show_pdf_credit: true,
+        };
+      }
+    } else {
+      console.warn(
+        "[parent/student] center select with report columns failed, falling back:",
+        centerFullRes.error.message,
+      );
+      const basic = await supabase
+        .from("centers")
+        .select(centerSelectBasic)
+        .eq("id", user.center_id)
+        .single();
+      if (basic.data) {
+        center = {
+          ...(basic.data as Pick<
+            CenterRow,
+            "name" | "logo_url" | "contact_email" | "contact_phone"
+          >),
+          report_intro_text: null,
+          report_footer_text: null,
+          report_show_summary: true,
+          report_show_signatures: false,
+          report_signature_label_left: null,
+          report_signature_label_right: null,
+          brand_color: null,
+          show_pdf_credit: true,
+        };
+      }
     }
   }
 
@@ -165,7 +197,7 @@ export default async function StudentProgressPage({
     const withTopic = await supabase
       .from("lessons")
       .select(
-        "id, lesson_date, unit, lesson_number, topic, worksheet:worksheets(id, name, public_url)",
+        "id, lesson_date, unit, lesson_number, topic, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, public_url)",
       )
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
@@ -178,7 +210,7 @@ export default async function StudentProgressPage({
       const fallback = await supabase
         .from("lessons")
         .select(
-          "id, lesson_date, unit, lesson_number, worksheet:worksheets(id, name, public_url)",
+          "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, public_url)",
         )
         .eq("class_id", cls.id)
         .order("lesson_date", { ascending: false })
@@ -303,6 +335,122 @@ export default async function StudentProgressPage({
       ? fmtDate(lessons[lessons.length - 1].lesson_date)
       : null;
   const periodTo = lessons.length > 0 ? fmtDate(lessons[0].lesson_date) : null;
+
+  // ---------------- PDF-only derived content -----------------
+  // Everything below is consumed by the print-only blocks lower in
+  // the file. Keeping the derivations here so the JSX stays scannable.
+
+  /** Two-letter initials from the center name for the auto-generated
+   *  letterhead avatar (shown when no logo_url is set). Takes the
+   *  first letter of the first two non-trivial words, falls back to
+   *  the first two letters of a single-word name. */
+  const centerInitials = (() => {
+    const name = (center?.name ?? "").trim();
+    if (!name) return "?";
+    const words = name.split(/\s+/).filter((w) => w.length > 0);
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  })();
+
+  /** Vocabulary chips for the printed report. The teacher writes
+   *  vocabulary as free text (commas, semicolons, or newlines —
+   *  whichever feels natural). Split + trim + cap at 8 visible so
+   *  one lesson card doesn't dominate the page. */
+  function vocabChipsFromLesson(raw: string | null): string[] {
+    if (!raw) return [];
+    return raw
+      .split(/[\n,;·]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && s.length < 40)
+      .slice(0, 8);
+  }
+
+  /** Auto-generate up to 3 highlights from the monthly data. The
+   *  parent's screenshottable moment — pick the most positive,
+   *  specific signals available. */
+  const highlights: string[] = [];
+  if (monthAttendancePct !== null && monthAttendancePct >= 90) {
+    highlights.push(
+      t("highlightAttendance", { pct: monthAttendancePct }),
+    );
+  }
+  if (
+    monthHomeworkPct !== null &&
+    monthHomeworkTotal > 0 &&
+    monthHomeworkPct >= 80
+  ) {
+    highlights.push(
+      t("highlightHomework", {
+        done: monthHomeworkDone,
+        total: monthHomeworkTotal,
+      }),
+    );
+  }
+  if (behaviorCounts.great > 0) {
+    highlights.push(
+      t("highlightBehaviorGreat", { n: behaviorCounts.great }),
+    );
+  } else if (behaviorCounts.good > 0 && highlights.length < 3) {
+    highlights.push(t("highlightBehaviorGood", { n: behaviorCounts.good }));
+  }
+
+  /** Auto-generate gentle recommendations — only when actually
+   *  needed. Worded as growth, never as criticism. */
+  const recommendations: string[] = [];
+  if (
+    monthHomeworkPct !== null &&
+    monthHomeworkTotal > 0 &&
+    monthHomeworkPct < 70
+  ) {
+    recommendations.push(
+      t("recommendHomework", {
+        done: monthHomeworkDone,
+        total: monthHomeworkTotal,
+      }),
+    );
+  }
+  if (monthAttendancePct !== null && monthAttendancePct < 85) {
+    recommendations.push(t("recommendAttendance"));
+  }
+  if (behaviorCounts.needs_attention > 0) {
+    recommendations.push(t("recommendBehavior"));
+  }
+
+  /** Teacher's monthly message — sourced from the most recent
+   *  lesson's general_note. If teachers want to write a per-month
+   *  narrative just for this student, that lives in a future
+   *  feature; for now the most recent class-wide note is the
+   *  closest existing field. */
+  const teacherMonthlyNote = (() => {
+    for (const l of monthlyLessons) {
+      const note = (l.general_note ?? "").trim();
+      if (note.length > 0) return note;
+    }
+    return null;
+  })();
+
+  /** Teacher's initial for the avatar circle in the monthly-note
+   *  block. Falls back to "?" so the layout never breaks. */
+  const teacherInitial = (() => {
+    const name: string = String(teacher?.full_name ?? "").trim();
+    if (!name) return "?";
+    const words: string[] = name.split(/\s+/).filter((w) => w.length > 0);
+    return (words[words.length - 1]?.[0] ?? name[0] ?? "?").toUpperCase();
+  })();
+
+  /** Brand color for the PDF accent bar. Reads center.brand_color
+   *  when the column exists (db/center-branding.sql), falls back to
+   *  the platform's default blue. Inlined as a CSS variable in
+   *  page-level style so print stylesheet rules can use it without
+   *  hard-coding hex values. */
+  const brandColor =
+    (center as { brand_color?: string | null } | null)?.brand_color?.trim() ||
+    "#2563EB";
+  const showCredit =
+    (center as { show_pdf_credit?: boolean | null } | null)
+      ?.show_pdf_credit !== false;
 
   const classLineText = cls
     ? teacher
@@ -460,72 +608,172 @@ export default async function StudentProgressPage({
         </section>
       ) : null}
 
-      {/* Print-only formal report header */}
-      <div className="print-only">
+      {/* Print-only report — redesigned letterhead, stat cards,
+          highlights, suggestions, teacher message. Each block is
+          print-only; the on-screen view above is untouched. The
+          per-element style="--brand-color" sets a CSS custom
+          property the print stylesheet reads for the accent strip
+          and section underlines. */}
+      <div
+        className="print-only"
+        style={
+          { "--brand-color": brandColor } as React.CSSProperties
+        }
+      >
+        {/* Letterhead */}
         <div className="report-letterhead">
-          <div className="flex items-start gap-3">
+          <div className="report-brand-row">
             {center?.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={center.logo_url}
                 alt={center?.name ?? ""}
-                style={{ width: "56px", height: "56px", objectFit: "contain" }}
+                className="report-logo"
               />
-            ) : null}
-            <div className="report-center-name">{center?.name}</div>
+            ) : (
+              <div className="report-initials" aria-hidden="true">
+                {centerInitials}
+              </div>
+            )}
+            <div className="report-brand-text">
+              <div className="report-center-name">{center?.name}</div>
+              {center?.contact_phone || center?.contact_email ? (
+                <div className="report-contact">
+                  {center?.contact_phone ?? ""}
+                  {center?.contact_phone && center?.contact_email
+                    ? " · "
+                    : ""}
+                  {center?.contact_email ?? ""}
+                </div>
+              ) : null}
+            </div>
           </div>
-          {center?.contact_email || center?.contact_phone ? (
-            <div className="report-contact">
-              {center?.contact_phone ? <div>{center.contact_phone}</div> : null}
-              {center?.contact_email ? <div>{center.contact_email}</div> : null}
+          <div className="report-printed-on">
+            {t("printedOn", { date: printedOn })}
+          </div>
+        </div>
+        <div className="report-accent-bar" />
+
+        {/* Headline */}
+        <div className="report-headline">
+          <div className="report-eyebrow">{t("reportEyebrow")}</div>
+          <h1 className="report-student-name">{student.full_name}</h1>
+          <div className="report-class-line">
+            {cls?.name ?? "—"}
+            {teacher ? ` · ${teacher.full_name}` : ""}
+          </div>
+          {periodFrom && periodTo ? (
+            <div className="report-period">
+              {t("reportPeriod", { from: periodFrom, to: periodTo })}
             </div>
           ) : null}
         </div>
 
-        <div className="report-title">{t("printHeading")}</div>
-        {periodFrom && periodTo ? (
-          <div className="report-period">
-            {t("reportPeriod", { from: periodFrom, to: periodTo })}
-          </div>
-        ) : null}
         {center?.report_intro_text ? (
-          <p
-            className="report-intro"
-            style={{
-              marginTop: "0.6rem",
-              fontSize: "10pt",
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {center.report_intro_text}
-          </p>
+          <p className="report-intro">{center.report_intro_text}</p>
         ) : null}
 
-        <div className="report-info">
-          <dl>
-            <dt>{t("infoStudent")}</dt>
-            <dd>{student.full_name}</dd>
-            <dt>{t("infoAge")}</dt>
-            <dd>{student.age ?? "—"}</dd>
-            <dt>{t("infoClass")}</dt>
-            <dd>{cls?.name ?? "—"}</dd>
-            <dt>{t("infoTeacher")}</dt>
-            <dd>{teacher?.full_name ?? "—"}</dd>
-            <dt>{tLevel("header")}</dt>
-            <dd>
-              {student.overall_level
-                ? tLevel(
-                    student.overall_level as
-                      | "good"
-                      | "okay"
-                      | "needs_attention",
-                  )
-                : tLevel("none")}
-            </dd>
-            <dt>{t("infoLessonsRecorded")}</dt>
-            <dd>{lessons.length}</dd>
-          </dl>
+        {/* Stat cards */}
+        <div className="report-stats">
+          <div className="report-stat stat-blue">
+            <div className="stat-label">{t("statLessonsLabel")}</div>
+            <div className="stat-value">{monthlyLessons.length}</div>
+            <div className="stat-context">
+              {t("statLessonsContext", {
+                total: lessons.length,
+              })}
+            </div>
+          </div>
+          {monthHomeworkPct !== null ? (
+            <div className="report-stat stat-emerald">
+              <div className="stat-label">{t("statHomeworkLabel")}</div>
+              <div className="stat-value">{monthHomeworkPct}%</div>
+              <div className="stat-context">
+                {monthHomeworkDone}/{monthHomeworkTotal} {t("statHomeworkSuffix")}
+              </div>
+            </div>
+          ) : null}
+          {monthAttendancePct !== null ? (
+            <div
+              className={
+                "report-stat " +
+                (monthAttendancePct >= 90
+                  ? "stat-emerald"
+                  : monthAttendancePct >= 70
+                    ? "stat-amber"
+                    : "stat-rose")
+              }
+            >
+              <div className="stat-label">{t("statAttendanceLabel")}</div>
+              <div className="stat-value">{monthAttendancePct}%</div>
+              <div className="stat-context">
+                {monthAttendancePct >= 90
+                  ? t("statAttendanceLabelGreat")
+                  : monthAttendancePct >= 70
+                    ? t("statAttendanceLabelGood")
+                    : t("statAttendanceLabelLow")}
+              </div>
+            </div>
+          ) : null}
+          {topBehavior ? (
+            <div className="report-stat stat-violet">
+              <div className="stat-label">{t("statBehaviorLabel")}</div>
+              <div className="stat-value stat-value-text">
+                {tBehavior(topBehavior)}
+              </div>
+              <div className="stat-context">
+                {behaviorCounts[topBehavior]}/{behaviorTotal}{" "}
+                {t("statBehaviorSuffix")}
+              </div>
+            </div>
+          ) : null}
         </div>
+
+        {/* Highlights (auto-generated) */}
+        {highlights.length > 0 ? (
+          <section className="report-callout report-callout-highlights">
+            <h2 className="report-callout-heading">
+              ★ {t("highlightsHeading")}
+            </h2>
+            <ul className="report-callout-list">
+              {highlights.map((h) => (
+                <li key={h}>{h}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {/* Suggestions (auto-generated) */}
+        {recommendations.length > 0 ? (
+          <section className="report-callout report-callout-suggestions">
+            <h2 className="report-callout-heading">
+              {t("suggestionsHeading")}
+            </h2>
+            <ul className="report-callout-list">
+              {recommendations.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {/* Teacher message (from most recent general_note) */}
+        {teacherMonthlyNote ? (
+          <section className="report-teacher-note">
+            <h2 className="report-section-heading">
+              {t("teacherMessageHeading")}
+            </h2>
+            <div className="report-teacher-line">
+              <span className="report-teacher-avatar" aria-hidden="true">
+                {teacherInitial}
+              </span>
+              <span className="report-teacher-name">
+                {teacher?.full_name ?? "—"}
+              </span>
+            </div>
+            <p className="report-teacher-body">{teacherMonthlyNote}</p>
+          </section>
+        ) : null}
       </div>
 
       {/* 30-day summary: hidden on screen (parents found it noisy) but
@@ -778,6 +1026,46 @@ export default async function StudentProgressPage({
                   </div>
                 </div>
 
+                {/* Print-only vocab/grammar enrichment. Hidden on the
+                    parent's screen view (they don't need raw vocab
+                    lists scrolling on their phone), but rendered on
+                    the PDF so the report shows what was actually
+                    taught. Chips are kept compact so even a long
+                    vocab list fits on one printed page. */}
+                {(() => {
+                  const vocabChips = vocabChipsFromLesson(l.vocabulary);
+                  const grammar = (l.grammar_point ?? "").trim();
+                  if (vocabChips.length === 0 && !grammar) return null;
+                  return (
+                    <div className="hidden print:mt-2 print:block print:space-y-1.5">
+                      {vocabChips.length > 0 ? (
+                        <div className="report-vocab-row">
+                          <span className="report-vocab-label">
+                            {t("printVocabLabel")}
+                          </span>
+                          <span className="report-vocab-chips">
+                            {vocabChips.map((v) => (
+                              <span key={v} className="report-vocab-chip">
+                                {v}
+                              </span>
+                            ))}
+                          </span>
+                        </div>
+                      ) : null}
+                      {grammar ? (
+                        <div className="report-grammar-row">
+                          <span className="report-grammar-label">
+                            {t("printGrammarLabel")}
+                          </span>
+                          <span className="report-grammar-text">
+                            {grammar}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })()}
+
                 {/* Per-child feedback (the parent only sees the unit/lesson
                     label above plus their own child's feedback below — the
                     vocab/grammar/etc. is for teachers, not parents). */}
@@ -835,8 +1123,16 @@ export default async function StudentProgressPage({
       </div>
 
       {/* Print-only signature + footer */}
-      <div className="print-only">
-        {center?.report_show_signatures !== false ? (
+      <div
+        className="print-only"
+        style={
+          { "--brand-color": brandColor } as React.CSSProperties
+        }
+      >
+        {/* Signatures are now off by default — parents don't sign
+            PDFs. Centers who actually want them (e.g. for printed
+            archives) can opt back in via report_show_signatures. */}
+        {center?.report_show_signatures === true ? (
           <div className="report-signatures">
             <div className="report-sig-block">
               <div className="report-sig-label">
@@ -854,21 +1150,32 @@ export default async function StudentProgressPage({
             </div>
           </div>
         ) : null}
-        {center?.report_footer_text ? (
-          <p
-            style={{
-              marginTop: "1rem",
-              fontSize: "9.5pt",
-              whiteSpace: "pre-wrap",
-              fontStyle: "italic",
-              textAlign: "center",
-            }}
-          >
-            {center.report_footer_text}
-          </p>
+
+        {/* Tagline — center-provided custom thank-you, or the
+            default 'Cảm ơn anh/chị đã tin tưởng X' worded with the
+            center's name when no custom value is set. */}
+        <p className="report-tagline">
+          {center?.report_footer_text?.trim() ||
+            t("reportTaglineDefault", { center: center?.name ?? "" })}
+        </p>
+
+        {/* Contact strip — repeated at the bottom so the parent can
+            reach the center without scrolling back to the header. */}
+        {center?.contact_phone || center?.contact_email ? (
+          <div className="report-contact-strip">
+            {t("contactLabel")}:{" "}
+            {center?.contact_phone ?? ""}
+            {center?.contact_phone && center?.contact_email ? " · " : ""}
+            {center?.contact_email ?? ""}
+          </div>
         ) : null}
+
         <div className="report-footer">
-          <span>{center?.name}</span>
+          <span>
+            {showCredit
+              ? t("createdWithCredit")
+              : ""}
+          </span>
           <span>{t("printedOn", { date: printedOn })}</span>
         </div>
       </div>

@@ -226,68 +226,239 @@
     content: "" !important;
   }
 
-  /* ---------- Printable progress report ---------- */
+  /* ---------- Printable progress report — redesigned ----------
+   * Premium / warm / content-rich. The accent colour comes from a
+   * CSS custom property (--brand-color) set inline on the
+   * .print-only wrapper from JS, so per-center brand colours work
+   * without hard-coding hex values here.
+   *
+   * Be Vietnamese-Pro from next/font is already loaded as
+   * --font-sans on <body>; it handles every diacritic we need.
+   */
+
+  /* --- Letterhead --- */
   .report-letterhead {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1.2rem;
-    padding-bottom: 0.6rem;
-    border-bottom: 2px solid #000;
+    padding-bottom: 0.7rem;
   }
-  .report-letterhead .report-center-name {
+  .report-brand-row {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .report-logo {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+  }
+  .report-initials {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background: var(--brand-color, #2563eb);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18pt;
+    letter-spacing: 0.04em;
+  }
+  .report-brand-text .report-center-name {
     font-size: 16pt;
     font-weight: 700;
     line-height: 1.1;
+    color: #0f172a;
   }
-  .report-letterhead .report-contact {
+  .report-brand-text .report-contact {
+    margin-top: 2pt;
     font-size: 9pt;
-    text-align: right;
+    color: #475569;
     line-height: 1.4;
   }
-  .report-title {
-    margin-top: 0.9rem;
-    text-align: center;
-    font-size: 15pt;
-    font-weight: 700;
+  .report-printed-on {
+    font-size: 8.5pt;
+    color: #64748b;
+    align-self: flex-start;
+    padding-top: 4pt;
+  }
+  .report-accent-bar {
+    height: 3pt;
+    background: var(--brand-color, #2563eb);
+    border-radius: 2pt;
+    margin-bottom: 1rem;
+  }
+
+  /* --- Headline --- */
+  .report-headline {
+    margin: 0.8rem 0 0.6rem;
+    text-align: left;
+  }
+  .report-eyebrow {
+    font-size: 9pt;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.12em;
+    color: var(--brand-color, #2563eb);
+  }
+  .report-student-name {
+    font-size: 24pt;
+    font-weight: 700;
+    line-height: 1.05;
+    color: #0f172a;
+    margin: 4pt 0 4pt;
+  }
+  .report-class-line {
+    font-size: 11pt;
+    color: #334155;
   }
   .report-period {
-    text-align: center;
-    font-size: 10pt;
-    margin-top: 0.15rem;
-  }
-  .report-info {
-    margin-top: 1rem;
-    border: 1px solid #000;
-  }
-  .report-info dl {
-    display: grid;
-    grid-template-columns: max-content 1fr max-content 1fr;
-    gap: 0;
-  }
-  .report-info dt {
-    background: #f1f1f1;
-    padding: 4pt 8pt;
-    font-weight: 600;
+    margin-top: 2pt;
     font-size: 9.5pt;
-    border-bottom: 1px solid #000;
-    border-right: 1px solid #000;
+    color: #64748b;
   }
-  .report-info dd {
-    padding: 4pt 8pt;
+  .report-intro {
+    margin-top: 0.5rem;
     font-size: 10pt;
-    border-bottom: 1px solid #000;
-    border-right: 1px solid #000;
+    color: #334155;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+
+  /* --- Stat cards --- */
+  .report-stats {
+    margin-top: 0.9rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8pt;
+    page-break-inside: avoid;
+  }
+  .report-stat {
+    border: 1pt solid #e2e8f0;
+    border-radius: 8pt;
+    padding: 8pt 10pt;
+  }
+  .report-stat .stat-label {
+    font-size: 8.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #475569;
+  }
+  .report-stat .stat-value {
+    font-size: 20pt;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-top: 2pt;
+    color: #0f172a;
+  }
+  .report-stat .stat-value-text {
+    font-size: 14pt;
+    line-height: 1.2;
+  }
+  .report-stat .stat-context {
+    font-size: 8.5pt;
+    color: #64748b;
+    margin-top: 2pt;
+  }
+  .stat-blue {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+  .stat-emerald {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+  }
+  .stat-amber {
+    background: #fffbeb;
+    border-color: #fcd34d;
+  }
+  .stat-rose {
+    background: #fff1f2;
+    border-color: #fecdd3;
+  }
+  .stat-violet {
+    background: #f5f3ff;
+    border-color: #ddd6fe;
+  }
+
+  /* --- Highlights + Suggestions callouts --- */
+  .report-callout {
+    margin-top: 1rem;
+    border-radius: 8pt;
+    padding: 10pt 12pt;
+    page-break-inside: avoid;
+  }
+  .report-callout-highlights {
+    background: #ecfdf5;
+    border: 1pt solid #a7f3d0;
+  }
+  .report-callout-suggestions {
+    background: #fffbeb;
+    border: 1pt solid #fcd34d;
+  }
+  .report-callout-heading {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 4pt;
+  }
+  .report-callout-list {
     margin: 0;
+    padding: 0 0 0 1.1rem;
+    font-size: 10pt;
+    color: #1f2937;
+    line-height: 1.55;
   }
-  .report-info dd:nth-of-type(2n) {
-    border-right: 0;
+  .report-callout-list li {
+    margin-top: 2pt;
   }
-  .report-info > dl > :nth-last-child(-n+4) {
-    border-bottom: 0;
+
+  /* --- Teacher monthly note --- */
+  .report-teacher-note {
+    margin-top: 1rem;
+    border: 1pt solid #e2e8f0;
+    border-left: 3pt solid var(--brand-color, #2563eb);
+    border-radius: 6pt;
+    padding: 10pt 12pt;
+    background: #fafaf9;
+    page-break-inside: avoid;
   }
+  .report-teacher-line {
+    display: flex;
+    align-items: center;
+    gap: 8pt;
+    margin: 4pt 0 6pt;
+  }
+  .report-teacher-avatar {
+    width: 22pt;
+    height: 22pt;
+    border-radius: 50%;
+    background: var(--brand-color, #2563eb);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10pt;
+    font-weight: 700;
+  }
+  .report-teacher-name {
+    font-size: 10pt;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  .report-teacher-body {
+    margin: 0;
+    font-size: 10pt;
+    line-height: 1.55;
+    color: #1f2937;
+    white-space: pre-wrap;
+  }
+
+  /* --- Section heading used before the lesson log --- */
   .report-section-heading {
     margin-top: 1.1rem;
     margin-bottom: 0.4rem;
@@ -295,9 +466,45 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    border-bottom: 1px solid #000;
+    color: var(--brand-color, #2563eb);
+    border-bottom: 1pt solid var(--brand-color, #2563eb);
     padding-bottom: 2pt;
   }
+
+  /* --- Per-lesson vocab + grammar chips (print only) --- */
+  .report-vocab-row,
+  .report-grammar-row {
+    font-size: 9.5pt;
+    line-height: 1.5;
+    color: #1f2937;
+  }
+  .report-vocab-label,
+  .report-grammar-label {
+    font-size: 8.5pt;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    margin-right: 4pt;
+  }
+  .report-vocab-chips {
+    display: inline;
+  }
+  .report-vocab-chip {
+    display: inline-block;
+    background: #eff6ff;
+    border: 0.6pt solid #bfdbfe;
+    color: #1e40af;
+    padding: 0.5pt 5pt;
+    margin: 0 3pt 2pt 0;
+    border-radius: 999pt;
+    font-size: 8.5pt;
+  }
+  .report-grammar-text {
+    color: #1f2937;
+  }
+
+  /* --- Signatures (now off by default, optional via toggle) --- */
   .report-signatures {
     margin-top: 1.6rem;
     display: grid;
@@ -323,12 +530,29 @@
     padding-top: 3pt;
     font-size: 9pt;
   }
+
+  /* --- Tagline + contact strip + footer --- */
+  .report-tagline {
+    margin: 1.2rem 0 0.6rem;
+    text-align: center;
+    font-size: 10pt;
+    color: #334155;
+    font-style: italic;
+    white-space: pre-wrap;
+  }
+  .report-contact-strip {
+    text-align: center;
+    font-size: 9pt;
+    color: #475569;
+    padding: 4pt 0;
+    border-top: 0.6pt solid #e2e8f0;
+    border-bottom: 0.6pt solid #e2e8f0;
+  }
   .report-footer {
-    margin-top: 1.4rem;
-    padding-top: 0.4rem;
-    border-top: 1px solid #888;
-    font-size: 8.5pt;
-    color: #555;
+    margin-top: 0.6rem;
+    padding-top: 0.3rem;
+    font-size: 8pt;
+    color: #94a3b8;
     display: flex;
     justify-content: space-between;
   }

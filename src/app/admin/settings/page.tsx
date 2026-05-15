@@ -16,13 +16,44 @@ export default async function SettingsPage() {
   const t = await getTranslations("settings");
   const supabase = createClient();
 
-  const { data: center } = await supabase
+  type CenterRow = {
+    name: string | null;
+    logo_url: string | null;
+    report_intro_text: string | null;
+    report_footer_text: string | null;
+    report_show_summary: boolean | null;
+    report_show_signatures: boolean | null;
+    report_signature_label_left: string | null;
+    report_signature_label_right: string | null;
+    brand_color: string | null;
+    show_pdf_credit: boolean | null;
+  };
+  let center: CenterRow | null = null;
+  const full = await supabase
     .from("centers")
     .select(
-      "name, logo_url, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right",
+      "name, logo_url, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right, brand_color, show_pdf_credit",
     )
     .eq("id", user.center_id)
     .single();
+  if (!full.error) {
+    center = full.data as CenterRow;
+  } else if (/brand_color|show_pdf_credit/i.test(full.error.message)) {
+    const fb = await supabase
+      .from("centers")
+      .select(
+        "name, logo_url, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right",
+      )
+      .eq("id", user.center_id)
+      .single();
+    if (!fb.error && fb.data) {
+      center = {
+        ...(fb.data as Omit<CenterRow, "brand_color" | "show_pdf_credit">),
+        brand_color: null,
+        show_pdf_credit: true,
+      };
+    }
+  }
 
   // Programs catalog. Fall back to empty if migration hasn't been run.
   const programsRes = await supabase
@@ -120,9 +151,11 @@ export default async function SettingsPage() {
               intro: center?.report_intro_text ?? null,
               footer: center?.report_footer_text ?? null,
               show_summary: center?.report_show_summary ?? true,
-              show_signatures: center?.report_show_signatures ?? true,
+              show_signatures: center?.report_show_signatures ?? false,
               sig_left: center?.report_signature_label_left ?? null,
               sig_right: center?.report_signature_label_right ?? null,
+              brand_color: center?.brand_color ?? null,
+              show_pdf_credit: center?.show_pdf_credit ?? true,
             }}
           />
         </section>
