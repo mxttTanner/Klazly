@@ -142,7 +142,7 @@
     "faq6A": "No. Onboarding is free. We help you upload your logo, configure reports, and invite your first teachers + parents over Zalo.",
     "ctaTitle": "Still have questions?",
     "ctaSubtitle": "Message us on Zalo — we reply faster than email.",
-    "guaranteeBar": "14-day free trial · No credit card · Cancel anytime · Setup in under 30 minutes"
+    "guaranteeBar": "14-day free trial · No upfront payment · Cancel anytime · Setup in under 30 minutes"
   },
   "pricingCta": {
     "buttons": {
@@ -151,7 +151,7 @@
       "annual": "Get started"
     },
     "trustLines": {
-      "micro": "14-day free trial · no card required",
+      "micro": "14-day free trial · no upfront payment",
       "monthly": "Save 25% vs monthly",
       "annual": "Save 31% vs monthly · Lock in launch pricing"
     },
@@ -200,7 +200,7 @@
     "ctaLiveDemo": "See live demo",
     "ctaZalo": "Talk to us on Zalo",
     "trustTrial": "14-day free trial",
-    "trustNoCard": "No credit card",
+    "trustNoCard": "No upfront payment",
     "trustSetup": "Setup in 10 minutes",
     "trustBilingual": "Vietnamese & English",
     "heroEyebrow": "For English centers in Vietnam",
@@ -322,13 +322,13 @@
     "pricingAnnualPeriod": "/ year · ~825,000 VNĐ/mo",
     "pricingAnnualEquivalent": "Works out to 825,000 VNĐ / month",
     "pricingAnnualNote": "Pay yearly — save 4,500,000 VNĐ vs paying monthly, plus lock in launch pricing.",
-    "pricingNote": "Free 14-day trial on any plan. No credit card required. Every plan includes:",
+    "pricingNote": "Free 14-day trial on any plan. No upfront payment. Every plan includes:",
     "pricingItem1": "Unlimited classes, students, parents, teachers",
     "pricingItem2": "Unlimited PDF reports",
     "pricingItem3": "Center worksheet library",
     "pricingItem4": "Zalo / email support and free updates",
     "pricingCta": "Start free trial",
-    "pricingTrialInline": "First 14 days free · no card required",
+    "pricingTrialInline": "First 14 days free · no upfront payment",
     "faq": {
       "title": "Frequently asked questions",
       "subtitle": "Everything centers ask before they sign up.",
@@ -347,10 +347,10 @@
       "q7": "What if I have multiple locations?",
       "a7": "Each location is its own center on the platform — and you get a multi-location discount. Message us on Zalo and we'll quote you.",
       "q8": "Is there a free trial?",
-      "a8": "Yes — 14 days, full features, no credit card. After 14 days, if you don't pick a plan, your account goes read-only until you decide."
+      "a8": "Yes — 14 days, full features, no upfront payment. After 14 days, if you don't pick a plan, your account goes read-only until you decide."
     },
     "finalCtaTitle": "Ready to run a more professional center?",
-    "finalCtaSubtitle": "Start your 14-day free trial. No credit card. Setup in 10 minutes.",
+    "finalCtaSubtitle": "Start your 14-day free trial. No upfront payment. Setup in 10 minutes.",
     "finalCtaTrust": "Already have teachers + parents ready? Invite them right after signup.",
     "footerTagline": "Professional management for English centers in Vietnam. Manage teachers, track lessons, and retain parents with automated PDF reports.",
     "footerZalo": "Talk to us on Zalo",
@@ -381,7 +381,7 @@
       "whoTitle": "Who we are",
       "whoBody": "The Operator is Matthew Stadler, an individual based in Vietnam, who designs and runs the Service. The Service is hosted on Vercel (web hosting) and Supabase (Postgres database, authentication, file storage). Data is stored in their US / EU data centers.",
       "dataTitle": "What data we hold",
-      "dataBody": "Center admins, teachers, parents and students each have an account with name, email, role and a link to their center. Lessons recorded by teachers are stored. Centers also have a name, contact info, optional logo, and subscription status. The Service is NOT designed for sensitive data — do not enter health records, identity documents, payment cards, or anything similar.",
+      "dataBody": "Center admins, teachers, parents and students each have an account with name, email, role and a link to their center. Lessons recorded by teachers are stored. Centers also have a name, contact info, optional logo, and subscription status. The Service is NOT designed for sensitive data — do not enter health records, ID/passport numbers, banking credentials, or anything similar.",
       "useTitle": "What we do with the data",
       "useBody": "Store it for the center to view and use, scoped per-center via Row Level Security so no center can see another center's data. Display it to the relevant users (admin sees their center; teachers see their classes; parents see their own children). Generate the printable PDF report when a parent requests it. Operate the Service: routine logging, backups. We do NOT sell or rent any data, do NOT use it for advertising, and do NOT train AI/ML models on it.",
       "shareTitle": "Who else can see the data",
@@ -405,7 +405,7 @@
       "payTitle": "Subscription and payment",
       "payBody": "The Service is offered on 1-month, 6-month, or 12-month prepaid plans, paid by bank transfer. Pricing is published at the website and may change for new subscriptions; existing subscriptions stay at the price they signed. A 14-day free trial is available on every plan. Refunds are not offered for unused portions unless the Owner agrees otherwise.",
       "subTitle": "Subscriber responsibilities",
-      "subBody": "Keep admin credentials confidential. Only enter data the Subscriber has the right to enter. Do not enter sensitive data the Service is not designed for (e.g. health records, payment cards). Use the Service only for the lawful purpose of running an English language center.",
+      "subBody": "Keep admin credentials confidential. Only enter data the Subscriber has the right to enter. Do not enter sensitive data the Service is not designed for (e.g. health records, banking credentials). Use the Service only for the lawful purpose of running an English language center.",
       "dataTitle": "Data ownership and export",
       "dataBody": "Data you enter belongs to you. The Owner holds it on your behalf while your subscription is active. You can request a CSV export of all your data at any time. The Owner will deliver it within 14 days at no charge. After cancellation, your data is retained for 30 days then permanently deleted.",
       "licenseTitle": "Permitted use",
@@ -974,7 +974,7 @@
     "banner": "DEMO • Read-only — changes you make are not saved.",
     "exit": "Exit demo",
     "heroTitle": "See it in action",
-    "heroSubtitle": "Explore the full platform with realistic sample data. No signup, no credit card.",
+    "heroSubtitle": "Explore the full platform with realistic sample data. No signup, no upfront payment.",
     "heroBannerLabel": "Demo",
     "heroBannerNote": "Read-only — changes aren't saved.",
     "chooserTitle": "View the demo by role",

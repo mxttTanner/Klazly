@@ -35,7 +35,7 @@ identity), database schema, and documentation. See `LICENSE.md`.
   any action taken on its center's account.
 - Only enter data the Subscriber has the right to enter (parents,
   students, lessons). Do not enter sensitive data the Service is not
-  designed for (e.g. health records, payment card numbers).
+  designed for (e.g. health records, banking credentials).
 - Use the Service only for the lawful purpose of running an English
   language center.
 - Do not share access with users outside your center. Each parent / teacher

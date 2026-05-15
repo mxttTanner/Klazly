@@ -99,7 +99,7 @@ Trung tâm cần thời gian để nhập học sinh, đào tạo giáo viên, l
 - Hỗ trợ qua Zalo / email
 - Cập nhật tính năng miễn phí
 
-**Dùng thử miễn phí 14 ngày** trước khi thanh toán. Không cần thẻ tín dụng.
+**Dùng thử miễn phí 14 ngày** trước khi thanh toán. Không cần thanh toán trước.
 
 **Thanh toán:** Chuyển khoản trực tiếp qua mã QR ngân hàng. Hoá đơn có thể yêu cầu.
 

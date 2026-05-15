@@ -142,7 +142,7 @@
     "faq6A": "Không. Cài đặt miễn phí. Chúng tôi giúp bạn upload logo, thiết lập báo cáo, mời giáo viên + phụ huynh đầu tiên qua Zalo.",
     "ctaTitle": "Còn câu hỏi?",
     "ctaSubtitle": "Nhắn cho chúng tôi qua Zalo — chúng tôi trả lời nhanh hơn email.",
-    "guaranteeBar": "Dùng thử 14 ngày · Không cần thẻ · Huỷ bất cứ lúc nào · Cài đặt trong dưới 30 phút"
+    "guaranteeBar": "Dùng thử 14 ngày · Không cần thanh toán trước · Huỷ bất cứ lúc nào · Cài đặt trong dưới 30 phút"
   },
   "pricingCta": {
     "buttons": {
@@ -151,7 +151,7 @@
       "annual": "Bắt đầu ngay"
     },
     "trustLines": {
-      "micro": "Dùng thử 14 ngày · không cần thẻ",
+      "micro": "Dùng thử 14 ngày · không cần thanh toán trước",
       "monthly": "Tiết kiệm 25% so với trả theo tháng",
       "annual": "Tiết kiệm 31% · Khoá giá ra mắt vĩnh viễn"
     },
@@ -200,7 +200,7 @@
     "ctaLiveDemo": "Xem bản demo trực tiếp",
     "ctaZalo": "Nhắn Zalo với chúng tôi",
     "trustTrial": "Dùng thử 14 ngày miễn phí",
-    "trustNoCard": "Không cần thẻ tín dụng",
+    "trustNoCard": "Không cần thanh toán trước",
     "trustSetup": "Cài đặt trong 10 phút",
     "trustBilingual": "Tiếng Việt & English",
     "heroEyebrow": "Dành cho trung tâm tiếng Anh tại Việt Nam",
@@ -322,13 +322,13 @@
     "pricingAnnualPeriod": "/ năm · ~825.000 VNĐ/tháng",
     "pricingAnnualEquivalent": "Tương đương 825.000 VNĐ/tháng",
     "pricingAnnualNote": "Trả trước cả năm — tiết kiệm 4.500.000 VNĐ so với trả theo tháng, cộng thêm khoá giá ra mắt.",
-    "pricingNote": "Dùng thử miễn phí 14 ngày cho mọi gói. Không cần thẻ tín dụng. Mọi gói đều bao gồm:",
+    "pricingNote": "Dùng thử miễn phí 14 ngày cho mọi gói. Không cần thanh toán trước. Mọi gói đều bao gồm:",
     "pricingItem1": "Không giới hạn lớp học, học sinh, phụ huynh, giáo viên",
     "pricingItem2": "Báo cáo PDF không giới hạn",
     "pricingItem3": "Thư viện tài liệu trung tâm",
     "pricingItem4": "Hỗ trợ qua Zalo / email và cập nhật miễn phí",
     "pricingCta": "Bắt đầu dùng thử",
-    "pricingTrialInline": "14 ngày đầu miễn phí · không cần thẻ",
+    "pricingTrialInline": "14 ngày đầu miễn phí · không cần thanh toán trước",
     "faq": {
       "title": "Câu hỏi thường gặp",
       "subtitle": "Những gì các trung tâm hay hỏi trước khi đăng ký.",
@@ -347,10 +347,10 @@
       "q7": "Nếu tôi có nhiều cơ sở thì sao?",
       "a7": "Mỗi cơ sở là một trung tâm độc lập trên hệ thống — bạn được giảm giá khi đăng ký nhiều cơ sở. Liên hệ qua Zalo để chúng tôi tư vấn cụ thể.",
       "q8": "Có dùng thử miễn phí không?",
-      "a8": "Có — 14 ngày dùng thử đầy đủ tính năng, không cần thẻ tín dụng. Sau 14 ngày, nếu bạn không chọn gói thuê bao, tài khoản vào trạng thái chỉ-đọc cho đến khi bạn quyết định."
+      "a8": "Có — 14 ngày dùng thử đầy đủ tính năng, không cần thanh toán trước. Sau 14 ngày, nếu bạn không chọn gói thuê bao, tài khoản vào trạng thái chỉ-đọc cho đến khi bạn quyết định."
     },
     "finalCtaTitle": "Sẵn sàng vận hành một trung tâm chuyên nghiệp hơn?",
-    "finalCtaSubtitle": "Bắt đầu dùng thử 14 ngày miễn phí. Không cần thẻ tín dụng. Cài đặt trong 10 phút.",
+    "finalCtaSubtitle": "Bắt đầu dùng thử 14 ngày miễn phí. Không cần thanh toán trước. Cài đặt trong 10 phút.",
     "finalCtaTrust": "Đã có giáo viên + phụ huynh sẵn sàng tham gia? Mời họ ngay sau khi đăng ký.",
     "footerTagline": "Nền tảng quản lý chuyên nghiệp cho trung tâm tiếng Anh tại Việt Nam. Quản lý giáo viên, ghi nhận từng buổi học, và giữ chân phụ huynh bằng báo cáo PDF tự động.",
     "footerZalo": "Nhắn Zalo với chúng tôi",
@@ -381,7 +381,7 @@
       "whoTitle": "Chúng tôi là ai",
       "whoBody": "Đơn vị vận hành là Matthew Stadler, cá nhân làm việc tại Việt Nam, người thiết kế và vận hành Dịch vụ. Dịch vụ được lưu trữ trên Vercel (web hosting) và Supabase (Postgres, xác thực, lưu trữ tệp). Dữ liệu nằm tại trung tâm dữ liệu Mỹ / EU.",
       "dataTitle": "Dữ liệu chúng tôi giữ",
-      "dataBody": "Quản trị trung tâm, giáo viên, phụ huynh và học sinh đều có tài khoản với họ tên, email, vai trò và liên kết với trung tâm. Bài học do giáo viên ghi nhận sẽ được lưu lại. Trung tâm cũng có tên, thông tin liên hệ, logo (tuỳ chọn) và trạng thái thuê bao. Dịch vụ KHÔNG được thiết kế cho dữ liệu nhạy cảm — không nhập hồ sơ y tế, giấy tờ định danh, thẻ thanh toán hay tương tự.",
+      "dataBody": "Quản trị trung tâm, giáo viên, phụ huynh và học sinh đều có tài khoản với họ tên, email, vai trò và liên kết với trung tâm. Bài học do giáo viên ghi nhận sẽ được lưu lại. Trung tâm cũng có tên, thông tin liên hệ, logo (tuỳ chọn) và trạng thái thuê bao. Dịch vụ KHÔNG được thiết kế cho dữ liệu nhạy cảm — không nhập hồ sơ y tế, số CCCD/hộ chiếu, thông tin tài khoản ngân hàng hay tương tự.",
       "useTitle": "Chúng tôi dùng dữ liệu vào việc gì",
       "useBody": "Lưu trữ để trung tâm xem và sử dụng, phân vùng theo từng trung tâm bằng Row Level Security để không trung tâm nào nhìn thấy dữ liệu của trung tâm khác. Hiển thị cho người dùng phù hợp (admin xem trung tâm; giáo viên xem lớp của mình; phụ huynh xem con mình). Tạo báo cáo PDF khi phụ huynh yêu cầu. Vận hành Dịch vụ: ghi log, sao lưu. Chúng tôi KHÔNG bán hay cho thuê dữ liệu, KHÔNG dùng cho quảng cáo, KHÔNG huấn luyện AI/ML.",
       "shareTitle": "Ai khác có thể thấy dữ liệu",
@@ -405,7 +405,7 @@
       "payTitle": "Thuê bao và thanh toán",
       "payBody": "Dịch vụ cung cấp theo gói 1 tháng, 6 tháng hoặc 12 tháng trả trước, thanh toán qua chuyển khoản. Giá được công bố trên website và có thể thay đổi cho thuê bao mới; thuê bao hiện tại giữ nguyên giá đã ký. Có 14 ngày dùng thử miễn phí cho mọi gói. Không hoàn tiền cho phần chưa dùng trừ khi Chủ sở hữu đồng ý khác.",
       "subTitle": "Trách nhiệm của Khách hàng",
-      "subBody": "Giữ kín thông tin đăng nhập admin. Chỉ nhập dữ liệu mà Khách hàng có quyền nhập. Không nhập dữ liệu nhạy cảm mà Dịch vụ không được thiết kế cho (VD: hồ sơ y tế, thẻ thanh toán). Chỉ sử dụng Dịch vụ cho mục đích hợp pháp là vận hành trung tâm tiếng Anh.",
+      "subBody": "Giữ kín thông tin đăng nhập admin. Chỉ nhập dữ liệu mà Khách hàng có quyền nhập. Không nhập dữ liệu nhạy cảm mà Dịch vụ không được thiết kế cho (VD: hồ sơ y tế, thông tin tài khoản ngân hàng). Chỉ sử dụng Dịch vụ cho mục đích hợp pháp là vận hành trung tâm tiếng Anh.",
       "dataTitle": "Quyền sở hữu và xuất dữ liệu",
       "dataBody": "Dữ liệu bạn nhập thuộc về bạn. Chủ sở hữu giữ hộ trong khi thuê bao còn hiệu lực. Bạn có thể yêu cầu xuất toàn bộ dữ liệu dạng CSV bất kỳ lúc nào. Chủ sở hữu sẽ giao trong 14 ngày, miễn phí. Sau khi huỷ, dữ liệu được giữ thêm 30 ngày rồi xoá vĩnh viễn.",
       "licenseTitle": "Phạm vi sử dụng",
@@ -974,7 +974,7 @@
     "banner": "BẢN DEMO • Chỉ xem — các thay đổi của bạn sẽ không được lưu.",
     "exit": "Thoát demo",
     "heroTitle": "Xem thử ngay",
-    "heroSubtitle": "Khám phá toàn bộ nền tảng với dữ liệu mẫu thực tế. Không cần đăng ký, không cần thẻ tín dụng.",
+    "heroSubtitle": "Khám phá toàn bộ nền tảng với dữ liệu mẫu thực tế. Không cần đăng ký, không cần thanh toán trước.",
     "heroBannerLabel": "Bản demo",
     "heroBannerNote": "Chỉ xem — các thay đổi sẽ không được lưu.",
     "chooserTitle": "Xem demo theo từng góc nhìn",

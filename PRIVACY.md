@@ -26,7 +26,7 @@ Three groups of people have data in the Service:
 - **Centers** — center name, contact email/phone, logo, subscription status
 
 The Service is **not designed for sensitive data** — do not enter health
-records, identity documents, payment cards, or anything similar.
+records, ID/passport numbers, banking credentials, or anything similar.
 
 ## 3. What we do with the data
 

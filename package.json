@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/check-no-localhost-fallback.mjs",
+    "prebuild": "node scripts/check-no-localhost-fallback.mjs && node scripts/check-no-card-language.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "check:no-localhost": "node scripts/check-no-localhost-fallback.mjs",
+    "check:no-card-language": "node scripts/check-no-card-language.mjs",
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
