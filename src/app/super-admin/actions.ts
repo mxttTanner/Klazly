@@ -123,7 +123,6 @@ async function writeAuditLog(
  * via PLAN_TYPE_DECOMPOSITION below.
  */
 const PLAN_TYPE_VALUES = [
-  "trial_standard",
   "trial_founding",
   "active_monthly",
   "active_six_months",
@@ -145,7 +144,6 @@ const PLAN_TYPE_DECOMPOSITION: Record<
     trialDays: number | null;
   }
 > = {
-  trial_standard: { status: "trial", plan: null, tier: "standard", trialDays: 14 },
   trial_founding: { status: "trial", plan: null, tier: "founding", trialDays: 30 },
   active_monthly: { status: "active", plan: "monthly", tier: "standard", trialDays: null },
   active_six_months: { status: "active", plan: "six_months", tier: "standard", trialDays: null },
@@ -172,7 +170,7 @@ const createCenterSchema = z.object({
   admin_phone: z.string().optional(),
   admin_password: z.string().min(8).max(72),
   contact_phone: z.string().max(40).optional().nullable(),
-  plan_type: z.enum(PLAN_TYPE_VALUES).default("trial_standard"),
+  plan_type: z.enum(PLAN_TYPE_VALUES).default("trial_founding"),
   signup_source: z.enum(SIGNUP_SOURCE_VALUES).default("zalo_cold"),
   referral_note: z.string().max(280).optional().nullable(),
 });
@@ -182,7 +180,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   const t = await getTranslations("superAdmin");
   const tco = await getTranslations("contact");
 
-  const planTypeRaw = String(formData.get("plan_type") ?? "trial_standard");
+  const planTypeRaw = String(formData.get("plan_type") ?? "trial_founding");
   const sourceRaw = String(formData.get("signup_source") ?? "zalo_cold");
   const parsed = createCenterSchema.safeParse({
     center_name: formData.get("center_name"),
@@ -193,7 +191,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     contact_phone: formData.get("contact_phone") || null,
     plan_type: (PLAN_TYPE_VALUES as readonly string[]).includes(planTypeRaw)
       ? planTypeRaw
-      : "trial_standard",
+      : "trial_founding",
     signup_source: (SIGNUP_SOURCE_VALUES as readonly string[]).includes(sourceRaw)
       ? sourceRaw
       : "zalo_cold",

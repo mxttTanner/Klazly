@@ -23,9 +23,10 @@ identity), database schema, and documentation. See `LICENSE.md`.
   paid by bank transfer. Pricing is published at
   https://parent-portal-nine.vercel.app and may change for new
   subscriptions; existing subscriptions stay at the price they signed.
-- A **14-day free trial** is available. No payment is required during the
-  trial. If you do not pay before the trial ends, your account is moved to
-  read-only and then suspended.
+- Trial periods, if any, are set on a per-customer basis at the time of
+  onboarding. No payment is required during the trial. If you do not pay
+  before the trial ends, your account is moved to read-only and then
+  suspended.
 - Refunds are not offered for unused portions of a paid plan unless the
   Provider, at its sole discretion, agrees otherwise.
 

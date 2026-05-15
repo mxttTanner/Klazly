@@ -1,50 +1,26 @@
-"use client";
+import { getTranslations } from "next-intl/server";
+import { ClipboardList, Sparkles, MessageCircle } from "lucide-react";
+import { getFoundingStatus } from "@/lib/founding";
 
-import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
-import { ClipboardList, Sparkles } from "lucide-react";
+const ZALO_URL = "https://zalo.me/84862404036";
+const PHONE_DISPLAY = "+84 86 240 4036";
 
 /**
- * Right-side brand panel on /login. Dark navy gradient, ambient glow,
- * floating dashboard mockup, and a rotating testimonial pinned at
- * bottom. Client component because of the testimonial rotation.
+ * Right-side brand panel on /login. Dark navy gradient with a small
+ * abstract dashboard mockup and an authentic founder/Founding-Center
+ * panel at the bottom — *not* fabricated testimonials (the previous
+ * version rotated three fake quotes; those are now stripped).
+ *
+ * Server component now — needs no client state. The Founding-Center
+ * spots count is server-rendered so the panel matches the same live
+ * counter shown on /super-admin and the public landing page.
  *
  * On mobile (< lg) this component hides — the form fills the screen.
- * The auth/forgot-password + reset-password screens reuse the same
- * pattern via their own copies of this layout if we want; for now
- * only /login uses it.
  */
-export function LoginBrandPanel() {
-  const t = useTranslations("login");
-
-  // Three quotes rotate every 7 seconds. Static index on first paint
-  // so SSR + client agree.
-  const quotes = [
-    {
-      quote: t("testimonial1Quote"),
-      name: t("testimonial1Name"),
-      role: t("testimonial1Role"),
-    },
-    {
-      quote: t("testimonial2Quote"),
-      name: t("testimonial2Name"),
-      role: t("testimonial2Role"),
-    },
-    {
-      quote: t("testimonial3Quote"),
-      name: t("testimonial3Name"),
-      role: t("testimonial3Role"),
-    },
-  ];
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const id = window.setInterval(
-      () => setIdx((i) => (i + 1) % quotes.length),
-      7000,
-    );
-    return () => window.clearInterval(id);
-  }, [quotes.length]);
-  const q = quotes[idx];
+export async function LoginBrandPanel() {
+  const t = await getTranslations("login");
+  const tFounder = await getTranslations("founder");
+  const status = await getFoundingStatus();
 
   return (
     <aside className="relative hidden overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white lg:flex lg:flex-col">
@@ -68,7 +44,7 @@ export function LoginBrandPanel() {
           {t("brandHeadline")}
         </h2>
         <p className="text-slate-300 mt-3 max-w-md text-sm leading-relaxed">
-          {t("brandSubtitle")}
+          {tFounder("loginTagline")}
         </p>
 
         {/* Floating mini-dashboard — abstracted, not the full app. */}
@@ -123,35 +99,45 @@ export function LoginBrandPanel() {
         </div>
       </div>
 
-      {/* Rotating testimonial pinned at bottom. Fades on rotation via
-          key prop forcing a remount. */}
+      {/* Authentic Founding-Center panel — replaces the previous
+          rotating fake testimonials. Dark-variant card so it sits on
+          the navy background without a colour clash. */}
       <div className="relative border-white/10 border-t bg-slate-950/40 px-10 py-6 backdrop-blur-sm">
-        <figure key={idx} className="animate-in fade-in duration-700">
-          <blockquote className="text-slate-200 text-sm leading-relaxed">
-            &ldquo;{q.quote}&rdquo;
-          </blockquote>
-          <figcaption className="text-slate-400 mt-3 flex items-center gap-2 text-xs">
-            <span className="bg-primary/20 text-primary inline-flex size-7 items-center justify-center rounded-full text-xs font-semibold ring-1 ring-primary/30">
-              {q.name.trim().split(/\s+/).slice(-1)[0]?.charAt(0) ?? "?"}
+        <div className="ring-white/15 bg-white/5 rounded-xl p-4 ring-1">
+          <div className="flex items-center gap-2.5">
+            <span className="bg-amber-400/15 text-amber-300 inline-flex size-8 items-center justify-center rounded-full ring-1 ring-amber-300/30">
+              <Sparkles className="size-3.5" />
             </span>
-            <span>
-              <span className="text-slate-200 font-medium">{q.name}</span>
-              <span className="text-slate-500"> · {q.role}</span>
-            </span>
-          </figcaption>
-        </figure>
-        {/* Pagination dots */}
-        <div className="mt-4 flex items-center gap-1.5">
-          {quotes.map((_, i) => (
-            <span
-              key={i}
-              className={
-                "h-1 rounded-full transition-all " +
-                (i === idx ? "w-6 bg-white/70" : "w-1.5 bg-white/20")
-              }
-            />
-          ))}
+            <div className="min-w-0">
+              <p className="text-amber-200 text-[10px] font-semibold uppercase tracking-widest">
+                {tFounder("programName")}
+              </p>
+              <p className="text-white mt-0.5 text-sm font-semibold">
+                {status.isFull
+                  ? tFounder("fullHeadlineShort")
+                  : tFounder("openHeadlineShort", {
+                      filled: status.filled,
+                      cap: status.cap,
+                    })}
+              </p>
+            </div>
+          </div>
+          <a
+            href={ZALO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-emerald-500 hover:bg-emerald-400 text-white mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold shadow-sm transition"
+          >
+            <MessageCircle className="size-3.5" />
+            {status.isFull
+              ? tFounder("waitlistCta")
+              : tFounder("zaloCta")}
+          </a>
         </div>
+        <p className="text-slate-400 mt-3 text-[11px]">
+          {tFounder("loginHelpHint")}{" "}
+          <span className="text-slate-200 font-medium">{PHONE_DISPLAY}</span>
+        </p>
       </div>
     </aside>
   );

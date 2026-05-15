@@ -1,21 +1,33 @@
 #!/usr/bin/env node
-// Regression guard: fail the build if any customer-facing string in
-// the codebase reintroduces Western "credit card" / "thẻ tín dụng"
-// payment language. We sell into Vietnam where business
-// subscriptions are paid via bank transfer / Momo / ZaloPay /
-// VNPay — card framing makes the product feel foreign and was
-// stripped in commit 7ef92c5 / follow-ups.
+// Regression guard for public-facing copy. Fails the build if any of
+// these patterns reappear in the translation strings or root marketing
+// docs — they all map to messaging mistakes we've explicitly stripped:
 //
-// Scope: src/messages/*.json (the translation strings that actually
-// render to users) plus the root-level marketing docs (WHY.md,
-// SALES.md, PRIVACY.md, TERMS.md).
+//   1. Western card-payment framing
+//      ("credit card" / "thẻ tín dụng" / "no card required" …)
+//      VN business subscriptions are paid via bank transfer / Momo /
+//      ZaloPay / VNPay — card language makes the product feel foreign.
 //
-// Explicitly excluded:
-//   - src/components/clarity-script.tsx — technical comment about
-//     what Clarity auto-masks (credit card fields are one of them);
-//     it's accurate, not a marketing claim.
-//   - Anything matching `classCard*` — those are UI Card component
-//     names ("class card lessons"), nothing to do with payment.
+//   2. Public 14-day-trial promises
+//      ("14-day free trial" / "free trial" / "14 ngày" …)
+//      Trial length is now a private super-admin setting (Founding
+//      Trial = 30 days). The public site doesn't commit to a number.
+//
+//   3. Fabricated testimonial names
+//      ("Nguyen Thi Lan" / "Tran Van Hoang" / "Le Thi Huong")
+//      These three were invented placeholders — illegal under VN
+//      consumer law and discoverable by the target community.
+//
+//   4. Refund / money-back marketing promises
+//      ("refund" / "hoàn tiền" / "money back")
+//      The marketing FAQ doesn't promise refunds; the Terms reserve
+//      the right not to refund unused portions. Marketing-tone
+//      mentions create expectations we can't easily honour.
+//
+// Scope: src/messages/*.json (the strings that actually render) plus
+// the root-level marketing docs (WHY.md, SALES.md, PRIVACY.md,
+// TERMS.md). Internal super-admin status labels ("Trial",
+// "Founding Trial") are allowed — they're not customer-facing.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -31,20 +43,53 @@ const TARGETS = [
   "TERMS.md",
 ];
 
-// Phrases that always indicate payment-context card language.
 const BAD_PATTERNS = [
-  /credit\s+card/i,
-  /debit\s+card/i,
-  /\bcardless\b/i,
-  /no\s+card\s+required/i,
-  /no\s+credit\s+card/i,
-  /card\s+on\s+file/i,
-  /card\s+details/i,
-  /payment\s+card/i,
-  /thẻ\s+tín\s+dụng/i,
-  /thẻ\s+ghi\s+nợ/i,
-  /không\s+cần\s+thẻ/i,
-  /thẻ\s+thanh\s+toán/i,
+  // 1. Card-payment language
+  { rx: /credit\s+card/i, label: "credit card" },
+  { rx: /debit\s+card/i, label: "debit card" },
+  { rx: /\bcardless\b/i, label: "cardless" },
+  { rx: /no\s+card\s+required/i, label: "no card required" },
+  { rx: /no\s+credit\s+card/i, label: "no credit card" },
+  { rx: /card\s+on\s+file/i, label: "card on file" },
+  { rx: /card\s+details/i, label: "card details" },
+  { rx: /payment\s+card/i, label: "payment card" },
+  { rx: /thẻ\s+tín\s+dụng/i, label: "thẻ tín dụng" },
+  { rx: /thẻ\s+ghi\s+nợ/i, label: "thẻ ghi nợ" },
+  { rx: /không\s+cần\s+thẻ/i, label: "không cần thẻ" },
+  { rx: /thẻ\s+thanh\s+toán/i, label: "thẻ thanh toán" },
+
+  // 2. 14-day-trial messaging
+  { rx: /14[-\s]day(s)?\s+(free\s+)?trial/i, label: "14-day trial" },
+  { rx: /\bfree\s+trial\b/i, label: "free trial" },
+  { rx: /14\s+ngày\s+miễn\s+phí/i, label: "14 ngày miễn phí" },
+  { rx: /dùng\s+thử\s+14\s+ngày/i, label: "dùng thử 14 ngày" },
+  { rx: /dùng\s+thử\s+miễn\s+phí/i, label: "dùng thử miễn phí" },
+
+  // 3. Fake testimonial names (any locale spelling)
+  { rx: /nguyen\s+thi\s+lan|nguyễn\s+thị\s+lan/i, label: "Nguyen Thi Lan" },
+  { rx: /tran\s+van\s+hoang|trần\s+văn\s+hoàng/i, label: "Tran Van Hoang" },
+  { rx: /le\s+thi\s+huong|lê\s+thị\s+hương/i, label: "Le Thi Huong" },
+
+  // 4. Marketing refund promises (Terms can still reserve the right
+  // not to refund — those use the word "Refunds" capitalised in a
+  // negative-policy sentence, which still trips the regex. We accept
+  // that and require the Terms language to be reworded if it ever
+  // changes; the current Terms entry phrases it as "Refunds are not
+  // offered…" which is fine for legal cover, so we whitelist it via
+  // the SAFE list below.)
+  { rx: /\brefund(s|ed|ing)?\b/i, label: "refund" },
+  { rx: /money[-\s]back/i, label: "money back" },
+  { rx: /hoàn\s+tiền/i, label: "hoàn tiền" },
+];
+
+/** Substrings that contain a bad pattern but are intentional (e.g.
+ *  legal disclaimer that REFUSES refunds). Matched as case-sensitive
+ *  exact substrings — keep narrow. */
+const SAFE_SUBSTRINGS = [
+  "Refunds are not offered",
+  "no refund for unused portion",
+  "no refund for unused",
+  "Không hoàn tiền",
 ];
 
 const offenders = [];
@@ -55,35 +100,37 @@ for (const rel of TARGETS) {
   try {
     text = readFileSync(abs, "utf8");
   } catch {
-    continue; // file missing — not a regression
+    continue;
   }
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
-    for (const pattern of BAD_PATTERNS) {
-      if (pattern.test(lines[i])) {
+    if (SAFE_SUBSTRINGS.some((safe) => lines[i].includes(safe))) continue;
+    for (const { rx, label } of BAD_PATTERNS) {
+      if (rx.test(lines[i])) {
         offenders.push({
           file: rel,
           line: i + 1,
-          match: pattern.source,
+          label,
           text: lines[i].trim().slice(0, 160),
         });
-        break; // one finding per line is enough
+        break;
       }
     }
   }
 }
 
 if (offenders.length > 0) {
-  console.error("\n❌ Western card payment language found:");
+  console.error("\n❌ Forbidden marketing phrase in user-facing copy:");
   for (const o of offenders) {
-    console.error(`  ${o.file}:${o.line}  (/${o.match}/)\n    ${o.text}`);
+    console.error(`  ${o.file}:${o.line}  [${o.label}]\n    ${o.text}`);
   }
   console.error(
-    "\nVN business subscriptions are paid via bank transfer / Momo / " +
-      "ZaloPay / VNPay — no cards involved. Use 'No upfront payment' " +
-      "(EN) or 'Không cần thanh toán trước' (VI) instead.",
+    "\nFix: VN business subscriptions use bank transfer / Momo / ZaloPay /" +
+      " VNPay; trial length is private; no fabricated names or refund" +
+      " promises in marketing copy. Internal super-admin status labels" +
+      " are allowed (they're not customer-facing).",
   );
   process.exit(1);
 }
 
-console.log("✓ no card-payment language in user-facing copy");
+console.log("✓ no forbidden marketing language in user-facing copy");

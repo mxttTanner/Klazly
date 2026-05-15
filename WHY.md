@@ -92,7 +92,7 @@ for as long as they remain subscribed** — even after we raise prices for
 new customers.
 
 Both plans include unlimited classes, students, parents, teachers, lessons,
-PDF reports. Free 14-day trial. No upfront payment.
+PDF reports. Founding Center program open — message me on Zalo.
 
 ---
 

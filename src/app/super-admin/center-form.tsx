@@ -21,7 +21,6 @@ const initialState: { error?: string; success?: string } = {};
  * them three separate questions.
  */
 const PLAN_OPTIONS = [
-  "trial_standard",
   "trial_founding",
   "active_monthly",
   "active_six_months",
@@ -44,7 +43,7 @@ export function CenterForm() {
   const [state, action] = useFormState(createCenter, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const [planType, setPlanType] = useState<(typeof PLAN_OPTIONS)[number]>(
-    "trial_standard",
+    "trial_founding",
   );
   const [source, setSource] = useState<(typeof SOURCE_OPTIONS)[number]>(
     "zalo_cold",

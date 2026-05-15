@@ -14,6 +14,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandLogo } from "@/components/brand-logo";
 import { PricingCtaButton } from "@/components/pricing-cta-button";
+import { FoundingSpotsCard } from "@/components/founding-spots-card";
+import { getFoundingStatus } from "@/lib/founding";
 
 /**
  * Dedicated /pricing page. Extends the landing page's pricing teaser
@@ -29,6 +31,8 @@ export default async function PricingPage() {
   const tPP = await getTranslations("pricingPage");
   const tCta = await getTranslations("pricingCta");
   const tFaq = await getTranslations("pricingPage");
+  const tFounder = await getTranslations("founder");
+  const foundingStatus = await getFoundingStatus();
 
   const includes = [
     tPP("include1"),
@@ -373,6 +377,24 @@ export default async function PricingPage() {
               </details>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* FOUNDING-CENTER SCARCITY — sits just above the final CTA
+          so anyone who scrolled this far sees the live spot count
+          before deciding. Same source-of-truth as the landing page
+          and super-admin dashboard. */}
+      <section className="border-y border-amber-100 bg-amber-50/30">
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-14">
+          <div className="mb-5 text-center">
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              {tFounder("pricingPanelTitle")}
+            </h2>
+            <p className="text-muted-foreground mt-2 text-balance text-sm">
+              {tFounder("pricingPanelSubtitle")}
+            </p>
+          </div>
+          <FoundingSpotsCard status={foundingStatus} showQr={false} />
         </div>
       </section>
 

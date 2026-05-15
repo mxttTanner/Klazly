@@ -27,6 +27,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandLogo } from "@/components/brand-logo";
 import { PricingCtaButton } from "@/components/pricing-cta-button";
+import { FoundingSpotsCard } from "@/components/founding-spots-card";
+import { getFoundingStatus } from "@/lib/founding";
 
 /**
  * Landing page — center-owner-focused redesign.
@@ -51,6 +53,8 @@ export default async function HomePage() {
   const t = await getTranslations("landing");
   const tFaq = await getTranslations("landing.faq");
   const tCta = await getTranslations("pricingCta");
+  const tFounder = await getTranslations("founder");
+  const foundingStatus = await getFoundingStatus();
   const year = new Date().getFullYear();
 
   const navLinks = [
@@ -65,13 +69,6 @@ export default async function HomePage() {
     t("trustNoCard"),
     t("trustSetup"),
     t("trustBilingual"),
-  ];
-
-  const cities = [
-    t("socialProofCity1"),
-    t("socialProofCity2"),
-    t("socialProofCity3"),
-    t("socialProofCity4"),
   ];
 
   const howSteps = [
@@ -110,26 +107,6 @@ export default async function HomePage() {
     t("compareWith5"),
   ];
 
-  const testimonials = [
-    {
-      quote: t("testimonial1Quote"),
-      name: t("testimonial1Name"),
-      role: t("testimonial1Role"),
-      city: t("testimonial1City"),
-    },
-    {
-      quote: t("testimonial2Quote"),
-      name: t("testimonial2Name"),
-      role: t("testimonial2Role"),
-      city: t("testimonial2City"),
-    },
-    {
-      quote: t("testimonial3Quote"),
-      name: t("testimonial3Name"),
-      role: t("testimonial3Role"),
-      city: t("testimonial3City"),
-    },
-  ];
 
   const faqs = [
     { q: tFaq("q1"), a: tFaq("a1") },
@@ -255,26 +232,9 @@ export default async function HomePage() {
       </section>
 
       {/* ============================================================
-          SOCIAL PROOF BAR
-          ============================================================ */}
-      <section className="border-b border-border bg-zinc-50">
-        <div className="mx-auto max-w-6xl px-4 py-10 text-center sm:px-6">
-          <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
-            {t("socialProofTitle")}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-sm font-medium">
-            {cities.map((city) => (
-              <span
-                key={city}
-                className="text-muted-foreground/80 inline-flex items-center gap-1.5"
-              >
-                <Building2 className="size-4" />
-                {city}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
+          (social proof bar removed — replaced by the founder /
+          Founding Centers section further down. No fabricated trust
+          claims on this page.) */}
 
       {/* ============================================================
           THREE VIEWS — owner featured (60%), teacher + parent stacked
@@ -544,41 +504,53 @@ export default async function HomePage() {
       </section>
 
       {/* ============================================================
-          TESTIMONIALS — placeholder, replace as real ones land
+          FOUNDER STORY + FOUNDING CENTER RECRUITMENT
+          Replaces the previous testimonials section. The product has
+          zero customers at the moment of writing — pretending
+          otherwise is illegal under VN consumer law and would be
+          caught by the (small, tight-knit) target community. So we
+          tell the truth instead and actively recruit Founding
+          Centers from this page.
           ============================================================ */}
       <section className="bg-background border-b border-border">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              {t("testimonialsTitle")}
-            </h2>
-            <p className="text-muted-foreground mt-3 text-balance text-lg">
-              {t("testimonialsSubtitle")}
-            </p>
-          </div>
+          <div className="grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-14">
+            {/* Founder narrative */}
+            <div className="space-y-5">
+              <span className="bg-primary/10 text-primary inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+                <Heart className="size-3.5" />
+                {tFounder("eyebrow")}
+              </span>
+              <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+                {tFounder("title")}
+              </h2>
+              <div className="text-muted-foreground space-y-4 text-base leading-relaxed">
+                <p>{tFounder("paragraph1")}</p>
+                <p>{tFounder("paragraph2")}</p>
+                <p>{tFounder("paragraph3")}</p>
+              </div>
+              <ul className="space-y-2 text-sm">
+                {[
+                  tFounder("benefit1"),
+                  tFounder("benefit2"),
+                  tFounder("benefit3"),
+                  tFounder("benefit4"),
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2">
+                    <Check className="text-emerald-600 mt-0.5 size-4 shrink-0" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-foreground text-sm font-medium">
+                {tFounder("closing")}
+              </p>
+            </div>
 
-          <div className="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3">
-            {testimonials.map((t, i) => (
-              <figure
-                key={i}
-                className="bg-card flex flex-col rounded-2xl border p-6 shadow-sm"
-              >
-                <blockquote className="text-foreground text-sm leading-relaxed">
-                  &ldquo;{t.quote}&rdquo;
-                </blockquote>
-                <figcaption className="mt-5 flex items-center gap-3">
-                  <span className="bg-primary/10 text-primary inline-flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ring-1 ring-primary/20">
-                    {t.name.trim().split(/\s+/).slice(-1)[0]?.charAt(0) ?? "?"}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{t.name}</p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {t.role} · {t.city}
-                    </p>
-                  </div>
-                </figcaption>
-              </figure>
-            ))}
+            {/* Founding spots card */}
+            <div className="lg:pt-12">
+              <FoundingSpotsCard status={foundingStatus} />
+            </div>
           </div>
         </div>
       </section>
