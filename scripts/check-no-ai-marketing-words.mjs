@@ -23,18 +23,43 @@ const ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"
 const TARGETS = ["src/messages/en.json", "src/messages/vi.json"];
 
 const BAD_PATTERNS = [
-  // EN
+  // EN marketing-AI vocabulary
   { rx: /\bleverage(s|d|ing)?\b/i, label: "leverage" },
   { rx: /\bseamlessly\b/i, label: "seamlessly" },
   { rx: /\brobust\b/i, label: "robust" },
   { rx: /\bempower(s|ed|ing)?\b/i, label: "empower" },
   { rx: /\bcutting[-\s]edge\b/i, label: "cutting-edge" },
   { rx: /\bgame[-\s]changing\b/i, label: "game-changing" },
-  // VI
+  // VI marketing-AI vocabulary
   { rx: /giải\s+pháp\s+toàn\s+diện/i, label: "giải pháp toàn diện" },
   { rx: /trải\s+nghiệm\s+tuyệt\s+vời/i, label: "trải nghiệm tuyệt vời" },
   { rx: /đột\s+phá/i, label: "đột phá" },
   { rx: /cuộc\s+cách\s+mạng/i, label: "cuộc cách mạng" },
+  // EN in-person setup commitments — Matthew can't always travel, so
+  // public copy should never promise a physical visit. Internal
+  // labels (super-admin "In-person visit" lead-source) live outside
+  // src/messages and aren't checked.
+  { rx: /\bin[-\s]person\s+(setup|training|visit|help)/i, label: "in-person setup/visit" },
+  { rx: /\bpersonal\s+setup\b/i, label: "personal setup" },
+  { rx: /\bi\s+come\s+(in\s+person|to\s+your)/i, label: "I come (to your center / in person)" },
+  { rx: /\bi'll\s+come\b/i, label: "I'll come" },
+  // VI in-person commitments. "trực tiếp" is ambiguous (means
+  // 'directly' OR 'in person'), so we only block the specific
+  // physical-visit collocations.
+  { rx: /setup\s+trực\s+tiếp/i, label: "setup trực tiếp" },
+  { rx: /training\s+trực\s+tiếp/i, label: "training trực tiếp" },
+  { rx: /em\s+đến\s+trực\s+tiếp/i, label: "em đến trực tiếp" },
+  { rx: /em\s+sẽ\s+tới\s+setup/i, label: "em sẽ tới setup" },
+  { rx: /em\s+ghé\s+qua/i, label: "em ghé qua" },
+  { rx: /em\s+đến\s+trung\s+tâm/i, label: "em đến trung tâm" },
+];
+
+/** Internal-only translation keys that legitimately contain a flagged
+ *  word. Currently: the super-admin lead-source dropdown has an
+ *  "In-person visit" option as one of the channels by which a center
+ *  was acquired — that's a *data label*, not a public promise. */
+const SAFE_KEYS = [
+  "source_in_person", // super-admin signup-source enum label
 ];
 
 const offenders = [];
@@ -49,6 +74,7 @@ for (const rel of TARGETS) {
   }
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
+    if (SAFE_KEYS.some((key) => lines[i].includes(`"${key}"`))) continue;
     for (const { rx, label } of BAD_PATTERNS) {
       if (rx.test(lines[i])) {
         offenders.push({
