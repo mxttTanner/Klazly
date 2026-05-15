@@ -75,7 +75,14 @@ export function FeedbackWidget() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="bg-card text-foreground border-border hover:bg-muted/60 fixed bottom-4 right-4 z-30 inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium shadow-md transition print:hidden sm:bottom-5 sm:right-5"
+        className="bg-card text-foreground border-border hover:bg-muted/60 fixed right-4 z-30 inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium shadow-md transition print:hidden sm:right-5"
+        style={{
+          // Honor the iOS home-indicator safe area so the chip
+          // doesn't sit underneath the gesture bar on notched
+          // iPhones. Falls back to 1rem (sm: 1.25rem) when no
+          // safe-area inset exists (most Android).
+          bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
+        }}
         aria-label={t("buttonLabel")}
       >
         <MessageSquareHeart className="size-3.5 text-primary" />

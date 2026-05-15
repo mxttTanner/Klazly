@@ -74,6 +74,9 @@ export function CenterForm() {
             <Input
               id="contact_phone"
               name="contact_phone"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
               placeholder="+84 ..."
             />
           </div>

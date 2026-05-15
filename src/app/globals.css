@@ -122,6 +122,60 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* iOS Safari auto-zooms when a focused form control has font-size
+     under 16px. Force 16px on mobile across all native form controls
+     regardless of any Tailwind text-xs / text-sm utility applied
+     locally — the desktop styles are untouched. Without this, tapping
+     a select like the super-admin StatusSelect (text-xs) makes the
+     viewport zoom and stick. */
+  @media (max-width: 767px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  /* Kill the grey iOS tap-highlight on interactive elements — looks
+     unprofessional and clashes with the brand on coloured CTAs.
+     We replace it with the existing focus-visible ring (already
+     defined per-component) so keyboard users still see focus. */
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  label {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent the iOS long-press context menu / callout from popping
+     on interactive elements where it'd be unhelpful. Keep it on
+     plain text + links to non-app URLs so users can copy real
+     content (lesson notes, teacher names) by long-press. */
+  button,
+  [role="button"] {
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Utility for elements that must respect the iOS safe-area inset
+   (notch, Dynamic Island, home indicator). Apply with className
+   "pb-safe" or "pt-safe" on any sticky/fixed element near the
+   viewport edge. */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+}
+.pl-safe {
+  padding-left: max(env(safe-area-inset-left), 0px);
+}
+.pr-safe {
+  padding-right: max(env(safe-area-inset-right), 0px);
 }
 
 @media print {
