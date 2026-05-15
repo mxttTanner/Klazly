@@ -338,7 +338,12 @@ export default async function HomePage() {
               eyebrow={t("feat1Eyebrow")}
               title={t("feat1Title")}
               body={t("feat1Body")}
-              bullets={[t("feat1B1"), t("feat1B2"), t("feat1B3")]}
+              bullets={[
+                t("feat1B1"),
+                t("feat1B2"),
+                t("feat1B3"),
+                t("feat1B4"),
+              ]}
               icon={Printer}
               tone="sky"
               visual={<PdfReportMock />}
@@ -1184,63 +1189,162 @@ function MiniDashboardMock() {
   );
 }
 
+/**
+ * Landing-page mockup of the parent PDF report.
+ *
+ * Hand-rendered HTML/Tailwind that mirrors the @media print
+ * stylesheet in globals.css — letterhead with auto-initials tile,
+ * brand accent bar, 4 pastel stat cards, an emerald Highlights
+ * callout, a teacher message snippet, and a footer with the
+ * branded tagline. Deliberately *not* a screenshot of the real
+ * PDF: the prospect needs to scan this on a small landing-page
+ * column at any viewport, and a true PDF screenshot would be
+ * tiny + blurry on retina. Treat this as the marketing
+ * representation; the actual PDF rendering lives in
+ * /parent/students/[id] + globals.css print rules.
+ */
 function PdfReportMock() {
   return (
-    <div className="bg-white aspect-[4/5] overflow-hidden p-6 sm:p-10">
-      <div className="flex items-start gap-3 border-b border-slate-200 pb-3">
-        <div className="bg-primary size-12 rounded-lg" />
-        <div>
-          <div className="text-sm font-bold">Trung Tâm Anh Ngữ Hoa Mai</div>
-          <div className="text-slate-500 text-[10px]">
-            lienhe@hoamai.test · +84 28 1234 5678
+    <div className="bg-white aspect-[4/5] overflow-hidden px-5 py-5 sm:px-7 sm:py-7">
+      {/* Letterhead — auto-initials tile + center info */}
+      <div className="flex items-start justify-between gap-3 pb-2">
+        <div className="flex items-center gap-2.5">
+          <div className="bg-primary text-white inline-flex size-9 items-center justify-center rounded-lg text-xs font-bold tracking-wide">
+            TT
+          </div>
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold text-slate-900 leading-tight truncate">
+              Trung Tâm Anh Ngữ Hoa Mai
+            </div>
+            <div className="text-slate-500 text-[8px] leading-snug truncate">
+              +84 28 1234 5678 · lienhe@hoamai.test
+            </div>
           </div>
         </div>
-      </div>
-      <div className="mt-4 text-center">
-        <div className="text-[10px] uppercase text-slate-500">
-          Báo cáo tiến độ
+        <div className="text-slate-400 shrink-0 text-[7px] pt-1">
+          16/05/2026
         </div>
-        <div className="text-base font-bold">Phạm Minh An</div>
-        <div className="text-[10px] text-slate-500">Lớp Junior A · Tháng 5</div>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+      {/* Brand accent bar */}
+      <div className="bg-primary h-[2px] rounded-full" />
+
+      {/* Headline */}
+      <div className="mt-3">
+        <div className="text-primary text-[7px] font-bold uppercase tracking-[0.15em]">
+          Báo cáo tiến độ tháng
+        </div>
+        <div className="text-slate-900 mt-0.5 text-lg font-bold leading-tight">
+          Phạm Minh An
+        </div>
+        <div className="text-slate-600 text-[9px]">
+          Junior A · Cô Linh
+        </div>
+        <div className="text-slate-400 mt-0.5 text-[8px]">
+          01/05 → 31/05/2026
+        </div>
+      </div>
+
+      {/* 4 stat cards */}
+      <div className="mt-3 grid grid-cols-4 gap-1.5">
         {[
-          { l: "Buổi học", v: "12" },
-          { l: "BTVN", v: "88%" },
-          { l: "Chuyên cần", v: "95%" },
+          {
+            label: "Buổi học",
+            value: "12",
+            ctx: "trong 14",
+            cls: "bg-blue-50 border-blue-200 text-blue-900",
+          },
+          {
+            label: "BTVN",
+            value: "88%",
+            ctx: "7/8",
+            cls: "bg-emerald-50 border-emerald-200 text-emerald-900",
+          },
+          {
+            label: "Chuyên cần",
+            value: "95%",
+            ctx: "Xuất sắc",
+            cls: "bg-emerald-50 border-emerald-200 text-emerald-900",
+          },
+          {
+            label: "Thái độ",
+            value: "Tốt",
+            ctx: "6/8 buổi",
+            cls: "bg-violet-50 border-violet-200 text-violet-900",
+          },
         ].map((s) => (
           <div
-            key={s.l}
-            className="rounded-md border border-slate-200 p-2"
+            key={s.label}
+            className={"rounded-md border p-1.5 " + s.cls}
           >
-            <div className="text-[8px] uppercase text-slate-500">{s.l}</div>
-            <div className="text-sm font-bold tabular-nums">{s.v}</div>
+            <div className="text-[6px] font-semibold uppercase tracking-wider opacity-70">
+              {s.label}
+            </div>
+            <div className="text-[13px] font-bold leading-tight tabular-nums mt-0.5">
+              {s.value}
+            </div>
+            <div className="text-[6.5px] opacity-70 mt-0.5">{s.ctx}</div>
           </div>
         ))}
       </div>
-      <div className="mt-4 space-y-2">
-        {[
-          "Unit 4 — Animals · Tham gia tích cực",
-          "Unit 4 — Free Time · Phát biểu nhiều",
-          "Unit 3 — Daily Routines · BTVN đầy đủ",
-        ].map((l) => (
-          <div
-            key={l}
-            className="border-l-2 border-primary/40 pl-2 text-[10px] leading-relaxed text-slate-600"
-          >
-            {l}
-          </div>
-        ))}
+
+      {/* Highlights callout */}
+      <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 p-2">
+        <div className="text-emerald-900 text-[8px] font-bold">
+          ★ Điểm sáng trong tháng
+        </div>
+        <ul className="text-emerald-900 mt-1 space-y-0.5 pl-3 text-[8px] leading-snug list-disc marker:text-emerald-600">
+          <li>Đạt 95% chuyên cần</li>
+          <li>Hoàn thành BTVN 7/8 buổi</li>
+          <li>2 buổi đánh giá Xuất sắc</li>
+        </ul>
       </div>
-      <div className="mt-6 grid grid-cols-2 gap-4 border-t border-slate-200 pt-3 text-center text-[9px] text-slate-500">
-        <div>
-          <div className="border-b border-slate-300 pb-3" />
-          Giáo viên chủ nhiệm
+
+      {/* Lesson card with vocab chips + grammar */}
+      <div className="mt-3 rounded-md border border-slate-200 p-2">
+        <div className="flex items-center gap-1.5">
+          <span className="bg-primary/10 text-primary rounded-full px-1.5 py-px text-[6.5px] font-bold uppercase tracking-wide">
+            T5 · 14/05
+          </span>
+          <span className="text-slate-900 text-[9px] font-semibold leading-tight truncate">
+            Unit 4 — Animals
+          </span>
         </div>
-        <div>
-          <div className="border-b border-slate-300 pb-3" />
-          Phụ huynh
+        <div className="mt-1.5 flex flex-wrap gap-0.5">
+          {["family", "mother", "father", "sister", "brother"].map((v) => (
+            <span
+              key={v}
+              className="bg-blue-50 text-blue-800 border border-blue-200 rounded-full px-1 py-[1px] text-[6.5px]"
+            >
+              {v}
+            </span>
+          ))}
         </div>
+        <div className="text-slate-600 mt-1 text-[7.5px]">
+          <span className="font-semibold uppercase tracking-wider opacity-70">
+            Ngữ pháp:{" "}
+          </span>
+          Possessive adjectives
+        </div>
+      </div>
+
+      {/* Teacher message snippet */}
+      <div className="mt-3 rounded-md border border-slate-200 border-l-2 border-l-primary bg-slate-50/60 p-2">
+        <div className="flex items-center gap-1.5">
+          <span className="bg-primary text-white inline-flex size-4 items-center justify-center rounded-full text-[7px] font-bold">
+            L
+          </span>
+          <span className="text-slate-900 text-[8px] font-semibold">
+            Cô Linh
+          </span>
+        </div>
+        <p className="text-slate-700 mt-1 text-[7.5px] leading-snug">
+          Minh An tuần này tự tin phát biểu hơn, đặc biệt khi mô tả gia đình. Bài tập về nhà đều và đúng giờ.
+        </p>
+      </div>
+
+      {/* Footer tagline */}
+      <div className="text-slate-500 mt-3 text-center text-[7px] italic">
+        Cảm ơn anh/chị đã tin tưởng Trung Tâm Anh Ngữ Hoa Mai
       </div>
     </div>
   );
