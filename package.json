@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/check-no-localhost-fallback.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "check:no-localhost": "node scripts/check-no-localhost-fallback.mjs",
     "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
