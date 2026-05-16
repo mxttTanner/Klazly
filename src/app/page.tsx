@@ -54,6 +54,7 @@ export default async function HomePage() {
   const tFaq = await getTranslations("landing.faq");
   const tCta = await getTranslations("pricingCta");
   const tFounder = await getTranslations("founder");
+  const tCommon = await getTranslations("common");
   const foundingStatus = await getFoundingStatus();
   const year = new Date().getFullYear();
 
@@ -843,6 +844,13 @@ export default async function HomePage() {
               <div className="flex items-center gap-2 text-white">
                 <BrandLogo size="md" />
               </div>
+              {/* Vietnamese tagline sits directly under the wordmark
+                  so the brand pattern (Klazly + 'Cổng Phụ Huynh cho
+                  trung tâm tiếng Anh') is consistent with the spec
+                  everywhere it appears. */}
+              <p className="text-slate-400 -mt-1 text-xs italic leading-snug">
+                {tCommon("appTagline")}
+              </p>
               <p className="text-slate-400 max-w-sm text-sm leading-relaxed">
                 {t("footerTagline")}
               </p>
