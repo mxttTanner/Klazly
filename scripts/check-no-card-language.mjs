@@ -90,6 +90,15 @@ const SAFE_SUBSTRINGS = [
   "no refund for unused portion",
   "no refund for unused",
   "Không hoàn tiền",
+  // New TOS section after the May 2026 legal rebrand. The section
+  // exists *to disclaim* refunds, not to promise them. Same
+  // intent as the prior whitelists; just a different phrasing the
+  // guard would otherwise trip on every line.
+  "Refunds and cancellation",
+  "don't offer refunds for unused",
+  "Hoàn tiền và huỷ thuê bao",
+  "không hoàn tiền cho phần chưa dùng",
+  "# 3. Refunds and cancellation",
 ];
 
 const offenders = [];

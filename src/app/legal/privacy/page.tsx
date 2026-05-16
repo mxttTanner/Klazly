@@ -8,6 +8,9 @@ export default async function PrivacyPage() {
       <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
       <p className="text-muted-foreground mt-1 text-sm">{t("effective")}</p>
 
+      <h2 className="mt-8 text-xl font-semibold">{t("smallOpTitle")}</h2>
+      <p className="leading-relaxed">{t("smallOpBody")}</p>
+
       <p className="mt-6 leading-relaxed">{t("intro")}</p>
 
       <h2 className="mt-8 text-xl font-semibold">{t("whoTitle")}</h2>
@@ -33,6 +36,9 @@ export default async function PrivacyPage() {
 
       <h2 className="mt-6 text-xl font-semibold">{t("childrenTitle")}</h2>
       <p className="leading-relaxed">{t("childrenBody")}</p>
+
+      <h2 className="mt-6 text-xl font-semibold">{t("vietnamLawTitle")}</h2>
+      <p className="leading-relaxed">{t("vietnamLawBody")}</p>
 
       <p className="text-muted-foreground mt-10 text-sm">{t("contact")}</p>
     </article>
