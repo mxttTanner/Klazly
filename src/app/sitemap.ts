@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE = "https://parent-portal-nine.vercel.app";
+const BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://klazly.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

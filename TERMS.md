@@ -9,7 +9,7 @@ you agree to these terms. If you do not agree, do not use the Service.
 ## 1. The Service
 
 "The Service" is the hosted web platform Cổng Phụ Huynh
-(https://parent-portal-nine.vercel.app), operated by the Provider, which
+(https://klazly.com), operated by the Provider, which
 allows English language centers in Vietnam ("Subscribers") to record
 lessons and share progress with parents.
 
@@ -21,7 +21,7 @@ identity), database schema, and documentation. See `LICENSE.md`.
 
 - The Service is offered on a **6-month** or **12-month** prepaid plan,
   paid by bank transfer. Pricing is published at
-  https://parent-portal-nine.vercel.app and may change for new
+  https://klazly.com and may change for new
   subscriptions; existing subscriptions stay at the price they signed.
 - Trial periods, if any, are set on a per-customer basis at the time of
   onboarding. No payment is required during the trial. If you do not pay

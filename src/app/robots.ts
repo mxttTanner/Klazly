@@ -25,6 +25,6 @@ export default function robots(): MetadataRoute.Robots {
         "/locked",
       ],
     },
-    sitemap: "https://parent-portal-nine.vercel.app/sitemap.xml",
+    sitemap: `${process.env.NEXT_PUBLIC_APP_URL ?? "https://klazly.com"}/sitemap.xml`,
   };
 }

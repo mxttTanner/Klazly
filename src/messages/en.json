@@ -7,7 +7,7 @@
     "eyebrow": "Founder note",
     "title": "Built by a founder, for Vietnamese centers",
     "paragraph1": "I'm Matthew, based in Hai Phong.",
-    "paragraph2": "I built Cổng Phụ Huynh after watching English centers around me struggle with the same thing: chaotic Zalo groups, parents asking \"what did my child learn today?\" over and over, and owners with no time to answer each one.",
+    "paragraph2": "I built Klazly after watching English centers around me struggle with the same thing: chaotic Zalo groups, parents asking \"what did my child learn today?\" over and over, and owners with no time to answer each one.",
     "paragraph3": "Right now I'm looking for 5 centers in Vietnam to build this product with me. I call them Founding Centers. In exchange, these centers get:",
     "benefit1": "30 days free (double the standard window)",
     "benefit2": "Setup help and teacher guidance over Zalo",
@@ -38,7 +38,7 @@
     "fullSubtext": "All current Founding spots filled. Message me to join the waitlist for the next cohort.",
     "zaloCta": "Message me on Zalo",
     "waitlistCta": "Join the waitlist",
-    "zaloQrAlt": "Zalo QR code for Cổng Phụ Huynh",
+    "zaloQrAlt": "Zalo QR code for Klazly",
     "zaloQrHint": "Scan to chat on Zalo"
   },
   "errorPage": {
@@ -98,7 +98,8 @@
     "language": "Language",
     "languageVi": "Tiếng Việt",
     "languageEn": "English",
-    "appName": "Parent Portal",
+    "appName": "Klazly",
+    "appTagline": "Cổng Phụ Huynh cho trung tâm tiếng Anh",
     "demoReadOnly": "Demo mode — changes aren't saved. Sign up your center to use this for real.",
     "copy": "Copy",
     "copied": "Copied"
@@ -143,7 +144,7 @@
     "compareSubtitle": "Running on Excel + Zalo right now? Here's the difference.",
     "compareColPaper": "Pen & paper / Excel",
     "compareColZalo": "Zalo groups only",
-    "compareColUs": "Cổng Phụ Huynh",
+    "compareColUs": "Klazly",
     "compareRow1Label": "Parent PDF reports",
     "compareRow1Paper": "Hand-written monthly",
     "compareRow1Zalo": "None",
@@ -204,9 +205,9 @@
     },
     "modalSubtitle": "Send this message to me on Zalo (+84 86 240 4036). I'll get back to you within 24 hours.",
     "templates": {
-      "micro": "Hi! I'd like to learn more about Cổng Phụ Huynh and the 1-month plan.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nLooking forward to hearing from you. Thanks!",
-      "monthly": "Hi! I'd like to learn more about Cổng Phụ Huynh and the 6-month plan.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nLooking forward to hearing from you. Thanks!",
-      "annual": "Hi! I'd like to learn more about Cổng Phụ Huynh and the 1-year plan.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nLooking forward to hearing from you. Thanks!"
+      "micro": "Hi! I'd like to learn more about Klazly and the 1-month plan.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nLooking forward to hearing from you. Thanks!",
+      "monthly": "Hi! I'd like to learn more about Klazly and the 6-month plan.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nLooking forward to hearing from you. Thanks!",
+      "annual": "Hi! I'd like to learn more about Klazly and the 1-year plan.\n\nHere's my info:\n- Name:\n- Center name:\n- City/Province:\n- Number of teachers:\n- Number of students:\n- Email (optional):\n\nLooking forward to hearing from you. Thanks!"
     },
     "messageLabel": "Message",
     "fillInHint": "Fill in your info after each colon, then copy and send via Zalo.",
@@ -230,7 +231,7 @@
     "phoneTakenAnotherCenter": "That phone is already used by a phone-only account at another center. Invite by email instead, or use a different number."
   },
   "landing": {
-    "title": "Parent Portal",
+    "title": "Klazly",
     "tagline": "The management platform for English centers in Vietnam.",
     "login": "Log in",
     "demo": "See the demo",
@@ -383,16 +384,16 @@
     "contactCardLabel": "Get in touch",
     "contactCardScanHint": "Scan the QR to open Zalo",
     "contactCardOpenZalo": "Open Zalo",
-    "zaloQrAlt": "Cổng Phụ Huynh Zalo QR code",
+    "zaloQrAlt": "Klazly Zalo QR code",
     "footerColProduct": "Product",
     "footerColResources": "Resources",
     "footerColLegal": "Legal",
     "footerLinkSupport": "Contact support",
     "footerLinkHelp": "How it works",
     "footerMadeInVn": "Made in Vietnam",
-    "brandAriaLabel": "Parent Portal",
+    "brandAriaLabel": "Klazly",
     "footerContact": "Contact:",
-    "footerCopyright": "© {year} Cổng Phụ Huynh — Matthew Stadler. All rights reserved.",
+    "footerCopyright": "© {year} Klazly — Matthew Stadler. All rights reserved.",
     "footerTerms": "Terms of Service",
     "footerPrivacy": "Privacy Policy",
     "footerOwnership": "Proprietary software — operated by Matthew Stadler"
@@ -401,7 +402,7 @@
     "privacy": {
       "title": "Privacy Policy",
       "effective": "Effective: 2026-05-10. Operator: Matthew Stadler — matthewstadlers14@gmail.com",
-      "intro": "This Privacy Policy explains what data Cổng Phụ Huynh (the Service) collects, why, and how it is handled.",
+      "intro": "This Privacy Policy explains what data Klazly (the Service) collects, why, and how it is handled.",
       "whoTitle": "Who we are",
       "whoBody": "The Operator is Matthew Stadler, an individual based in Vietnam, who designs and runs the Service. The Service is hosted on Vercel (web hosting) and Supabase (Postgres database, authentication, file storage). Data is stored in their US / EU data centers.",
       "dataTitle": "What data we hold",
@@ -423,9 +424,9 @@
     "terms": {
       "title": "Terms of Service",
       "effective": "Effective: 2026-05-10. Owner: Matthew Stadler — matthewstadlers14@gmail.com",
-      "intro": "By creating or using a Cổng Phụ Huynh center account you agree to these terms. If you do not agree, do not use the Service.",
+      "intro": "By creating or using a Klazly center account you agree to these terms. If you do not agree, do not use the Service.",
       "serviceTitle": "The Service",
-      "serviceBody": "Cổng Phụ Huynh is a hosted web platform that allows English language centers in Vietnam to record lessons and share progress with parents. The Service is licensed, not sold. The Owner retains full ownership of the software, source code, brand marks, database schema, and documentation.",
+      "serviceBody": "Klazly is a hosted web platform that allows English language centers in Vietnam to record lessons and share progress with parents. The Service is licensed, not sold. The Owner retains full ownership of the software, source code, brand marks, database schema, and documentation.",
       "payTitle": "Subscription and payment",
       "payBody": "The Service is offered on 1-month, 6-month, or 12-month prepaid plans, paid by bank transfer or VN e-wallet (Momo / ZaloPay / VNPay). Pricing is published at the website and may change for new subscriptions; existing subscriptions stay at the price they signed. Onboarding trial periods, if any, are set on a per-customer basis. Refunds are not offered for unused portions unless the Owner agrees otherwise.",
       "subTitle": "Subscriber responsibilities",
@@ -792,7 +793,7 @@
       "printGrammarLabel": "Grammar",
       "reportTaglineDefault": "Thank you for trusting {center}",
       "contactLabel": "Contact",
-      "createdWithCredit": "Created with Cổng Phụ Huynh"
+      "createdWithCredit": "Created with Klazly"
     }
   },
   "behavior": {
@@ -971,7 +972,7 @@
     "brandColorLabel": "Brand color",
     "brandColorHelp": "Used for the PDF accent bar, section underlines, and the auto-initials circle when no logo is uploaded. Leave blank for the default.",
     "brandColorReset": "Reset to default",
-    "brandCreditLabel": "Show \"Created with Cổng Phụ Huynh\" credit",
+    "brandCreditLabel": "Show \"Created with Klazly\" credit",
     "brandCreditHelp": "Small grey line at the bottom of each PDF report. Turn off for a fully white-label look.",
     "reportSaveSubmit": "Save report settings",
     "reportSaveSubmitting": "Saving...",

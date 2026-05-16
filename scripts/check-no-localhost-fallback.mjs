@@ -36,6 +36,14 @@ function scan(file) {
         /["'`]127\.0\.0\.1/.test(line)) {
       offenders.push({ file, line: i + 1, text: line.trim() });
     }
+    // Old preview-deploy domain. The custom domain is klazly.com,
+    // surfaced via NEXT_PUBLIC_APP_URL with klazly.com as the
+    // fallback. Anything still hard-coding the vercel.app hostname
+    // is a leftover from the rebrand and would publish stale URLs
+    // in OG / sitemap / email links.
+    if (/parent-portal-nine\.vercel\.app/.test(line)) {
+      offenders.push({ file, line: i + 1, text: line.trim() });
+    }
   }
 }
 

@@ -43,7 +43,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const tLanding = await getTranslations("landing");
   const name = t("appName");
   const description = tLanding("tagline");
-  const url = "https://parent-portal-nine.vercel.app";
+  // Canonical site URL. Reads from NEXT_PUBLIC_APP_URL so production,
+  // preview, and local-dev each report the right origin in OG /
+  // Twitter / metadataBase tags. Falls back to the live custom
+  // domain for safety if the env var is missing.
+  const url = process.env.NEXT_PUBLIC_APP_URL || "https://klazly.com";
 
   return {
     metadataBase: new URL(url),

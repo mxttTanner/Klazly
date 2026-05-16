@@ -50,5 +50,5 @@ config({ path: resolve(process.cwd(), ".env.local") });
   console.log(`\nSuper-admin password reset.\n`);
   console.log(`  Email:    ${email}`);
   console.log(`  Password: ${newPassword}\n`);
-  console.log(`Login at https://parent-portal-nine.vercel.app/login`);
+  console.log(`Login at https://klazly.com/login`);
 })();

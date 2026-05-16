@@ -68,7 +68,7 @@ export default async function LoginPage() {
           </main>
 
           <footer className="text-muted-foreground px-6 pb-6 text-center text-xs sm:px-10">
-            © {new Date().getFullYear()} Cổng Phụ Huynh
+            © {new Date().getFullYear()} Klazly
           </footer>
         </div>
 

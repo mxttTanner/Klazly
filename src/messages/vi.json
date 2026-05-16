@@ -7,7 +7,7 @@
     "eyebrow": "Lời từ người sáng lập",
     "title": "Được xây dựng bởi người sáng lập, dành cho trung tâm Việt Nam",
     "paragraph1": "Em là Matthew, em sống tại Hải Phòng.",
-    "paragraph2": "Em xây Cổng Phụ Huynh sau khi quan sát các trung tâm tiếng Anh xung quanh em vật lộn với cùng một vấn đề: Zalo group lộn xộn, phụ huynh hỏi \"hôm nay con học gì?\" liên tục, và chủ trung tâm không có thời gian trả lời từng người.",
+    "paragraph2": "Em xây Klazly sau khi quan sát các trung tâm tiếng Anh xung quanh em vật lộn với cùng một vấn đề: Zalo group lộn xộn, phụ huynh hỏi \"hôm nay con học gì?\" liên tục, và chủ trung tâm không có thời gian trả lời từng người.",
     "paragraph3": "Em đang tìm 5 trung tâm tại Việt Nam để cùng xây sản phẩm này. Em gọi họ là Founding Centers. Đổi lại, các trung tâm này nhận được:",
     "benefit1": "30 ngày miễn phí (gấp đôi so với tiêu chuẩn)",
     "benefit2": "Em hỗ trợ setup và hướng dẫn giáo viên qua Zalo",
@@ -38,7 +38,7 @@
     "fullSubtext": "Toàn bộ suất Founding hiện tại đã đầy. Inbox em qua Zalo để ghi danh chờ đợt sau.",
     "zaloCta": "Inbox em qua Zalo",
     "waitlistCta": "Ghi danh chờ đợt sau",
-    "zaloQrAlt": "Mã QR Zalo của Cổng Phụ Huynh",
+    "zaloQrAlt": "Mã QR Zalo của Klazly",
     "zaloQrHint": "Quét để nhắn Zalo"
   },
   "errorPage": {
@@ -98,7 +98,8 @@
     "language": "Ngôn ngữ",
     "languageVi": "Tiếng Việt",
     "languageEn": "English",
-    "appName": "Cổng Phụ Huynh",
+    "appName": "Klazly",
+    "appTagline": "Cổng Phụ Huynh cho trung tâm tiếng Anh",
     "demoReadOnly": "Chế độ demo — thay đổi không được lưu. Đăng ký trung tâm của bạn để dùng thật.",
     "copy": "Sao chép",
     "copied": "Đã sao chép"
@@ -143,7 +144,7 @@
     "compareSubtitle": "Trung tâm hiện đang chạy bằng Excel + Zalo? Đây là sự khác biệt.",
     "compareColPaper": "Giấy / Excel",
     "compareColZalo": "Chỉ Zalo nhóm",
-    "compareColUs": "Cổng Phụ Huynh",
+    "compareColUs": "Klazly",
     "compareRow1Label": "Báo cáo PDF cho phụ huynh",
     "compareRow1Paper": "Soạn tay hằng tháng",
     "compareRow1Zalo": "Không có",
@@ -204,9 +205,9 @@
     },
     "modalSubtitle": "Gửi tin nhắn này qua Zalo cho em (+84 86 240 4036). Em sẽ phản hồi trong vòng 24 giờ.",
     "templates": {
-      "micro": "Chào em! Anh/chị muốn tìm hiểu thêm về Cổng Phụ Huynh và gói 1 tháng.\n\nThông tin của anh/chị:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nMong sớm được phản hồi. Cảm ơn em!",
-      "monthly": "Chào em! Anh/chị muốn tìm hiểu thêm về Cổng Phụ Huynh và gói 6 tháng.\n\nThông tin của anh/chị:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nMong sớm được phản hồi. Cảm ơn em!",
-      "annual": "Chào em! Anh/chị muốn tìm hiểu thêm về Cổng Phụ Huynh và gói 1 năm.\n\nThông tin của anh/chị:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nMong sớm được phản hồi. Cảm ơn em!"
+      "micro": "Chào em! Anh/chị muốn tìm hiểu thêm về Klazly và gói 1 tháng.\n\nThông tin của anh/chị:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nMong sớm được phản hồi. Cảm ơn em!",
+      "monthly": "Chào em! Anh/chị muốn tìm hiểu thêm về Klazly và gói 6 tháng.\n\nThông tin của anh/chị:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nMong sớm được phản hồi. Cảm ơn em!",
+      "annual": "Chào em! Anh/chị muốn tìm hiểu thêm về Klazly và gói 1 năm.\n\nThông tin của anh/chị:\n- Họ và tên:\n- Tên trung tâm:\n- Tỉnh/Thành phố:\n- Số giáo viên:\n- Số học viên:\n- Email (không bắt buộc):\n\nMong sớm được phản hồi. Cảm ơn em!"
     },
     "messageLabel": "Nội dung tin nhắn",
     "fillInHint": "Điền thông tin của bạn vào sau mỗi dấu hai chấm, sau đó sao chép và gửi qua Zalo.",
@@ -230,7 +231,7 @@
     "phoneTakenAnotherCenter": "Số điện thoại này đã được dùng cho một tài khoản chỉ-điện-thoại ở trung tâm khác. Vui lòng mời bằng email, hoặc dùng số khác."
   },
   "landing": {
-    "title": "Cổng Phụ Huynh",
+    "title": "Klazly",
     "tagline": "Nền tảng quản lý cho trung tâm tiếng Anh tại Việt Nam.",
     "login": "Đăng nhập",
     "demo": "Xem bản demo",
@@ -383,16 +384,16 @@
     "contactCardLabel": "Liên hệ trực tiếp",
     "contactCardScanHint": "Quét QR để mở Zalo",
     "contactCardOpenZalo": "Mở Zalo",
-    "zaloQrAlt": "Mã QR Zalo của Cổng Phụ Huynh",
+    "zaloQrAlt": "Mã QR Zalo của Klazly",
     "footerColProduct": "Sản phẩm",
     "footerColResources": "Tài nguyên",
     "footerColLegal": "Pháp lý",
     "footerLinkSupport": "Liên hệ hỗ trợ",
     "footerLinkHelp": "Hướng dẫn sử dụng",
     "footerMadeInVn": "Made in Vietnam",
-    "brandAriaLabel": "Cổng Phụ Huynh",
+    "brandAriaLabel": "Klazly",
     "footerContact": "Liên hệ:",
-    "footerCopyright": "© {year} Cổng Phụ Huynh — Matthew Stadler. Mọi quyền được bảo lưu.",
+    "footerCopyright": "© {year} Klazly — Matthew Stadler. Mọi quyền được bảo lưu.",
     "footerTerms": "Điều khoản sử dụng",
     "footerPrivacy": "Chính sách bảo mật",
     "footerOwnership": "Phần mềm độc quyền — vận hành bởi Matthew Stadler"
@@ -401,7 +402,7 @@
     "privacy": {
       "title": "Chính sách bảo mật",
       "effective": "Hiệu lực: 10/05/2026. Đơn vị vận hành: Matthew Stadler — matthewstadlers14@gmail.com",
-      "intro": "Chính sách này giải thích Cổng Phụ Huynh (Dịch vụ) thu thập dữ liệu nào, vì sao và xử lý ra sao.",
+      "intro": "Chính sách này giải thích Klazly (Dịch vụ) thu thập dữ liệu nào, vì sao và xử lý ra sao.",
       "whoTitle": "Chúng tôi là ai",
       "whoBody": "Đơn vị vận hành là Matthew Stadler, cá nhân làm việc tại Việt Nam, người thiết kế và vận hành Dịch vụ. Dịch vụ được lưu trữ trên Vercel (web hosting) và Supabase (Postgres, xác thực, lưu trữ tệp). Dữ liệu nằm tại trung tâm dữ liệu Mỹ / EU.",
       "dataTitle": "Dữ liệu chúng tôi giữ",
@@ -423,9 +424,9 @@
     "terms": {
       "title": "Điều khoản sử dụng",
       "effective": "Hiệu lực: 10/05/2026. Chủ sở hữu: Matthew Stadler — matthewstadlers14@gmail.com",
-      "intro": "Bằng việc tạo hoặc sử dụng tài khoản trung tâm trên Cổng Phụ Huynh, bạn đồng ý với các điều khoản này. Nếu không đồng ý, vui lòng không sử dụng Dịch vụ.",
+      "intro": "Bằng việc tạo hoặc sử dụng tài khoản trung tâm trên Klazly, bạn đồng ý với các điều khoản này. Nếu không đồng ý, vui lòng không sử dụng Dịch vụ.",
       "serviceTitle": "Dịch vụ",
-      "serviceBody": "Cổng Phụ Huynh là nền tảng web cho phép trung tâm tiếng Anh tại Việt Nam ghi nhận bài học và chia sẻ tiến trình với phụ huynh. Dịch vụ được cấp phép sử dụng, không phải bán đứt. Chủ sở hữu giữ toàn bộ quyền sở hữu phần mềm, mã nguồn, thương hiệu, lược đồ cơ sở dữ liệu và tài liệu.",
+      "serviceBody": "Klazly là nền tảng web cho phép trung tâm tiếng Anh tại Việt Nam ghi nhận bài học và chia sẻ tiến trình với phụ huynh. Dịch vụ được cấp phép sử dụng, không phải bán đứt. Chủ sở hữu giữ toàn bộ quyền sở hữu phần mềm, mã nguồn, thương hiệu, lược đồ cơ sở dữ liệu và tài liệu.",
       "payTitle": "Thuê bao và thanh toán",
       "payBody": "Dịch vụ cung cấp theo gói 1 tháng, 6 tháng hoặc 12 tháng trả trước, thanh toán qua chuyển khoản ngân hàng hoặc ví điện tử Việt Nam (Momo / ZaloPay / VNPay). Giá được công bố trên website và có thể thay đổi cho thuê bao mới; thuê bao hiện tại giữ nguyên giá đã ký. Thời hạn dùng thử (nếu có) được thoả thuận riêng với từng trung tâm. Không hoàn tiền cho phần chưa dùng trừ khi Chủ sở hữu đồng ý khác.",
       "subTitle": "Trách nhiệm của Khách hàng",
@@ -792,7 +793,7 @@
       "printGrammarLabel": "Ngữ pháp",
       "reportTaglineDefault": "Cảm ơn anh/chị đã tin tưởng {center}",
       "contactLabel": "Liên hệ",
-      "createdWithCredit": "Tạo bởi Cổng Phụ Huynh"
+      "createdWithCredit": "Tạo bởi Klazly"
     }
   },
   "behavior": {
@@ -971,7 +972,7 @@
     "brandColorLabel": "Màu thương hiệu",
     "brandColorHelp": "Dùng cho thanh nhấn của báo cáo PDF, gạch chân tiêu đề, và vòng tròn chữ cái khi chưa upload logo. Để trống để dùng màu mặc định.",
     "brandColorReset": "Khôi phục mặc định",
-    "brandCreditLabel": "Hiển thị dòng \"Tạo bởi Cổng Phụ Huynh\"",
+    "brandCreditLabel": "Hiển thị dòng \"Tạo bởi Klazly\"",
     "brandCreditHelp": "Dòng chữ nhỏ màu xám ở cuối mỗi báo cáo PDF. Tắt nếu muốn báo cáo trông hoàn toàn là của trung tâm.",
     "reportSaveSubmit": "Lưu cài đặt báo cáo",
     "reportSaveSubmitting": "Đang lưu...",

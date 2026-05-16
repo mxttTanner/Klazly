@@ -4,7 +4,7 @@
 **Operator: Matthew Stadler ("the Operator"), matthewstadlers14@gmail.com**
 
 This Privacy Policy explains what data Cổng Phụ Huynh
-(https://parent-portal-nine.vercel.app, "the Service") collects, why, and
+(https://klazly.com, "the Service") collects, why, and
 how it is handled.
 
 ## 1. Who we are

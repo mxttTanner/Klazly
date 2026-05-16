@@ -10,7 +10,7 @@
 >
 > Em đang tìm 2-3 trung tâm để dùng thử miễn phí 14 ngày. Anh/chị có thể xem demo tại đây (không cần đăng nhập):
 >
-> 👉 https://parent-portal-nine.vercel.app/demo
+> 👉 https://klazly.com/demo
 >
 > Nếu thấy phù hợp, em tạo tài khoản trung tâm cho anh/chị trong 5 phút. Sau 14 ngày dùng thử miễn phí, gói **6 tháng là 5.4tr** hoặc **1 năm 9.6tr** (rẻ hơn 20%). **Đây là giá ra mắt** — các trung tâm tham gia bây giờ sẽ giữ nguyên mức giá này suốt thời gian còn dùng, kể cả khi em tăng giá sau này. Cảm ơn anh/chị đã đọc!
 
@@ -34,7 +34,7 @@
 >
 > **Đa ngôn ngữ Việt-Anh** sẵn có cho giáo viên nước ngoài. **Bảo mật dữ liệu** từng trung tâm cách ly hoàn toàn.
 >
-> 👉 **Xem demo ngay (không cần đăng nhập):** https://parent-portal-nine.vercel.app/demo
+> 👉 **Xem demo ngay (không cần đăng nhập):** https://klazly.com/demo
 >
 > Em đang tìm 2-3 trung tâm để làm khách hàng đầu tiên. Em cấp tài khoản trung tâm + 14 ngày dùng thử miễn phí. Sau đó:
 >
@@ -57,4 +57,4 @@
 
 ## Một câu (chào trên Zalo / phòng họp)
 
-> Em làm một công cụ giúp giáo viên ghi nhận buổi học trong 60 giây và phụ huynh thấy tiến trình con ngay trên điện thoại — anh/chị xem demo nhé: https://parent-portal-nine.vercel.app/demo
+> Em làm một công cụ giúp giáo viên ghi nhận buổi học trong 60 giây và phụ huynh thấy tiến trình con ngay trên điện thoại — anh/chị xem demo nhé: https://klazly.com/demo

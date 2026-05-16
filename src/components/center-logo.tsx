@@ -54,7 +54,7 @@ export function CenterLogo({
         className={`line-clamp-2 min-w-0 font-semibold leading-tight tracking-tight ${dimensions.text}`}
         title={centerName ?? undefined}
       >
-        {centerName ?? "Cổng Phụ Huynh"}
+        {centerName ?? "Klazly"}
       </span>
     </div>
   );

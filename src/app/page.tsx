@@ -1029,7 +1029,7 @@ function LaptopMock() {
         <span className="size-2 rounded-full bg-amber-400/70" />
         <span className="size-2 rounded-full bg-emerald-400/70" />
         <span className="text-slate-500 ml-3 text-[10px]">
-          parent-portal-nine.vercel.app
+          klazly.com
         </span>
       </div>
       <div className="bg-background overflow-hidden rounded-md">

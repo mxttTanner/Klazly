@@ -17,11 +17,11 @@ const resend = process.env.RESEND_API_KEY
 
 const FROM =
   process.env.RESEND_FROM_EMAIL ||
-  "Parent Portal <onboarding@resend.dev>";
+  "Klazly <onboarding@resend.dev>";
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
-  "https://parent-portal-nine.vercel.app";
+  "https://klazly.com";
 
 function escapeHtml(s: string): string {
   return s
@@ -66,7 +66,7 @@ export async function sendNewMessageEmail(m: NewMessageEmail): Promise<void> {
 <html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f6f7f9; margin: 0; padding: 24px;">
   <div style="max-width: 520px; margin: 0 auto; background: white; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
     <div style="padding: 20px 24px; border-bottom: 1px solid #f1f5f9;">
-      <p style="margin: 0 0 4px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Cổng Phụ Huynh · Parent Portal</p>
+      <p style="margin: 0 0 4px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Klazly · Cổng Phụ Huynh</p>
       <h1 style="margin: 0; font-size: 18px; color: #0f172a;">Tin nhắn mới về ${safeStudent}</h1>
       <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">New message about ${safeStudent}</p>
     </div>

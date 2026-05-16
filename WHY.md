@@ -98,7 +98,7 @@ PDF reports. Founding Center program open — message me on Zalo.
 
 ## Try it now
 
-🌐 **Demo (no login):** https://parent-portal-nine.vercel.app/demo
+🌐 **Demo (no login):** https://klazly.com/demo
 📩 **Contact:** matthewstadlers14@gmail.com
 
 ---
