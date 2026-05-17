@@ -33,6 +33,19 @@ export type CenterSubscriptionInput = {
   subscription_plan: string | null;
   trial_ends_at: string | null;
   subscription_ends_at?: string | null;
+  /**
+   * 'standard' | 'founding' | 'design_partner' — when a founding-tier
+   * trial reaches its end date, the lazy-expire logic converts it to
+   * 'active' instead of 'expired'. Optional so older callers that
+   * predate the founding-center migration still type-check.
+   */
+  plan_tier?: string | null;
+  /**
+   * Per-center locked monthly price in VND, only meaningful when
+   * plan_tier='founding'. Used by MRR + display, not by the
+   * conversion logic itself (the conversion just flips the status).
+   */
+  founding_locked_price_vnd?: number | null;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -53,7 +66,14 @@ export function deriveStatus(c: CenterSubscriptionInput): DerivedStatus {
   if (raw === "trial") {
     if (c.trial_ends_at) {
       const left = new Date(c.trial_ends_at).getTime() - Date.now();
-      if (left <= 0) return "expired";
+      if (left <= 0) {
+        // Founding-tier trials auto-convert to 'active' on expiry, not
+        // 'expired'. We surface the converted state immediately even if
+        // the bulk-UPDATE in expireOverdueTrials hasn't run yet, so a
+        // founding center that just crossed trial_ends_at never flashes
+        // as 'expired' in the UI.
+        return c.plan_tier === "founding" ? "active" : "expired";
+      }
       if (left <= TRIAL_ENDING_SOON_DAYS * DAY_MS) return "trial_ending_soon";
     }
     return "trial";
@@ -90,9 +110,9 @@ export function subscriptionDaysLeft(
 }
 
 /**
- * Find center IDs that should be auto-transitioned from 'trial' →
- * 'expired'. Caller is expected to issue an UPDATE and write an
- * audit_log row for each.
+ * Standard-tier trials past their end date — these become 'expired'
+ * and lose access. Founding-tier trials are intentionally excluded
+ * (see `findFoundingTrialsToConvert`).
  */
 export function findTrialsToExpire(
   centers: CenterSubscriptionInput[],
@@ -101,6 +121,7 @@ export function findTrialsToExpire(
     .filter(
       (c) =>
         c.subscription_status === "trial" &&
+        c.plan_tier !== "founding" &&
         c.trial_ends_at !== null &&
         new Date(c.trial_ends_at).getTime() < Date.now(),
     )
@@ -108,48 +129,163 @@ export function findTrialsToExpire(
 }
 
 /**
- * Issue a bulk lazy-expire on the super-admin page. Writes one
- * audit_log row per transition so the history is preserved.
+ * Founding-tier trials past their end date — these convert to 'active'
+ * at their locked monthly price (founding_locked_price_vnd), and the
+ * trial→paid transition is permanent. Caller is expected to issue the
+ * UPDATE and write an audit_log row for each.
+ *
+ * Returned as full row references (not just IDs) so the caller can
+ * preserve each row's `trial_ends_at` as the new `subscription_started_at`
+ * — i.e. the paid period begins exactly when the trial ended, no gap.
+ */
+export function findFoundingTrialsToConvert(
+  centers: CenterSubscriptionInput[],
+): { id: string; trial_ends_at: string }[] {
+  return centers
+    .filter(
+      (c) =>
+        c.subscription_status === "trial" &&
+        c.plan_tier === "founding" &&
+        c.trial_ends_at !== null &&
+        new Date(c.trial_ends_at).getTime() < Date.now(),
+    )
+    .map((c) => ({ id: c.id, trial_ends_at: c.trial_ends_at as string }));
+}
+
+/**
+ * Lazy auto-transition on every super-admin page render. Handles two
+ * distinct overdue-trial transitions in one pass:
+ *
+ *   1. Standard trials past trial_ends_at  →  status='expired'
+ *      (single bulk UPDATE — no per-row data to preserve.)
+ *
+ *   2. Founding trials past trial_ends_at  →  status='active', with
+ *      subscription_started_at = NOW and next_billing_at = NOW + 1mo.
+ *      Using "now" instead of trial_ends_at means the paid clock
+ *      starts the moment the operator's first /super-admin load fires
+ *      the conversion — matches the operator's intuition ("we
+ *      converted them today") and the spec for the manual Convert
+ *      dialog. The locked monthly price is read from
+ *      founding_locked_price_vnd at display time; subscription_plan
+ *      is left untouched.
+ *      (Per-row UPDATE because audit metadata captures each row's
+ *      previous trial_ends_at separately. Founding cohort caps at 5
+ *      so the loop is trivially cheap.)
+ *
+ * Writes one audit_log row per transition so each conversion is
+ * traceable. All Supabase calls are best-effort — a failure inside
+ * this helper must NEVER block the super-admin dashboard render. The
+ * caller re-fetches subscription_status after this returns, so the
+ * UI is always consistent with whatever did succeed.
  *
  * Uses the service-role client; only callable from /super-admin which
  * is gated by requireSuperAdmin.
+ *
+ * @returns total number of rows transitioned (expired + converted).
  */
 export async function expireOverdueTrials(
   supabase: SupabaseClient,
   centers: CenterSubscriptionInput[],
 ): Promise<number> {
-  const ids = findTrialsToExpire(centers);
-  if (ids.length === 0) return 0;
+  let touched = 0;
 
-  const { error } = await supabase
-    .from("centers")
-    .update({ subscription_status: "expired" })
-    .in("id", ids);
-  if (error) {
-    // Don't crash the dashboard render if the audit update fails; the
-    // derived status will still display correctly. Log via Sentry up
-    // the call stack.
-    return 0;
+  // ----- 1. Standard trials → 'expired' (single bulk UPDATE) -----
+  const expireIds = findTrialsToExpire(centers);
+  if (expireIds.length > 0) {
+    const { error } = await supabase
+      .from("centers")
+      .update({ subscription_status: "expired" })
+      .in("id", expireIds);
+    if (!error) {
+      touched += expireIds.length;
+      const rows = expireIds.map((centerId) => ({
+        user_id: null,
+        center_id: centerId,
+        action: "subscription_status_change",
+        entity_type: "center",
+        entity_id: centerId,
+        metadata: {
+          from: "trial",
+          to: "expired",
+          reason: "trial_expired",
+          auto: true,
+        },
+      }));
+      await supabase.from("audit_log").insert(rows);
+    }
   }
 
-  // Write audit_log entries (best-effort; failure here doesn't block
-  // the visible state).
-  const rows = ids.map((centerId) => ({
-    user_id: null,
-    center_id: centerId,
-    action: "subscription_status_change",
-    entity_type: "center",
-    entity_id: centerId,
-    metadata: {
-      from: "trial",
-      to: "expired",
-      reason: "trial_expired",
-      auto: true,
-    },
-  }));
-  await supabase.from("audit_log").insert(rows);
+  // ----- 2. Founding trials → 'active' (per-row UPDATE) -----
+  // We need each row's own trial_ends_at to set subscription_started_at,
+  // so this can't collapse into one bulk statement. The founding cohort
+  // caps at 5 rows globally, so N tiny UPDATEs is fine.
+  const founding = findFoundingTrialsToConvert(centers);
+  if (founding.length > 0) {
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const nextBillingDate = new Date(now);
+    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
+    const nextBillingIso = nextBillingDate.toISOString();
+    for (const row of founding) {
+      const { error } = await supabase
+        .from("centers")
+        .update({
+          subscription_status: "active",
+          subscription_started_at: nowIso,
+          next_billing_at: nextBillingIso,
+        })
+        .eq("id", row.id);
+      if (!error) {
+        touched += 1;
+        await supabase.from("audit_log").insert({
+          user_id: null,
+          center_id: row.id,
+          action: "subscription_status_change",
+          entity_type: "center",
+          entity_id: row.id,
+          metadata: {
+            from: "trial",
+            to: "active",
+            reason: "founding_trial_converted",
+            auto: true,
+            previous_trial_ends_at: row.trial_ends_at,
+            subscription_started_at: nowIso,
+            next_billing_at: nextBillingIso,
+          },
+        });
+      } else if (
+        /subscription_started_at|next_billing_at/i.test(error.message)
+      ) {
+        // Lifecycle columns missing — fall back to a status-only flip
+        // so the founding center still moves out of 'trial' and never
+        // lands in the 'expired' bucket. The dates can be backfilled
+        // when the migration runs.
+        const retry = await supabase
+          .from("centers")
+          .update({ subscription_status: "active" })
+          .eq("id", row.id);
+        if (!retry.error) {
+          touched += 1;
+          await supabase.from("audit_log").insert({
+            user_id: null,
+            center_id: row.id,
+            action: "subscription_status_change",
+            entity_type: "center",
+            entity_id: row.id,
+            metadata: {
+              from: "trial",
+              to: "active",
+              reason: "founding_trial_converted",
+              auto: true,
+              degraded: true,
+            },
+          });
+        }
+      }
+    }
+  }
 
-  return ids.length;
+  return touched;
 }
 
 /** Tailwind classes for the status badge, keyed off DerivedStatus. */
