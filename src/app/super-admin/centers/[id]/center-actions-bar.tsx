@@ -8,6 +8,7 @@ import {
   CircleDollarSign,
   Lock,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -30,27 +31,41 @@ type Plan = (typeof PLANS)[number];
 const EXTEND_PRESETS = [7, 14, 30] as const;
 
 /**
- * Four-action operations bar for the super-admin's center detail
- * page. The four operations cover the conversion funnel and the
- * pause/unpause lifecycle:
+ * Operations bar for the super-admin's center detail page. Each button
+ * opens a context-aware dialog:
  *
- *   Convert    trial / expired  → active   (picks a plan)
- *   Extend     trial / expired  → trial    (pushes trial_ends_at out)
- *   Lock       trial / active   → expired  (revokes access immediately)
- *   Reactivate expired/canceled → trial    (7-day courtesy trial)
+ *   Convert    trial / expired   →  active
+ *              tier-aware: Founding rows get a single-option confirm
+ *              ("₫600K/mo locked"); standard rows get the 1mo / 6mo /
+ *              1yr picker.
+ *   Extend     trial / expired   →  trial
+ *              shows current trial_ends_at, +7 / +14 / +30 preset only.
+ *   Lock       trial / active    →  expired
+ *   Reactivate expired/canceled  →  trial (7-day courtesy)
  *
  * Buttons that don't make sense for the current status are hidden
- * outright rather than disabled — a button you can't use just adds
- * noise to a decision UI.
+ * outright rather than disabled.
  */
 export function CenterActionsBar({
   centerId,
+  centerName,
   status,
   plan,
+  planTier,
+  trialEndsAt,
+  foundingCenterNumber,
+  foundingLockedPriceVnd,
+  locale,
 }: {
   centerId: string;
+  centerName: string;
   status: string;
   plan: string | null;
+  planTier: string | null;
+  trialEndsAt: string | null;
+  foundingCenterNumber: number | null;
+  foundingLockedPriceVnd: number | null;
+  locale: string;
 }) {
   const t = useTranslations("superAdmin");
 
@@ -64,6 +79,8 @@ export function CenterActionsBar({
     status === "trial" || status === "expired" || status === "past_due";
   const showLock = status === "trial" || status === "active" || status === "past_due";
   const showReactivate = status === "expired" || status === "canceled";
+
+  const isFounding = planTier === "founding";
 
   return (
     <>
@@ -119,16 +136,23 @@ export function CenterActionsBar({
         onClose={() => setOpen(null)}
         centerId={centerId}
         currentPlan={plan}
+        isFounding={isFounding}
+        foundingCenterNumber={foundingCenterNumber}
+        foundingLockedPriceVnd={foundingLockedPriceVnd}
+        locale={locale}
       />
       <ExtendDialog
         open={open === "extend"}
         onClose={() => setOpen(null)}
         centerId={centerId}
+        trialEndsAt={trialEndsAt}
+        locale={locale}
       />
       <LockDialog
         open={open === "lock"}
         onClose={() => setOpen(null)}
         centerId={centerId}
+        centerName={centerName}
       />
       <ReactivateDialog
         open={open === "reactivate"}
@@ -139,16 +163,32 @@ export function CenterActionsBar({
   );
 }
 
+/**
+ * Convert dialog. Branches on plan_tier:
+ *
+ *   plan_tier='founding'  →  single locked-price confirm (no picker).
+ *                            "Convert to Founding subscription · ₫{X}/mo
+ *                             locked as Founding Center #{N}"
+ *   anything else         →  the three-plan picker.
+ */
 function ConvertDialog({
   open,
   onClose,
   centerId,
   currentPlan,
+  isFounding,
+  foundingCenterNumber,
+  foundingLockedPriceVnd,
+  locale,
 }: {
   open: boolean;
   onClose: () => void;
   centerId: string;
   currentPlan: string | null;
+  isFounding: boolean;
+  foundingCenterNumber: number | null;
+  foundingLockedPriceVnd: number | null;
+  locale: string;
 }) {
   const t = useTranslations("superAdmin");
   const defaultPlan: Plan = (currentPlan as Plan) ?? "monthly";
@@ -156,11 +196,20 @@ function ConvertDialog({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  function submit() {
+  // Founding price fallback: if the slot migration is missing, default
+  // to the canonical ₫600K so the operator can still convert. The
+  // server action's audit log will record locked_price_vnd=null in
+  // that edge case so it's visible later.
+  const lockedPrice = foundingLockedPriceVnd ?? 600_000;
+  const formattedLockedPrice = new Intl.NumberFormat(locale).format(
+    lockedPrice,
+  );
+
+  function submit(choice: Plan | "founding") {
     setError(null);
     const fd = new FormData();
     fd.append("id", centerId);
-    fd.append("plan", plan);
+    fd.append("plan", choice);
     startTransition(async () => {
       const res = await convertCenterToPaid(fd);
       if (res?.error) {
@@ -171,6 +220,68 @@ function ConvertDialog({
     });
   }
 
+  if (isFounding) {
+    return (
+      <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("convertFoundingDialogTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("convertFoundingDialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="border-emerald-300 bg-emerald-50/40 rounded-lg border-2 p-4">
+            <div className="flex items-start gap-3">
+              <span className="bg-emerald-100 text-emerald-700 ring-emerald-200 inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1">
+                <Sparkles className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-emerald-900 text-sm font-semibold">
+                  {t("convertFoundingHeadline", {
+                    price: formattedLockedPrice,
+                  })}
+                </p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {t("convertFoundingSubhead", {
+                    n: foundingCenterNumber ?? 0,
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {error ? (
+            <p className="text-destructive text-xs" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={pending}
+            >
+              {t("cancel")}
+            </Button>
+            <Button
+              type="button"
+              onClick={() => submit("founding")}
+              disabled={pending}
+              className="bg-emerald-600 text-white hover:bg-emerald-500"
+            >
+              <Check className="size-4" />
+              {pending ? t("saving") : t("convertFoundingConfirmButton")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Standard tier — the three-plan picker.
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent>
@@ -223,7 +334,7 @@ function ConvertDialog({
           </Button>
           <Button
             type="button"
-            onClick={submit}
+            onClick={() => submit(plan)}
             disabled={pending}
             className="bg-emerald-600 text-white hover:bg-emerald-500"
           >
@@ -236,22 +347,59 @@ function ConvertDialog({
   );
 }
 
+/**
+ * Extend dialog. Shows the current trial_ends_at prominently so the
+ * operator can see what they're extending, then a +7 / +14 / +30
+ * picker that submits immediately on click. Custom-days input was
+ * removed (per spec) since the three presets cover every real case
+ * and a free-text input adds typo risk.
+ */
 function ExtendDialog({
   open,
   onClose,
   centerId,
+  trialEndsAt,
+  locale,
 }: {
   open: boolean;
   onClose: () => void;
   centerId: string;
+  trialEndsAt: string | null;
+  locale: string;
 }) {
   const t = useTranslations("superAdmin");
-  const [days, setDays] = useState<number>(14);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState<number | null>(null);
 
-  function submit() {
+  const VN_TZ = "Asia/Ho_Chi_Minh";
+  const formattedCurrent = trialEndsAt
+    ? new Date(trialEndsAt).toLocaleDateString(locale, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: VN_TZ,
+      })
+    : null;
+
+  // Project the new end date for each preset so the operator sees the
+  // resulting calendar date next to each "+N days" button (no surprises
+  // and confirms the operator's mental math).
+  const baseMs = Math.max(
+    Date.now(),
+    trialEndsAt ? new Date(trialEndsAt).getTime() : 0,
+  );
+  const projectedFor = (days: number) =>
+    new Date(baseMs + days * 24 * 60 * 60 * 1000).toLocaleDateString(locale, {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: VN_TZ,
+    });
+
+  function submit(days: number) {
     setError(null);
+    setActivePreset(days);
     const fd = new FormData();
     fd.append("id", centerId);
     fd.append("days", String(days));
@@ -259,6 +407,7 @@ function ExtendDialog({
       const res = await extendTrial(fd);
       if (res?.error) {
         setError(res.error);
+        setActivePreset(null);
         return;
       }
       onClose();
@@ -273,41 +422,34 @@ function ExtendDialog({
           <DialogDescription>{t("extendDialogDescription")}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {EXTEND_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setDays(preset)}
-                disabled={pending}
-                className={
-                  "rounded-md border px-3 py-1.5 text-sm font-medium transition " +
-                  (days === preset
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "hover:bg-muted/60")
-                }
-              >
-                {t("daysShort", { n: preset })}
-              </button>
-            ))}
-          </div>
-          <div>
-            <label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-              {t("extendCustomLabel")}
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={90}
-              value={days}
-              onChange={(e) =>
-                setDays(Math.max(1, Math.min(90, Number(e.target.value) || 0)))
-              }
+        {formattedCurrent ? (
+          <p className="bg-muted/60 text-foreground rounded-md px-3 py-2 text-sm">
+            {t("extendCurrentEnd", { date: formattedCurrent })}
+          </p>
+        ) : null}
+
+        <div className="space-y-2">
+          {EXTEND_PRESETS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => submit(preset)}
               disabled={pending}
-              className="border-input bg-background mt-1 h-9 w-32 rounded-md border px-2.5 text-sm"
-            />
-          </div>
+              className={
+                "flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition " +
+                (activePreset === preset && pending
+                  ? "border-primary bg-primary/5"
+                  : "hover:bg-muted/60")
+              }
+            >
+              <span className="text-sm font-semibold">
+                {t("daysShort", { n: preset })}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                {t("extendNewEnd", { date: projectedFor(preset) })}
+              </span>
+            </button>
+          ))}
         </div>
 
         {error ? (
@@ -317,14 +459,13 @@ function ExtendDialog({
         ) : null}
 
         <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onClose}
+            disabled={pending}
+          >
             {t("cancel")}
-          </Button>
-          <Button type="button" onClick={submit} disabled={pending}>
-            <Check className="size-4" />
-            {pending
-              ? t("saving")
-              : t("extendConfirmButton", { n: days })}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -336,10 +477,12 @@ function LockDialog({
   open,
   onClose,
   centerId,
+  centerName,
 }: {
   open: boolean;
   onClose: () => void;
   centerId: string;
+  centerName: string;
 }) {
   const t = useTranslations("superAdmin");
   const [pending, startTransition] = useTransition();
@@ -365,7 +508,9 @@ function LockDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("lockDialogTitle")}</DialogTitle>
-          <DialogDescription>{t("lockDialogDescription")}</DialogDescription>
+          <DialogDescription>
+            {t("lockDialogDescriptionNamed", { name: centerName })}
+          </DialogDescription>
         </DialogHeader>
 
         {error ? (

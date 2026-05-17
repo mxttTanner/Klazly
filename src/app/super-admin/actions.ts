@@ -13,6 +13,15 @@ const PLAN_VALUES = ["monthly", "six_months", "annual"] as const;
 type Plan = (typeof PLAN_VALUES)[number];
 
 /**
+ * Values accepted by the Convert dialog. 'founding' is special — it
+ * means "convert this Founding-tier center to active at its locked
+ * monthly price" and only validates if the row's plan_tier='founding'.
+ * Standard centers use the three Plan values directly.
+ */
+const CONVERT_VALUES = [...PLAN_VALUES, "founding"] as const;
+type ConvertChoice = (typeof CONVERT_VALUES)[number];
+
+/**
  * Lifecycle columns added by db/subscription-lifecycle.sql. Treated as
  * optional everywhere — if any are missing from the schema cache
  * (migration not run, or PostgREST hasn't reloaded yet) we strip them
@@ -590,38 +599,115 @@ export async function convertCenterToPaid(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const planRaw = String(formData.get("plan") ?? "");
   if (!id) return { error: "missing id" };
-  if (!(PLAN_VALUES as readonly string[]).includes(planRaw)) {
+  if (!(CONVERT_VALUES as readonly string[]).includes(planRaw)) {
     return { error: "invalid plan" };
   }
-  const plan = planRaw as Plan;
+  const choice = planRaw as ConvertChoice;
 
   const supabase = createAdminClient();
-  const { data: existing, error: readErr } = await supabase
+
+  // Read the columns we'll branch on plus the lifecycle anchors we
+  // either preserve (subscription_started_at) or stamp fresh. Founding
+  // columns are pulled too so we can validate the 'founding' choice
+  // matches the row and surface the locked price in the audit log.
+  // Falls back to a tier-less select if the founding-center migration
+  // hasn't been applied yet.
+  type ExistingRow = {
+    subscription_status?: string;
+    subscription_plan?: string | null;
+    subscription_started_at?: string | null;
+    subscription_ends_at?: string | null;
+    plan_tier?: string | null;
+    founding_locked_price_vnd?: number | null;
+    founding_center_number?: number | null;
+  };
+  let existing: ExistingRow | null = null;
+  const full = await supabase
     .from("centers")
     .select(
-      "subscription_status, subscription_plan, subscription_started_at, subscription_ends_at",
+      "subscription_status, subscription_plan, subscription_started_at, subscription_ends_at, plan_tier, founding_locked_price_vnd, founding_center_number",
     )
     .eq("id", id)
     .single();
-  if (readErr || !existing) {
-    return { error: readErr?.message ?? "center not found" };
+  if (!full.error) {
+    existing = full.data as ExistingRow;
+  } else if (/plan_tier|founding_locked_price_vnd|founding_center_number/i.test(full.error.message)) {
+    const fb = await supabase
+      .from("centers")
+      .select(
+        "subscription_status, subscription_plan, subscription_started_at, subscription_ends_at",
+      )
+      .eq("id", id)
+      .single();
+    if (!fb.error) existing = fb.data as ExistingRow;
+  }
+  if (!existing) return { error: "center not found" };
+
+  // The 'founding' choice only makes sense for a Founding-tier row;
+  // surface a friendly error if the dialog somehow submitted it for a
+  // standard center (defensive — the UI already hides this option).
+  if (choice === "founding" && existing.plan_tier !== "founding") {
+    return { error: "founding conversion requires plan_tier='founding'" };
   }
 
   const now = new Date();
-  const endsAt = new Date(now);
-  if (plan === "monthly") endsAt.setMonth(endsAt.getMonth() + 1);
-  if (plan === "six_months") endsAt.setMonth(endsAt.getMonth() + 6);
-  if (plan === "annual") endsAt.setFullYear(endsAt.getFullYear() + 1);
+  const nowIso = now.toISOString();
 
-  const patch: Record<string, string | null> = {
-    subscription_status: "active",
-    subscription_plan: plan,
-    subscription_started_at:
-      existing.subscription_started_at ?? now.toISOString(),
-    subscription_ends_at: endsAt.toISOString(),
-    last_payment_at: now.toISOString(),
-    next_billing_at: endsAt.toISOString(),
-  };
+  let patch: Record<string, string | null>;
+  let auditMetadata: Record<string, unknown>;
+
+  if (choice === "founding") {
+    // Founding conversion: monthly billing cadence, locked price comes
+    // from founding_locked_price_vnd. subscription_plan is set to
+    // 'monthly' so dashboards that key off plan still render a cadence;
+    // the actual MRR contribution is read from the locked price column
+    // by the display layer.
+    const nextBilling = new Date(now);
+    nextBilling.setMonth(nextBilling.getMonth() + 1);
+    patch = {
+      subscription_status: "active",
+      subscription_plan: "monthly",
+      subscription_started_at:
+        existing.subscription_started_at ?? nowIso,
+      // Founding doesn't have a fixed "ends at" — they renew monthly
+      // at the locked price unless cancelled. We still set the field
+      // to the next billing anchor for dashboard parity.
+      subscription_ends_at: nextBilling.toISOString(),
+      last_payment_at: nowIso,
+      next_billing_at: nextBilling.toISOString(),
+    };
+    auditMetadata = {
+      plan: "founding",
+      from_status: existing.subscription_status,
+      to_status: "active",
+      tier: "founding",
+      locked_price_vnd: existing.founding_locked_price_vnd ?? null,
+      founding_center_number: existing.founding_center_number ?? null,
+      next_billing_at: nextBilling.toISOString(),
+    };
+  } else {
+    // Standard conversion — one of the three paid plans.
+    const plan = choice as Plan;
+    const endsAt = new Date(now);
+    if (plan === "monthly") endsAt.setMonth(endsAt.getMonth() + 1);
+    if (plan === "six_months") endsAt.setMonth(endsAt.getMonth() + 6);
+    if (plan === "annual") endsAt.setFullYear(endsAt.getFullYear() + 1);
+    patch = {
+      subscription_status: "active",
+      subscription_plan: plan,
+      subscription_started_at:
+        existing.subscription_started_at ?? nowIso,
+      subscription_ends_at: endsAt.toISOString(),
+      last_payment_at: nowIso,
+      next_billing_at: endsAt.toISOString(),
+    };
+    auditMetadata = {
+      plan,
+      from_status: existing.subscription_status,
+      to_status: "active",
+      ends_at: endsAt.toISOString(),
+    };
+  }
 
   const { error: updErr, droppedCols } = await updateCenterPatchTolerant(
     supabase,
@@ -636,13 +722,7 @@ export async function convertCenterToPaid(formData: FormData) {
     action: "subscription_converted",
     entityType: "center",
     entityId: id,
-    metadata: {
-      plan,
-      from_status: existing.subscription_status,
-      to_status: "active",
-      ends_at: endsAt.toISOString(),
-      dropped_columns: droppedCols,
-    },
+    metadata: { ...auditMetadata, dropped_columns: droppedCols },
   });
 
   revalidatePath("/super-admin");

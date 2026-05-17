@@ -83,18 +83,41 @@ export default async function CenterDetailPage({
     subscription_ends_at: string | null;
     last_payment_at: string | null;
     next_billing_at: string | null;
+    founding_center_number: number | null;
+    founding_locked_price_vnd: number | null;
     created_at: string;
   };
   let center: CenterRow | null = null;
   const full = await supabase
     .from("centers")
     .select(
-      "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, plan_tier, signup_source, referral_note, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
+      "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, plan_tier, signup_source, referral_note, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, founding_center_number, founding_locked_price_vnd, created_at",
     )
     .eq("id", params.id)
     .single();
   if (!full.error) {
     center = full.data as CenterRow;
+  } else if (/founding_center_number|founding_locked_price_vnd/i.test(full.error.message)) {
+    // Founding-slot migration not applied yet — re-fetch without those
+    // two columns and treat them as null. The page still renders and
+    // the Convert dialog falls back to the standard plan picker.
+    const r = await supabase
+      .from("centers")
+      .select(
+        "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, plan_tier, signup_source, referral_note, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
+      )
+      .eq("id", params.id)
+      .single();
+    if (!r.error) {
+      center = {
+        ...(r.data as Omit<
+          CenterRow,
+          "founding_center_number" | "founding_locked_price_vnd"
+        >),
+        founding_center_number: null,
+        founding_locked_price_vnd: null,
+      };
+    }
   } else if (/plan_tier|signup_source|referral_note/i.test(full.error.message)) {
     const fb = await supabase
       .from("centers")
@@ -107,11 +130,17 @@ export default async function CenterDetailPage({
       center = {
         ...(fb.data as Omit<
           CenterRow,
-          "plan_tier" | "signup_source" | "referral_note"
+          | "plan_tier"
+          | "signup_source"
+          | "referral_note"
+          | "founding_center_number"
+          | "founding_locked_price_vnd"
         >),
         plan_tier: null,
         signup_source: null,
         referral_note: null,
+        founding_center_number: null,
+        founding_locked_price_vnd: null,
       };
     }
   }
@@ -320,8 +349,14 @@ export default async function CenterDetailPage({
 
         <CenterActionsBar
           centerId={center.id}
+          centerName={center.name}
           status={center.subscription_status}
           plan={center.subscription_plan}
+          planTier={center.plan_tier}
+          trialEndsAt={center.trial_ends_at}
+          foundingCenterNumber={center.founding_center_number}
+          foundingLockedPriceVnd={center.founding_locked_price_vnd}
+          locale={dateLocale}
         />
       </header>
 
