@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import * as Sentry from "@sentry/nextjs";
+import { ZALO_URL } from "@/lib/zalo";
 
 /**
  * Catastrophic-error boundary. Fires when the root layout itself
@@ -138,7 +139,7 @@ export default function GlobalCatastrophicError({
               Tải lại / Reload
             </button>
             <a
-              href="https://zalo.me/84862404036"
+              href={ZALO_URL}
               target="_blank"
               rel="noopener noreferrer"
               style={{

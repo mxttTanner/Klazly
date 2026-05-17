@@ -29,6 +29,7 @@ import { BrandLogo } from "@/components/brand-logo";
 import { PricingCtaButton } from "@/components/pricing-cta-button";
 import { FoundingSpotsCard } from "@/components/founding-spots-card";
 import { getFoundingStatus } from "@/lib/founding";
+import { ZALO_URL } from "@/lib/zalo";
 
 /**
  * Landing page — center-owner-focused redesign.
@@ -155,12 +156,18 @@ export default async function HomePage() {
             >
               {t("heroLoginCta")}
             </Link>
-            <Link
-              href="/demo"
+            {/* Primary CTA — labelled "Talk to me on Zalo" via
+                ctaStartTrial, so the link must actually open Zalo.
+                Previously routed to /demo which was a silent
+                mismatch between the rendered label and the action. */}
+            <a
+              href={ZALO_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className={buttonVariants({ size: "sm" })}
             >
               {t("ctaStartTrial")}
-            </Link>
+            </a>
           </div>
         </div>
       </header>
@@ -192,13 +199,18 @@ export default async function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/demo"
+              {/* Primary hero CTA — Zalo. Label is ctaStartTrial
+                  ("Talk to me on Zalo") so the action must match. */}
+              <a
+                href={ZALO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-md px-6 py-3 text-base font-semibold shadow-lg shadow-primary/30 transition"
               >
                 {t("ctaStartTrial")}
                 <ArrowRight className="size-4" />
-              </Link>
+              </a>
+              {/* Secondary hero CTA — actually goes to the demo. */}
               <Link
                 href="/demo"
                 className="border-white/20 bg-white/5 hover:bg-white/10 inline-flex items-center gap-2 rounded-md border px-6 py-3 text-base font-medium backdrop-blur-sm transition"
@@ -758,15 +770,23 @@ export default async function HomePage() {
                 {t("finalCtaSubtitle")}
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-                <Link
-                  href="/demo"
+                {/* Primary CTA — ctaStartTrial label is "Talk to me
+                    on Zalo" so this opens Zalo, not the demo. */}
+                <a
+                  href={ZALO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-md px-6 py-3 text-base font-semibold shadow-lg shadow-primary/30 transition"
                 >
                   {t("ctaStartTrial")}
                   <ArrowRight className="size-4" />
-                </Link>
+                </a>
+                {/* Secondary CTA — also Zalo, but a different
+                    label ("Talk to us on Zalo") and visual weight.
+                    Centralised through ZALO_URL so a phone-number
+                    change only happens in one place. */}
                 <a
-                  href="https://zalo.me/84862404036"
+                  href={ZALO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="border-white/20 bg-white/5 hover:bg-white/10 inline-flex items-center gap-2 rounded-md border px-6 py-3 text-base font-medium backdrop-blur-sm transition"

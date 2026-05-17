@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertTriangle, MessageCircle, RefreshCw, Activity } from "lucide-react";
 import * as Sentry from "@sentry/nextjs";
 import { useTranslations } from "next-intl";
+import { ZALO_URL } from "@/lib/zalo";
 
 /**
  * Root error boundary. Server-component throws (Supabase timeout, bad
@@ -81,7 +82,7 @@ export default function GlobalError({
             {t("retry")}
           </button>
           <a
-            href="https://zalo.me/84862404036"
+            href={ZALO_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-emerald-600 text-white inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium hover:bg-emerald-500"

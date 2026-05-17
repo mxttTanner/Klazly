@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { Lock, Mail, MessageCircle, Phone } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { LanguageToggle } from "@/components/language-toggle";
+import { ZALO_URL } from "@/lib/zalo";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,7 @@ export default async function LockedPage() {
               />
               <div className="space-y-3">
                 <a
-                  href="https://zalo.me/84862404036"
+                  href={ZALO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-emerald-500 text-white hover:bg-emerald-400 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-md transition"

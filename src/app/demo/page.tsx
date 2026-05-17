@@ -12,6 +12,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/language-toggle";
 import { BrandLogo } from "@/components/brand-logo";
+import { ZALO_URL } from "@/lib/zalo";
 
 /**
  * Public demo chooser. Visitors land here from the marketing page,
@@ -183,7 +184,7 @@ export default async function DemoChooserPage() {
                 <ArrowRight className="size-3.5" />
               </Link>
               <a
-                href="https://zalo.me/84862404036"
+                href={ZALO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="border-white/20 bg-white/5 hover:bg-white/10 hidden items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium backdrop-blur-sm transition sm:inline-flex"
