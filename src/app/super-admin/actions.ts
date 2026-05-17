@@ -8,6 +8,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
+import {
+  computeFoundingSlotAvailability,
+  FOUNDING_DEFAULT_CAP,
+} from "@/lib/subscription";
 
 const PLAN_VALUES = ["monthly", "six_months", "annual"] as const;
 type Plan = (typeof PLAN_VALUES)[number];
@@ -32,6 +36,14 @@ const LIFECYCLE_COLS = [
   "subscription_ends_at",
   "last_payment_at",
   "next_billing_at",
+  // Founding-slot columns also degrade gracefully — if the slot
+  // migration hasn't run, the convert action still flips status +
+  // plan but skips the slot assignment.
+  "founding_center_number",
+  "founding_locked_price_vnd",
+  // plan_tier column may not exist on the oldest pre-founding-center
+  // databases; allow it to drop too so a status flip still lands.
+  "plan_tier",
 ] as const;
 type LifecycleCol = (typeof LIFECYCLE_COLS)[number];
 
@@ -46,7 +58,7 @@ type LifecycleCol = (typeof LIFECYCLE_COLS)[number];
 async function updateCenterPatchTolerant(
   supabase: SupabaseClient,
   centerId: string,
-  patch: Record<string, string | null>,
+  patch: Record<string, string | number | null>,
 ): Promise<{ error: string | null; droppedCols: LifecycleCol[] }> {
   const droppedCols: LifecycleCol[] = [];
   // Cap the retry loop at the number of optional columns we might
@@ -683,30 +695,79 @@ export async function convertCenterToPaid(formData: FormData) {
   }
   if (!existing) return { error: "center not found" };
 
-  // The 'founding' choice only makes sense for a Founding-tier row;
-  // surface a friendly error if the dialog somehow submitted it for a
-  // standard center (defensive — the UI already hides this option).
-  if (choice === "founding" && existing.plan_tier !== "founding") {
-    return { error: "founding conversion requires plan_tier='founding'" };
-  }
-
   const now = new Date();
   const nowIso = now.toISOString();
 
-  let patch: Record<string, string | null>;
+  // Need patch to allow numbers + null + string; use a wider type.
+  let patch: Record<string, string | number | null>;
   let auditMetadata: Record<string, unknown>;
 
   if (choice === "founding") {
-    // Founding conversion: monthly billing cadence, locked price comes
-    // from founding_locked_price_vnd. subscription_plan is set to
-    // 'monthly' so dashboards that key off plan still render a cadence;
-    // the actual MRR contribution is read from the locked price column
-    // by the display layer.
+    // ---- FOUNDING CONVERSION ----
+    // If the row already has a slot assigned, keep it (operator may
+    // have reserved a specific number). Otherwise assign the lowest
+    // unused integer in [1..cap]. Cap defaults to FOUNDING_DEFAULT_CAP
+    // when app_settings is missing or unreadable.
+    let assignedSlot: number | null = existing.founding_center_number ?? null;
+    let allFoundingRows: {
+      plan_tier: string | null;
+      founding_center_number: number | null;
+    }[] = [];
+    let cap = FOUNDING_DEFAULT_CAP;
+    if (assignedSlot === null || assignedSlot <= 0) {
+      // Read current founding occupants + cap to compute next slot.
+      // Tolerant of missing app_settings (founding-center.sql not run)
+      // and missing founding_center_number column (slot migration not
+      // run) — both fall back to defaults that let the conversion
+      // proceed without slot assignment.
+      const [capRes, occRes] = await Promise.all([
+        supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "founding_center_cap")
+          .maybeSingle(),
+        supabase
+          .from("centers")
+          .select("plan_tier, founding_center_number")
+          .eq("plan_tier", "founding"),
+      ]);
+      if (capRes.data) {
+        const v = (capRes.data as { value: unknown }).value;
+        if (typeof v === "number") cap = v;
+        else if (typeof v === "string") cap = Number(v) || cap;
+      }
+      if (!occRes.error && occRes.data) {
+        allFoundingRows = occRes.data as typeof allFoundingRows;
+        const { nextAvailable } = computeFoundingSlotAvailability(
+          allFoundingRows,
+          cap,
+        );
+        if (nextAvailable === null) {
+          // Inline literal: convertCenterToPaid doesn't load the
+          // superAdmin namespace and adding it just for this edge
+          // case is overkill. Operator sees the slot count and the
+          // cap so the meaning is clear without translation.
+          return {
+            error: `All ${cap} Founding Center slots are filled. Free a slot before converting another center to Founding.`,
+          };
+        }
+        assignedSlot = nextAvailable;
+      }
+    }
+
+    // Locked price defaults to 600,000₫ for new founding conversions;
+    // if the row already has a locked price set (e.g. operator pre-
+    // configured a different number), preserve it.
+    const lockedPrice = existing.founding_locked_price_vnd ?? 600_000;
+
     const nextBilling = new Date(now);
     nextBilling.setMonth(nextBilling.getMonth() + 1);
     patch = {
       subscription_status: "active",
       subscription_plan: "monthly",
+      plan_tier: "founding",
+      founding_center_number: assignedSlot,
+      founding_locked_price_vnd: lockedPrice,
       subscription_started_at:
         existing.subscription_started_at ?? nowIso,
       // Founding doesn't have a fixed "ends at" — they renew monthly
@@ -719,14 +780,18 @@ export async function convertCenterToPaid(formData: FormData) {
     auditMetadata = {
       plan: "founding",
       from_status: existing.subscription_status,
+      from_plan_tier: existing.plan_tier ?? null,
       to_status: "active",
       tier: "founding",
-      locked_price_vnd: existing.founding_locked_price_vnd ?? null,
-      founding_center_number: existing.founding_center_number ?? null,
+      locked_price_vnd: lockedPrice,
+      founding_center_number: assignedSlot,
       next_billing_at: nextBilling.toISOString(),
     };
   } else {
-    // Standard conversion — one of the three paid plans.
+    // ---- STANDARD CONVERSION ----
+    // Picking a standard plan ALSO clears any Founding-tier markings.
+    // This is the "downgrade off founding" path: operator decided the
+    // center isn't actually a Founding partner after all.
     const plan = choice as Plan;
     const endsAt = new Date(now);
     if (plan === "monthly") endsAt.setMonth(endsAt.getMonth() + 1);
@@ -735,6 +800,9 @@ export async function convertCenterToPaid(formData: FormData) {
     patch = {
       subscription_status: "active",
       subscription_plan: plan,
+      plan_tier: "standard",
+      founding_center_number: null,
+      founding_locked_price_vnd: null,
       subscription_started_at:
         existing.subscription_started_at ?? nowIso,
       subscription_ends_at: endsAt.toISOString(),
@@ -744,8 +812,19 @@ export async function convertCenterToPaid(formData: FormData) {
     auditMetadata = {
       plan,
       from_status: existing.subscription_status,
+      from_plan_tier: existing.plan_tier ?? null,
       to_status: "active",
+      to_plan_tier: "standard",
       ends_at: endsAt.toISOString(),
+      ...(existing.plan_tier === "founding"
+        ? {
+            cleared_founding: true,
+            prior_founding_center_number:
+              existing.founding_center_number ?? null,
+            prior_founding_locked_price_vnd:
+              existing.founding_locked_price_vnd ?? null,
+          }
+        : {}),
     };
   }
 

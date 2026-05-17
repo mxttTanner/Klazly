@@ -312,6 +312,65 @@ export const STANDARD_PLAN_MONTHLY_VND: Record<string, number> = {
  *  computations sane while we wait for someone to set the real number. */
 const FOUNDING_FALLBACK_MONTHLY_VND = 600_000;
 
+/** Default cap for the Founding Center cohort when app_settings is
+ *  unavailable. Mirrored from db/founding-center.sql. */
+export const FOUNDING_DEFAULT_CAP = 5;
+
+/**
+ * Single source of truth for "is there an open Founding slot, and if
+ * so, which number?".
+ *
+ * Takes the full set of centers (so the caller can pass whatever it
+ * already fetched — no extra DB round trip) and the cap. Returns:
+ *   taken          — sorted list of slot numbers currently assigned
+ *   nextAvailable  — lowest unused integer in [1..cap], or null if
+ *                    the cap is hit
+ *   remaining      — max(0, cap - taken.length)
+ *
+ * Used by:
+ *   - the new-center form (page.tsx → CenterForm)  : pre-fill on
+ *     plan-type change
+ *   - the Convert dialog (CenterActionsBar)         : show "next
+ *     available slot: #N · M remaining" inside the Founding option
+ *
+ * Race condition guard lives at the DB layer (centers_founding_slot_uniq
+ * partial unique index) — this helper is purely advisory.
+ */
+export function computeFoundingSlotAvailability(
+  centers: {
+    plan_tier?: string | null;
+    founding_center_number?: number | null;
+  }[],
+  cap: number,
+): {
+  taken: number[];
+  nextAvailable: number | null;
+  remaining: number;
+} {
+  const taken = centers
+    .filter(
+      (c) =>
+        c.plan_tier === "founding" &&
+        typeof c.founding_center_number === "number" &&
+        c.founding_center_number !== null &&
+        c.founding_center_number > 0,
+    )
+    .map((c) => c.founding_center_number as number)
+    .sort((a, b) => a - b);
+  let nextAvailable: number | null = null;
+  for (let n = 1; n <= cap; n++) {
+    if (!taken.includes(n)) {
+      nextAvailable = n;
+      break;
+    }
+  }
+  return {
+    taken,
+    nextAvailable,
+    remaining: Math.max(0, cap - taken.length),
+  };
+}
+
 /**
  * Monthly VND contribution of a single center, used by both the org-
  * wide MRR widget on /super-admin and the per-center MRR card on

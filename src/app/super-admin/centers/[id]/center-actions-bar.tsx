@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import {
   CalendarPlus,
@@ -66,6 +66,9 @@ export function CenterActionsBar({
   trialEndsAt,
   foundingCenterNumber,
   foundingLockedPriceVnd,
+  foundingNextSlot,
+  foundingSlotsRemaining,
+  foundingCap,
   locale,
 }: {
   centerId: string;
@@ -76,6 +79,9 @@ export function CenterActionsBar({
   trialEndsAt: string | null;
   foundingCenterNumber: number | null;
   foundingLockedPriceVnd: number | null;
+  foundingNextSlot: number | null;
+  foundingSlotsRemaining: number;
+  foundingCap: number;
   locale: string;
 }) {
   const t = useTranslations("superAdmin");
@@ -167,10 +173,13 @@ export function CenterActionsBar({
         open={open === "convert"}
         onClose={() => setOpen(null)}
         centerId={centerId}
-        currentPlan={plan}
+        centerName={centerName}
         isFounding={isFounding}
         foundingCenterNumber={foundingCenterNumber}
         foundingLockedPriceVnd={foundingLockedPriceVnd}
+        foundingNextSlot={foundingNextSlot}
+        foundingSlotsRemaining={foundingSlotsRemaining}
+        foundingCap={foundingCap}
         locale={locale}
       />
       <ExtendDialog
@@ -208,42 +217,110 @@ export function CenterActionsBar({
 }
 
 /**
- * Convert dialog. Branches on plan_tier:
+ * Convert dialog. Unified UI: always shows all 4 plan options
+ * regardless of the center's current plan_tier. The Founding option
+ * is grouped under a separator so the standard plans read as the
+ * default offer and Founding feels intentional.
  *
- *   plan_tier='founding'  →  single locked-price confirm card.
- *   anything else         →  the three-plan picker.
+ *   ○ 1 month       (1.2M / month)
+ *   ○ 6 months      (5.4M / 6 mo)
+ *   ○ 1 year        (9.9M / year)
+ *   ─── Founding Center program (limited slots) ───
+ *   ○ Founding      (₫600K / month, locked) · next slot #N · M left
+ *
+ * - Founding option auto-selects if the center is already
+ *   plan_tier='founding'; otherwise the dialog opens with no
+ *   selection (Confirm disabled).
+ * - Founding option disables when all slots are taken.
+ * - Confirm submits the picked choice; the server action handles
+ *   the actual tier + slot bookkeeping (including downgrading off
+ *   founding when a standard plan is picked).
  */
+type ConvertChoice = Plan | "founding";
+
 function ConvertDialog({
   open,
   onClose,
   centerId,
-  currentPlan,
+  centerName,
   isFounding,
   foundingCenterNumber,
   foundingLockedPriceVnd,
+  foundingNextSlot,
+  foundingSlotsRemaining,
+  foundingCap,
   locale,
 }: {
   open: boolean;
   onClose: () => void;
   centerId: string;
-  currentPlan: string | null;
+  centerName: string;
   isFounding: boolean;
   foundingCenterNumber: number | null;
   foundingLockedPriceVnd: number | null;
+  /** Lowest unused founding slot in [1..cap], or null if all taken. */
+  foundingNextSlot: number | null;
+  /** cap - taken.length (≥0). */
+  foundingSlotsRemaining: number;
+  foundingCap: number;
   locale: string;
 }) {
   const t = useTranslations("superAdmin");
-  const defaultPlan: Plan = (currentPlan as Plan) ?? "monthly";
-  const [plan, setPlan] = useState<Plan>(defaultPlan);
+
+  // Default selection rule:
+  //   - already plan_tier='founding' (with or without an assigned slot)
+  //     → preselect 'founding'
+  //   - otherwise → no selection (Confirm disabled until operator picks)
+  const initialChoice: ConvertChoice | null = isFounding ? "founding" : null;
+  const [choice, setChoice] = useState<ConvertChoice | null>(initialChoice);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  // Re-sync the default when the dialog re-opens against a different
+  // center (rare in practice — the actions bar passes one centerId —
+  // but keeps the selection coherent if the parent re-renders with
+  // new props between opens).
+  useEffect(() => {
+    if (open) {
+      setChoice(isFounding ? "founding" : null);
+      setError(null);
+    }
+  }, [open, isFounding]);
 
   const lockedPrice = foundingLockedPriceVnd ?? 600_000;
   const formattedLockedPrice = new Intl.NumberFormat(locale).format(
     lockedPrice,
   );
 
-  function submit(choice: Plan | "founding") {
+  // Founding option is disabled when all slots are taken AND the
+  // center isn't already founding (an already-founding center keeps
+  // its existing slot — no fresh assignment needed).
+  const foundingDisabled = !isFounding && foundingNextSlot === null;
+
+  // Slot meta line under the Founding option:
+  //   - already founding with slot #N    → "Currently slot #N — keep it"
+  //   - already founding without slot    → "Slot will be assigned"
+  //   - new founding, slot available     → "Next available slot: #N · M of CAP remaining"
+  //   - new founding, all taken          → "All CAP Founding slots are taken"
+  let foundingMeta: string;
+  if (isFounding && foundingCenterNumber !== null && foundingCenterNumber > 0) {
+    foundingMeta = t("convertFoundingMetaCurrentSlot", {
+      n: foundingCenterNumber,
+    });
+  } else if (isFounding) {
+    foundingMeta = t("convertFoundingMetaWillAssign");
+  } else if (foundingNextSlot !== null) {
+    foundingMeta = t("convertFoundingMetaNextSlot", {
+      n: foundingNextSlot,
+      remaining: foundingSlotsRemaining,
+      cap: foundingCap,
+    });
+  } else {
+    foundingMeta = t("convertFoundingMetaAllTaken", { cap: foundingCap });
+  }
+
+  function submit() {
+    if (!choice) return;
     setError(null);
     const fd = new FormData();
     fd.append("id", centerId);
@@ -258,72 +335,13 @@ function ConvertDialog({
     });
   }
 
-  if (isFounding) {
-    return (
-      <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("convertFoundingDialogTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("convertFoundingDialogDescription")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="border-emerald-300 bg-emerald-50/40 rounded-lg border-2 p-4">
-            <div className="flex items-start gap-3">
-              <span className="bg-emerald-100 text-emerald-700 ring-emerald-200 inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1">
-                <Sparkles className="size-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-emerald-900 text-sm font-semibold">
-                  {t("convertFoundingHeadline", {
-                    price: formattedLockedPrice,
-                  })}
-                </p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  {t("convertFoundingSubhead", {
-                    n: foundingCenterNumber ?? 0,
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {error ? (
-            <p className="text-destructive text-xs" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onClose}
-              disabled={pending}
-            >
-              {t("cancel")}
-            </Button>
-            <Button
-              type="button"
-              onClick={() => submit("founding")}
-              disabled={pending}
-              className="bg-emerald-600 text-white hover:bg-emerald-500"
-            >
-              <Check className="size-4" />
-              {pending ? t("saving") : t("convertFoundingConfirmButton")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("convertDialogTitle")}</DialogTitle>
+          <DialogTitle>
+            {t("convertDialogTitleNamed", { name: centerName })}
+          </DialogTitle>
           <DialogDescription>{t("convertDialogDescription")}</DialogDescription>
         </DialogHeader>
 
@@ -331,12 +349,14 @@ function ConvertDialog({
           <legend className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
             {t("planLabel")}
           </legend>
+
+          {/* Three standard plans — radios. */}
           {PLANS.map((p) => (
             <label
               key={p}
               className={
                 "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 transition " +
-                (plan === p
+                (choice === p
                   ? "border-primary bg-primary/5"
                   : "hover:bg-muted/40")
               }
@@ -346,8 +366,8 @@ function ConvertDialog({
                   type="radio"
                   name="plan"
                   value={p}
-                  checked={plan === p}
-                  onChange={() => setPlan(p)}
+                  checked={choice === p}
+                  onChange={() => setChoice(p)}
                   className="size-4 accent-primary"
                 />
                 {t(planLabelKey(p) as Parameters<typeof t>[0])}
@@ -357,6 +377,52 @@ function ConvertDialog({
               </span>
             </label>
           ))}
+
+          {/* Separator + Founding option. Visually grouped under a
+              soft label so the standard plans read as the default
+              offer and Founding feels deliberate. */}
+          <div className="text-muted-foreground my-3 flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
+            <span className="bg-muted-foreground/20 h-px flex-1" />
+            <span>{t("convertFoundingSeparator")}</span>
+            <span className="bg-muted-foreground/20 h-px flex-1" />
+          </div>
+
+          <label
+            className={
+              "flex items-center justify-between gap-3 rounded-lg border-2 px-3.5 py-2.5 transition " +
+              (foundingDisabled
+                ? "cursor-not-allowed border-muted bg-muted/30 opacity-60"
+                : choice === "founding"
+                  ? "border-amber-400 bg-amber-50/40 cursor-pointer"
+                  : "border-amber-200 hover:bg-amber-50/40 cursor-pointer")
+            }
+          >
+            <span className="flex min-w-0 items-start gap-2.5">
+              <input
+                type="radio"
+                name="plan"
+                value="founding"
+                checked={choice === "founding"}
+                onChange={() => setChoice("founding")}
+                disabled={foundingDisabled}
+                className="mt-0.5 size-4 accent-amber-600"
+              />
+              <span className="min-w-0">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+                  <Sparkles className="size-3.5 text-amber-700" />
+                  {t("convertFoundingOptionTitle")}
+                </span>
+                <span className="text-amber-900/80 mt-0.5 block text-xs">
+                  {t("convertFoundingOptionPrice", {
+                    price: formattedLockedPrice,
+                  })}
+                </span>
+                <span className="text-muted-foreground mt-1 block text-[11px]">
+                  {foundingMeta}
+                </span>
+              </span>
+            </span>
+          </label>
         </fieldset>
 
         {error ? (
@@ -371,8 +437,8 @@ function ConvertDialog({
           </Button>
           <Button
             type="button"
-            onClick={() => submit(plan)}
-            disabled={pending}
+            onClick={submit}
+            disabled={pending || choice === null}
             className="bg-emerald-600 text-white hover:bg-emerald-500"
           >
             <Check className="size-4" />

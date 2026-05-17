@@ -21,7 +21,9 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import {
+  computeFoundingSlotAvailability,
   deriveStatus,
+  FOUNDING_DEFAULT_CAP,
   monthlyMrrVnd,
   planLabelKey,
   statusLabelKey,
@@ -196,6 +198,43 @@ export default async function CenterDetailPage({
     user_id: string | null;
   }>;
 
+  // Founding-slot availability — read all founding rows + cap so the
+  // Convert dialog can show "Next available slot: #N · M remaining".
+  // Tolerant of either column / table being absent (returns defaults).
+  let foundingCap = FOUNDING_DEFAULT_CAP;
+  let foundingNextSlot: number | null = 1;
+  let foundingSlotsRemaining = FOUNDING_DEFAULT_CAP;
+  try {
+    const [capRes, foundingRows] = await Promise.all([
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "founding_center_cap")
+        .maybeSingle(),
+      supabase
+        .from("centers")
+        .select("plan_tier, founding_center_number")
+        .eq("plan_tier", "founding"),
+    ]);
+    if (capRes.data) {
+      const v = (capRes.data as { value: unknown }).value;
+      if (typeof v === "number") foundingCap = v;
+      else if (typeof v === "string") foundingCap = Number(v) || foundingCap;
+    }
+    const occ =
+      foundingRows.error || !foundingRows.data
+        ? []
+        : (foundingRows.data as {
+            plan_tier: string | null;
+            founding_center_number: number | null;
+          }[]);
+    const availability = computeFoundingSlotAvailability(occ, foundingCap);
+    foundingNextSlot = availability.nextAvailable;
+    foundingSlotsRemaining = availability.remaining;
+  } catch {
+    // Migrations not applied — defaults already set above.
+  }
+
   const planKey = planLabelKey(center.subscription_plan);
   const planText = planKey ? t(planKey) : null;
   const statusLabel = t(
@@ -356,6 +395,9 @@ export default async function CenterDetailPage({
           trialEndsAt={center.trial_ends_at}
           foundingCenterNumber={center.founding_center_number}
           foundingLockedPriceVnd={center.founding_locked_price_vnd}
+          foundingNextSlot={foundingNextSlot}
+          foundingSlotsRemaining={foundingSlotsRemaining}
+          foundingCap={foundingCap}
           locale={dateLocale}
         />
       </header>
