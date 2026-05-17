@@ -286,6 +286,21 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     .select()
     .single();
   // Strip columns the DB doesn't have yet, one error at a time.
+  //
+  // PostgREST returns the column name in the error message ("Could not
+  // find the 'X' column of 'centers' in the schema cache"). Each
+  // retry drops the column named in the *current* error and tries
+  // again — so a center can be created against a partially-migrated
+  // database that's missing several of the optional lifecycle /
+  // founding-center / branding columns at once.
+  //
+  // Earlier this was a for-loop over `optional` that only saw the
+  // first matching column once per iteration; once a retry surfaced
+  // a *different* missing column the loop had already iterated past
+  // it and returned the error to the user. Rewritten as a while-loop
+  // that rescans `optional` against whatever error message is
+  // current. Capped at optional.length attempts so an unfamiliar
+  // error never spins forever.
   if (centerErr) {
     const stripped: Record<string, unknown> = { ...fullInsert };
     const optional = [
@@ -294,21 +309,25 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       "referral_note",
       "subscription_started_at",
       "subscription_ends_at",
+      "last_payment_at",
       "next_billing_at",
       "subscription_plan",
     ];
-    for (const col of optional) {
-      if (centerErr && new RegExp(col, "i").test(centerErr.message)) {
-        delete stripped[col];
-        const retry = await supabase
-          .from("centers")
-          .insert(stripped)
-          .select()
-          .single();
-        center = retry.data;
-        centerErr = retry.error;
-        if (!centerErr) break;
-      }
+    let attempts = 0;
+    while (centerErr && attempts < optional.length) {
+      const missing = optional.find((col) =>
+        new RegExp(col, "i").test(centerErr!.message),
+      );
+      if (!missing) break; // unfamiliar error — surface it to the user
+      delete stripped[missing];
+      const retry = await supabase
+        .from("centers")
+        .insert(stripped)
+        .select()
+        .single();
+      center = retry.data;
+      centerErr = retry.error;
+      attempts++;
     }
   }
   if (centerErr || !center) {
