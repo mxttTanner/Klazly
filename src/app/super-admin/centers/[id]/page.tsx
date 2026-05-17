@@ -393,6 +393,7 @@ export default async function CenterDetailPage({
           plan={center.subscription_plan}
           planTier={center.plan_tier}
           trialEndsAt={center.trial_ends_at}
+          subscriptionEndsAt={center.subscription_ends_at}
           foundingCenterNumber={center.founding_center_number}
           foundingLockedPriceVnd={center.founding_locked_price_vnd}
           foundingNextSlot={foundingNextSlot}
@@ -455,6 +456,31 @@ export default async function CenterDetailPage({
                 {" · "}
                 {t("trialTotalDays", { n: trialTotalDays })}
               </p>
+            </section>
+          ) : null}
+
+          {/* Renewal-due banner — surfaces when the lazy-expire pass
+              has flipped the row to 'pending_renewal' (or when
+              subscription_ends_at is in the past but the DB hasn't
+              caught up yet). Tells the operator the active period has
+              ended and points them at the Manage button. */}
+          {derived === "pending_renewal" ? (
+            <section className="rounded-2xl border border-orange-300 bg-orange-50/60 p-5 shadow-sm sm:p-6">
+              <div className="flex items-start gap-3">
+                <span className="bg-orange-100 text-orange-800 ring-orange-300 mt-0.5 inline-flex size-10 items-center justify-center rounded-full ring-1">
+                  <CalendarClock className="size-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-orange-900 text-sm font-semibold">
+                    {t("renewalDueBannerTitle", {
+                      date: formatDate(center.subscription_ends_at),
+                    })}
+                  </p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    {t("renewalDueBannerHint")}
+                  </p>
+                </div>
+              </div>
             </section>
           ) : null}
 
@@ -703,6 +729,9 @@ function renderAuditAction(
     if (auto && reason === "founding_trial_converted") {
       return t("auditFoundingTrialConverted");
     }
+    if (auto && reason === "renewal_due") {
+      return t("auditRenewalDue");
+    }
     return auto
       ? t("auditStatusChangedAuto", { from, to })
       : t("auditStatusChanged", { from, to });
@@ -737,6 +766,9 @@ function renderAuditAction(
     const mode = String(metadata?.mode ?? "");
     if (mode === "resume_trial") return t("auditReactivatedResumeTrial");
     return t("auditReactivated");
+  }
+  if (action === "reverted_to_trial") {
+    return t("auditRevertedToTrial");
   }
   return action;
 }

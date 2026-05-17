@@ -481,7 +481,15 @@ export async function updateSubscriptionStatus(formData: FormData) {
   const status = String(formData.get("status") ?? "");
   if (
     !id ||
-    !["trial", "active", "past_due", "canceled", "expired", "paused"].includes(status)
+    ![
+      "trial",
+      "active",
+      "past_due",
+      "canceled",
+      "expired",
+      "paused",
+      "pending_renewal",
+    ].includes(status)
   )
     return { error: "invalid input" };
 
@@ -833,7 +841,26 @@ export async function convertCenterToPaid(formData: FormData) {
     id,
     patch,
   );
-  if (updErr) return { error: updErr };
+  if (updErr) {
+    // Slot-race friendly error: two operators racing on the same
+    // Founding slot — partial unique index rejects the second writer.
+    // createCenter has the same catch; mirror it here so the convert
+    // path surfaces a useful message instead of raw Postgres.
+    if (
+      choice === "founding" &&
+      (/centers_founding_slot_uniq/i.test(updErr) ||
+        /duplicate key value violates unique constraint.*founding/i.test(updErr))
+    ) {
+      const slot =
+        typeof auditMetadata.founding_center_number === "number"
+          ? (auditMetadata.founding_center_number as number)
+          : 0;
+      return {
+        error: `Slot #${slot} was just claimed by another save. Reopen the dialog so the next available slot can be re-computed.`,
+      };
+    }
+    return { error: updErr };
+  }
 
   await writeAuditLog(supabase, {
     actorEmail: owner.email,
@@ -842,6 +869,83 @@ export async function convertCenterToPaid(formData: FormData) {
     entityType: "center",
     entityId: id,
     metadata: { ...auditMetadata, dropped_columns: droppedCols },
+  });
+
+  revalidatePath("/super-admin");
+  revalidatePath(`/super-admin/centers/${id}`);
+  return { success: true };
+}
+
+/**
+ * Revert a center to a fresh 30-day trial. The "I made a mistake on
+ * the plan, let me start over" escape hatch, plus the "let me test
+ * something internally" lever. Per spec:
+ *
+ *   - subscription_status   →  'trial'
+ *   - trial_ends_at          →  now + 30 days
+ *   - subscription_ends_at   →  null  (active cycle cancelled)
+ *   - next_billing_at        →  null
+ *   - last_payment_at        →  null
+ *   - subscription_plan      →  kept as-is (so we remember what they
+ *                                were on)
+ *   - plan_tier              →  kept as-is (founding stays founding)
+ *   - founding_center_number →  kept
+ *   - founding_locked_price_vnd → kept
+ *
+ * Audit log records the previous status + plan for traceability.
+ */
+export async function revertToTrial(formData: FormData) {
+  const owner = await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "missing id" };
+
+  const supabase = createAdminClient();
+
+  const { data: existing, error: readErr } = await supabase
+    .from("centers")
+    .select("subscription_status, subscription_plan, plan_tier")
+    .eq("id", id)
+    .single();
+  if (readErr || !existing) {
+    return { error: readErr?.message ?? "center not found" };
+  }
+
+  const fromStatus = String(existing.subscription_status ?? "");
+  if (fromStatus === "trial") return { success: true };
+
+  const now = new Date();
+  const trialEnd = new Date(now);
+  trialEnd.setDate(trialEnd.getDate() + 30);
+
+  const patch: Record<string, string | null> = {
+    subscription_status: "trial",
+    trial_ends_at: trialEnd.toISOString(),
+    subscription_ends_at: null,
+    next_billing_at: null,
+    last_payment_at: null,
+  };
+
+  const { error, droppedCols } = await updateCenterPatchTolerant(
+    supabase,
+    id,
+    patch,
+  );
+  if (error) return { error };
+
+  await writeAuditLog(supabase, {
+    actorEmail: owner.email,
+    centerId: id,
+    action: "reverted_to_trial",
+    entityType: "center",
+    entityId: id,
+    metadata: {
+      from: fromStatus,
+      to: "trial",
+      trial_ends_at: trialEnd.toISOString(),
+      prior_subscription_plan: existing.subscription_plan ?? null,
+      prior_plan_tier: existing.plan_tier ?? null,
+      dropped_columns: droppedCols,
+    },
   });
 
   revalidatePath("/super-admin");

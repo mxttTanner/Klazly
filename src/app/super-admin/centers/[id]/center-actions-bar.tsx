@@ -25,7 +25,7 @@ import {
   convertCenterToPaid,
   extendTrial,
   pauseCenter,
-  reactivateCenter,
+  revertToTrial,
 } from "../../actions";
 
 const PLANS = ["monthly", "six_months", "annual"] as const;
@@ -33,29 +33,31 @@ type Plan = (typeof PLANS)[number];
 
 const EXTEND_PRESETS = [7, 14, 30] as const;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const RENEWAL_NUDGE_WINDOW_DAYS = 7;
+
 /**
  * Operations bar for the super-admin's center detail page.
  *
- *   Convert    trial / expired / past_due  →  active
- *              tier-aware: Founding rows get a single locked-price
- *              confirm; standard rows get the 1mo/6mo/1yr picker.
+ *   Manage     unified state-aware button — replaces the old
+ *              Convert + Reactivate. Label adapts per status:
+ *                trial                              → "Convert to paid"
+ *                active (>7d from ends_at)          → "Change plan"
+ *                active (≤7d from ends_at)          → "Renew or change plan" (amber dot)
+ *                pending_renewal                    → "Renew or change plan" (amber dot)
+ *                paused / expired / canceled        → "Reactivate"
+ *              The dialog itself shows all 4 plans + a Revert-to-Trial
+ *              escape hatch, with the row's current plan flagged.
+ *
  *   Extend     trial / expired / past_due  →  trial
- *              shows current trial_ends_at + 3 presets that preview
- *              the new end-date and commit on click.
+ *              shows current trial_ends_at + 3 presets.
+ *
  *   Pause      trial / active / past_due   →  paused
  *              reversible — billing freezes where it is.
- *   Cancel     trial / active / past_due / paused / expired
- *                                         →  canceled (permanent)
- *              type-name confirmation, stamps cancelled_at. Smaller
- *              + grayer button below Pause, since this should be
- *              the rare permanent case.
- *   Reactivate expired / canceled / paused →  active or trial
- *              tier-aware dialog: founding picks one option,
- *              standard picks a plan, paused-with-unexpired-trial
- *              gets a "resume trial" option.
  *
- * Buttons that don't make sense for the current status are hidden
- * outright rather than disabled.
+ *   Cancel     anything except canceled    →  canceled (permanent)
+ *              type-name confirmation, smaller text-button below
+ *              the main row.
  */
 export function CenterActionsBar({
   centerId,
@@ -64,6 +66,7 @@ export function CenterActionsBar({
   plan,
   planTier,
   trialEndsAt,
+  subscriptionEndsAt,
   foundingCenterNumber,
   foundingLockedPriceVnd,
   foundingNextSlot,
@@ -77,6 +80,7 @@ export function CenterActionsBar({
   plan: string | null;
   planTier: string | null;
   trialEndsAt: string | null;
+  subscriptionEndsAt: string | null;
   foundingCenterNumber: number | null;
   foundingLockedPriceVnd: number | null;
   foundingNextSlot: number | null;
@@ -86,38 +90,73 @@ export function CenterActionsBar({
 }) {
   const t = useTranslations("superAdmin");
 
-  const [open, setOpen] = useState<
-    "convert" | "extend" | "pause" | "cancel" | "reactivate" | null
-  >(null);
+  const [open, setOpen] = useState<"manage" | "extend" | "pause" | "cancel" | null>(
+    null,
+  );
 
-  const showConvert =
-    status === "trial" || status === "expired" || status === "past_due";
+  // Renewal-due if active AND ends_at is within 7 days OR already
+  // past (the lazy-expire pass would normally flip them to
+  // pending_renewal but there's a small window between ends_at and
+  // the next page load).
+  const renewalDueSoon =
+    (status === "active" || status === "pending_renewal") &&
+    subscriptionEndsAt !== null &&
+    new Date(subscriptionEndsAt).getTime() - Date.now() <=
+      RENEWAL_NUDGE_WINDOW_DAYS * DAY_MS;
+
+  const isFounding = planTier === "founding";
+
+  // Manage button label + tone — state-aware so a glance at the button
+  // tells the operator what they're about to do.
+  let manageLabel: string;
+  let manageTone: "emerald" | "amber";
+  if (status === "trial") {
+    manageLabel = t("manageConvertToPaid");
+    manageTone = "emerald";
+  } else if (status === "active" && renewalDueSoon) {
+    manageLabel = t("manageRenewOrChange");
+    manageTone = "amber";
+  } else if (status === "active") {
+    manageLabel = t("manageChangePlan");
+    manageTone = "emerald";
+  } else if (status === "pending_renewal") {
+    manageLabel = t("manageRenewOrChange");
+    manageTone = "amber";
+  } else {
+    // expired / canceled / paused / past_due
+    manageLabel = t("manageReactivate");
+    manageTone = "emerald";
+  }
+
   const showExtend =
     status === "trial" || status === "expired" || status === "past_due";
   const showPause =
     status === "trial" || status === "active" || status === "past_due";
-  // Cancel: visible for everything except already-canceled rows. Even
-  // a paused row may need to be turned into a permanent cancel.
   const showCancel = status !== "canceled";
-  const showReactivate =
-    status === "expired" || status === "canceled" || status === "paused";
-
-  const isFounding = planTier === "founding";
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
-        {showConvert ? (
-          <Button
-            type="button"
-            onClick={() => setOpen("convert")}
-            className="bg-emerald-600 text-white hover:bg-emerald-500"
-            size="lg"
-          >
-            <CircleDollarSign className="size-4" />
-            {t("actionConvert")}
-          </Button>
-        ) : null}
+        <Button
+          type="button"
+          onClick={() => setOpen("manage")}
+          className={
+            (manageTone === "amber"
+              ? "bg-orange-600 text-white hover:bg-orange-500"
+              : "bg-emerald-600 text-white hover:bg-emerald-500") +
+            " relative"
+          }
+          size="lg"
+        >
+          <CircleDollarSign className="size-4" />
+          {manageLabel}
+          {manageTone === "amber" ? (
+            <span
+              className="ml-1 inline-flex size-2 animate-pulse rounded-full bg-amber-200 ring-2 ring-orange-700/30"
+              aria-hidden="true"
+            />
+          ) : null}
+        </Button>
         {showExtend ? (
           <Button
             type="button"
@@ -127,17 +166,6 @@ export function CenterActionsBar({
           >
             <CalendarPlus className="size-4" />
             {t("actionExtend")}
-          </Button>
-        ) : null}
-        {showReactivate ? (
-          <Button
-            type="button"
-            onClick={() => setOpen("reactivate")}
-            size="lg"
-            className="bg-emerald-600 text-white hover:bg-emerald-500"
-          >
-            <RotateCcw className="size-4" />
-            {t("actionReactivate")}
           </Button>
         ) : null}
         {showPause ? (
@@ -154,9 +182,7 @@ export function CenterActionsBar({
         ) : null}
       </div>
 
-      {/* Cancel is intentionally below the primary row + visually
-          softer — permanent archive should be a deliberate choice,
-          not the next button after Pause. */}
+      {/* Cancel: small text button below, deliberate choice. */}
       {showCancel ? (
         <div className="mt-3">
           <button
@@ -169,12 +195,15 @@ export function CenterActionsBar({
         </div>
       ) : null}
 
-      <ConvertDialog
-        open={open === "convert"}
+      <ManageDialog
+        open={open === "manage"}
         onClose={() => setOpen(null)}
         centerId={centerId}
         centerName={centerName}
+        status={status}
+        currentPlan={plan}
         isFounding={isFounding}
+        renewalDueSoon={renewalDueSoon}
         foundingCenterNumber={foundingCenterNumber}
         foundingLockedPriceVnd={foundingLockedPriceVnd}
         foundingNextSlot={foundingNextSlot}
@@ -201,49 +230,33 @@ export function CenterActionsBar({
         centerId={centerId}
         centerName={centerName}
       />
-      <ReactivateDialog
-        open={open === "reactivate"}
-        onClose={() => setOpen(null)}
-        centerId={centerId}
-        isFounding={isFounding}
-        priorPlan={plan}
-        trialEndsAt={trialEndsAt}
-        foundingCenterNumber={foundingCenterNumber}
-        foundingLockedPriceVnd={foundingLockedPriceVnd}
-        locale={locale}
-      />
     </>
   );
 }
 
 /**
- * Convert dialog. Unified UI: always shows all 4 plan options
- * regardless of the center's current plan_tier. The Founding option
- * is grouped under a separator so the standard plans read as the
- * default offer and Founding feels intentional.
- *
- *   ○ 1 month       (1.2M / month)
- *   ○ 6 months      (5.4M / 6 mo)
- *   ○ 1 year        (9.9M / year)
- *   ─── Founding Center program (limited slots) ───
- *   ○ Founding      (₫600K / month, locked) · next slot #N · M left
- *
- * - Founding option auto-selects if the center is already
- *   plan_tier='founding'; otherwise the dialog opens with no
- *   selection (Confirm disabled).
- * - Founding option disables when all slots are taken.
- * - Confirm submits the picked choice; the server action handles
- *   the actual tier + slot bookkeeping (including downgrading off
- *   founding when a standard plan is picked).
+ * Unified Manage Plan dialog. Handles convert / change / renew /
+ * reactivate by showing the same 4-option picker with:
+ *   - "Current plan" badge on whichever radio matches the row's
+ *     current plan (only when status='active' / 'pending_renewal')
+ *   - Pre-selection set to the current plan when applicable
+ *   - Header copy adapts per mode (convert vs change vs renew vs
+ *     reactivate)
+ *   - Small "Revert to 30-day trial" section at the bottom (visible
+ *     when status !== 'trial'), with an inline two-step confirm so
+ *     the operator can't fat-finger it.
  */
-type ConvertChoice = Plan | "founding";
+type ManageChoice = Plan | "founding";
 
-function ConvertDialog({
+function ManageDialog({
   open,
   onClose,
   centerId,
   centerName,
+  status,
+  currentPlan,
   isFounding,
+  renewalDueSoon,
   foundingCenterNumber,
   foundingLockedPriceVnd,
   foundingNextSlot,
@@ -255,58 +268,81 @@ function ConvertDialog({
   onClose: () => void;
   centerId: string;
   centerName: string;
+  status: string;
+  currentPlan: string | null;
   isFounding: boolean;
+  renewalDueSoon: boolean;
   foundingCenterNumber: number | null;
   foundingLockedPriceVnd: number | null;
-  /** Lowest unused founding slot in [1..cap], or null if all taken. */
   foundingNextSlot: number | null;
-  /** cap - taken.length (≥0). */
   foundingSlotsRemaining: number;
   foundingCap: number;
   locale: string;
 }) {
   const t = useTranslations("superAdmin");
 
-  // Default selection rule:
-  //   - already plan_tier='founding' (with or without an assigned slot)
-  //     → preselect 'founding'
-  //   - otherwise → no selection (Confirm disabled until operator picks)
-  const initialChoice: ConvertChoice | null = isFounding ? "founding" : null;
-  const [choice, setChoice] = useState<ConvertChoice | null>(initialChoice);
+  // What's the row's current plan choice, normalised to ManageChoice?
+  // Only meaningful when status='active' or 'pending_renewal'; we
+  // use it both for pre-selection and for the "Current plan" badge.
+  const currentChoice: ManageChoice | null =
+    status === "active" || status === "pending_renewal"
+      ? isFounding
+        ? "founding"
+        : (currentPlan as Plan | null) ?? null
+      : null;
+
+  // Pre-selection rule:
+  //   - active / pending_renewal → preselect current plan
+  //   - trial / expired / canceled / paused → no preselection (force
+  //     operator to make a deliberate pick)
+  //   - already founding (any status) still preselects 'founding'
+  //     so a re-convert keeps the locked rate.
+  const initialChoice: ManageChoice | null =
+    currentChoice ?? (isFounding ? "founding" : null);
+
+  const [choice, setChoice] = useState<ManageChoice | null>(initialChoice);
+  const [revertConfirmOpen, setRevertConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Re-sync the default when the dialog re-opens against a different
-  // center (rare in practice — the actions bar passes one centerId —
-  // but keeps the selection coherent if the parent re-renders with
-  // new props between opens).
   useEffect(() => {
     if (open) {
-      setChoice(isFounding ? "founding" : null);
+      setChoice(initialChoice);
       setError(null);
+      setRevertConfirmOpen(false);
     }
-  }, [open, isFounding]);
+    // Initial choice is derived from props that may change between
+    // opens, but we only want the reset on the open→true edge — so
+    // intentionally don't depend on initialChoice itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const lockedPrice = foundingLockedPriceVnd ?? 600_000;
-  const formattedLockedPrice = new Intl.NumberFormat(locale).format(
-    lockedPrice,
-  );
+  const formattedLockedPrice = new Intl.NumberFormat(locale).format(lockedPrice);
 
-  // Founding option is disabled when all slots are taken AND the
-  // center isn't already founding (an already-founding center keeps
-  // its existing slot — no fresh assignment needed).
   const foundingDisabled = !isFounding && foundingNextSlot === null;
 
-  // Slot meta line under the Founding option:
-  //   - already founding with slot #N    → "Currently slot #N — keep it"
-  //   - already founding without slot    → "Slot will be assigned"
-  //   - new founding, slot available     → "Next available slot: #N · M of CAP remaining"
-  //   - new founding, all taken          → "All CAP Founding slots are taken"
+  // Header copy adapts per mode.
+  let title: string;
+  let description: string;
+  if (status === "trial") {
+    title = t("manageDialogTitleConvert", { name: centerName });
+    description = t("manageDialogDescriptionConvert");
+  } else if (status === "pending_renewal" || renewalDueSoon) {
+    title = t("manageDialogTitleRenew", { name: centerName });
+    description = t("manageDialogDescriptionRenew");
+  } else if (status === "active") {
+    title = t("manageDialogTitleChange", { name: centerName });
+    description = t("manageDialogDescriptionChange");
+  } else {
+    title = t("manageDialogTitleReactivate", { name: centerName });
+    description = t("manageDialogDescriptionReactivate");
+  }
+
+  // Founding meta line under the Founding option.
   let foundingMeta: string;
   if (isFounding && foundingCenterNumber !== null && foundingCenterNumber > 0) {
-    foundingMeta = t("convertFoundingMetaCurrentSlot", {
-      n: foundingCenterNumber,
-    });
+    foundingMeta = t("convertFoundingMetaCurrentSlot", { n: foundingCenterNumber });
   } else if (isFounding) {
     foundingMeta = t("convertFoundingMetaWillAssign");
   } else if (foundingNextSlot !== null) {
@@ -335,14 +371,72 @@ function ConvertDialog({
     });
   }
 
+  function submitRevert() {
+    setError(null);
+    const fd = new FormData();
+    fd.append("id", centerId);
+    startTransition(async () => {
+      const res = await revertToTrial(fd);
+      if (res?.error) {
+        setError(res.error);
+        return;
+      }
+      onClose();
+    });
+  }
+
+  // Revert-to-trial confirmation step replaces the plan picker
+  // inline (rather than spawning a sub-modal) so the operator can
+  // still hit Cancel to back out and re-pick a plan.
+  if (revertConfirmOpen) {
+    return (
+      <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t("revertDialogTitle", { name: centerName })}
+            </DialogTitle>
+            <DialogDescription>
+              {t("revertDialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {error ? (
+            <p className="text-destructive text-xs" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setRevertConfirmOpen(false)}
+              disabled={pending}
+            >
+              {t("revertBackToPicker")}
+            </Button>
+            <Button
+              type="button"
+              onClick={submitRevert}
+              disabled={pending}
+              className="bg-sky-600 text-white hover:bg-sky-500"
+            >
+              <RotateCcw className="size-4" />
+              {pending ? t("saving") : t("revertConfirmButton")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {t("convertDialogTitleNamed", { name: centerName })}
-          </DialogTitle>
-          <DialogDescription>{t("convertDialogDescription")}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <fieldset className="space-y-2.5" disabled={pending}>
@@ -350,37 +444,41 @@ function ConvertDialog({
             {t("planLabel")}
           </legend>
 
-          {/* Three standard plans — radios. */}
-          {PLANS.map((p) => (
-            <label
-              key={p}
-              className={
-                "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 transition " +
-                (choice === p
-                  ? "border-primary bg-primary/5"
-                  : "hover:bg-muted/40")
-              }
-            >
-              <span className="flex items-center gap-2.5 text-sm font-medium">
-                <input
-                  type="radio"
-                  name="plan"
-                  value={p}
-                  checked={choice === p}
-                  onChange={() => setChoice(p)}
-                  className="size-4 accent-primary"
-                />
-                {t(planLabelKey(p) as Parameters<typeof t>[0])}
-              </span>
-              <span className="text-muted-foreground text-xs">
-                {t(planPriceKey(p) as Parameters<typeof t>[0])}
-              </span>
-            </label>
-          ))}
+          {PLANS.map((p) => {
+            const isCurrent = currentChoice === p;
+            return (
+              <label
+                key={p}
+                className={
+                  "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 transition " +
+                  (choice === p
+                    ? "border-primary bg-primary/5"
+                    : "hover:bg-muted/40")
+                }
+              >
+                <span className="flex items-center gap-2.5 text-sm font-medium">
+                  <input
+                    type="radio"
+                    name="plan"
+                    value={p}
+                    checked={choice === p}
+                    onChange={() => setChoice(p)}
+                    className="size-4 accent-primary"
+                  />
+                  {t(planLabelKey(p) as Parameters<typeof t>[0])}
+                  {isCurrent ? (
+                    <span className="bg-sky-100 text-sky-800 ring-sky-200 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1">
+                      {t("manageCurrentPlanBadge")}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {t(planPriceKey(p) as Parameters<typeof t>[0])}
+                </span>
+              </label>
+            );
+          })}
 
-          {/* Separator + Founding option. Visually grouped under a
-              soft label so the standard plans read as the default
-              offer and Founding feels deliberate. */}
           <div className="text-muted-foreground my-3 flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
             <span className="bg-muted-foreground/20 h-px flex-1" />
             <span>{t("convertFoundingSeparator")}</span>
@@ -408,14 +506,17 @@ function ConvertDialog({
                 className="mt-0.5 size-4 accent-amber-600"
               />
               <span className="min-w-0">
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+                <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-amber-900">
                   <Sparkles className="size-3.5 text-amber-700" />
                   {t("convertFoundingOptionTitle")}
+                  {currentChoice === "founding" ? (
+                    <span className="bg-sky-100 text-sky-800 ring-sky-200 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1">
+                      {t("manageCurrentPlanBadge")}
+                    </span>
+                  ) : null}
                 </span>
                 <span className="text-amber-900/80 mt-0.5 block text-xs">
-                  {t("convertFoundingOptionPrice", {
-                    price: formattedLockedPrice,
-                  })}
+                  {t("convertFoundingOptionPrice", { price: formattedLockedPrice })}
                 </span>
                 <span className="text-muted-foreground mt-1 block text-[11px]">
                   {foundingMeta}
@@ -429,6 +530,30 @@ function ConvertDialog({
           <p className="text-destructive text-xs" role="alert">
             {error}
           </p>
+        ) : null}
+
+        {/* Revert-to-trial section — only visible for non-trial rows.
+            Operator-facing escape hatch: "I made a mistake on the
+            plan / I want to test something". Sits below the main
+            picker so it doesn't compete for attention. */}
+        {status !== "trial" ? (
+          <div className="border-muted-foreground/20 mt-1 rounded-md border border-dashed p-3">
+            <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">
+              {t("revertSectionHeading")}
+            </p>
+            <p className="text-muted-foreground mt-1.5 text-xs">
+              {t("revertSectionHint")}
+            </p>
+            <button
+              type="button"
+              onClick={() => setRevertConfirmOpen(true)}
+              disabled={pending}
+              className="text-sky-700 hover:text-sky-800 mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              <RotateCcw className="size-3.5" />
+              {t("revertSectionButton")}
+            </button>
+          </div>
         ) : null}
 
         <DialogFooter>
@@ -452,8 +577,7 @@ function ConvertDialog({
 
 /**
  * Extend dialog. Shows the current trial_ends_at + three preset
- * buttons that submit immediately on click. Custom-days input is
- * removed (per spec) since presets cover every real case.
+ * buttons that submit immediately on click.
  */
 function ExtendDialog({
   open,
@@ -571,10 +695,6 @@ function ExtendDialog({
   );
 }
 
-/**
- * Pause dialog. Reversible — center loses access until reactivated,
- * billing freezes where it is. Friendlier than the old "Lock" copy.
- */
 function PauseDialog({
   open,
   onClose,
@@ -637,11 +757,6 @@ function PauseDialog({
   );
 }
 
-/**
- * Cancel dialog. Permanent archive. Two-step type-name confirmation
- * — Confirm stays disabled until the operator has typed the center
- * name exactly as it appears. Server enforces the match too.
- */
 function CancelDialog({
   open,
   onClose,
@@ -724,239 +839,6 @@ function CancelDialog({
           >
             <XCircle className="size-4" />
             {pending ? t("saving") : t("cancelConfirmButton")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/**
- * Tier-aware Reactivate dialog. Three modes the operator picks:
- *
- *   founding_active  →  resume as Active Founding @ locked price
- *   standard_active  →  resume as Active on monthly/6mo/yearly
- *   resume_trial     →  flip back to trial, leave trial_ends_at
- *                       untouched (the unexpired trial continues
- *                       from where it stopped).
- *
- * For founding rows we only offer founding_active. For standard
- * rows we offer the plan picker and, when trial_ends_at is in the
- * future, also offer resume_trial as a secondary option.
- */
-function ReactivateDialog({
-  open,
-  onClose,
-  centerId,
-  isFounding,
-  priorPlan,
-  trialEndsAt,
-  foundingCenterNumber,
-  foundingLockedPriceVnd,
-  locale,
-}: {
-  open: boolean;
-  onClose: () => void;
-  centerId: string;
-  isFounding: boolean;
-  priorPlan: string | null;
-  trialEndsAt: string | null;
-  foundingCenterNumber: number | null;
-  foundingLockedPriceVnd: number | null;
-  locale: string;
-}) {
-  const t = useTranslations("superAdmin");
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const defaultStandardPlan: Plan = (priorPlan as Plan) ?? "monthly";
-  const [chosenPlan, setChosenPlan] = useState<Plan>(defaultStandardPlan);
-
-  const trialStillValid =
-    trialEndsAt !== null && new Date(trialEndsAt).getTime() > Date.now();
-
-  const lockedPrice = foundingLockedPriceVnd ?? 600_000;
-  const formattedLockedPrice = new Intl.NumberFormat(locale).format(
-    lockedPrice,
-  );
-
-  function submitFounding() {
-    setError(null);
-    const fd = new FormData();
-    fd.append("id", centerId);
-    fd.append("mode", "founding_active");
-    startTransition(async () => {
-      const res = await reactivateCenter(fd);
-      if (res?.error) {
-        setError(res.error);
-        return;
-      }
-      onClose();
-    });
-  }
-
-  function submitStandard(plan: Plan) {
-    setError(null);
-    const fd = new FormData();
-    fd.append("id", centerId);
-    fd.append("mode", "standard_active");
-    fd.append("plan", plan);
-    startTransition(async () => {
-      const res = await reactivateCenter(fd);
-      if (res?.error) {
-        setError(res.error);
-        return;
-      }
-      onClose();
-    });
-  }
-
-  function submitResumeTrial() {
-    setError(null);
-    const fd = new FormData();
-    fd.append("id", centerId);
-    fd.append("mode", "resume_trial");
-    startTransition(async () => {
-      const res = await reactivateCenter(fd);
-      if (res?.error) {
-        setError(res.error);
-        return;
-      }
-      onClose();
-    });
-  }
-
-  if (isFounding) {
-    return (
-      <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("reactivateFoundingTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("reactivateFoundingDescription")}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="border-emerald-300 bg-emerald-50/40 rounded-lg border-2 p-4">
-            <div className="flex items-start gap-3">
-              <span className="bg-emerald-100 text-emerald-700 ring-emerald-200 inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1">
-                <Sparkles className="size-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-emerald-900 text-sm font-semibold">
-                  {t("convertFoundingHeadline", { price: formattedLockedPrice })}
-                </p>
-                <p className="text-muted-foreground mt-1 text-xs">
-                  {t("convertFoundingSubhead", {
-                    n: foundingCenterNumber ?? 0,
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {error ? (
-            <p className="text-destructive text-xs" role="alert">
-              {error}
-            </p>
-          ) : null}
-
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
-              {t("cancel")}
-            </Button>
-            <Button
-              type="button"
-              onClick={submitFounding}
-              disabled={pending}
-              className="bg-emerald-600 text-white hover:bg-emerald-500"
-            >
-              <RotateCcw className="size-4" />
-              {pending ? t("saving") : t("reactivateFoundingConfirmButton")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  // Standard path — plan picker, plus optional "resume trial" if
-  // the trial date is still in the future.
-  return (
-    <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("reactivateStandardTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("reactivateStandardDescription")}
-          </DialogDescription>
-        </DialogHeader>
-
-        <fieldset className="space-y-2.5" disabled={pending}>
-          <legend className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-            {t("planLabel")}
-          </legend>
-          {PLANS.map((p) => (
-            <label
-              key={p}
-              className={
-                "flex cursor-pointer items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 transition " +
-                (chosenPlan === p
-                  ? "border-primary bg-primary/5"
-                  : "hover:bg-muted/40")
-              }
-            >
-              <span className="flex items-center gap-2.5 text-sm font-medium">
-                <input
-                  type="radio"
-                  name="reactivate-plan"
-                  value={p}
-                  checked={chosenPlan === p}
-                  onChange={() => setChosenPlan(p)}
-                  className="size-4 accent-primary"
-                />
-                {t(planLabelKey(p) as Parameters<typeof t>[0])}
-              </span>
-              <span className="text-muted-foreground text-xs">
-                {t(planPriceKey(p) as Parameters<typeof t>[0])}
-              </span>
-            </label>
-          ))}
-        </fieldset>
-
-        {trialStillValid ? (
-          <div className="border-muted-foreground/20 mt-1 rounded-md border border-dashed p-3 text-xs">
-            <p className="text-muted-foreground">
-              {t("reactivateResumeTrialHint")}
-            </p>
-            <button
-              type="button"
-              onClick={submitResumeTrial}
-              disabled={pending}
-              className="text-primary hover:text-primary/80 mt-2 text-sm font-medium underline-offset-2 hover:underline"
-            >
-              {t("reactivateResumeTrialButton")}
-            </button>
-          </div>
-        ) : null}
-
-        {error ? (
-          <p className="text-destructive text-xs" role="alert">
-            {error}
-          </p>
-        ) : null}
-
-        <DialogFooter>
-          <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
-            {t("cancel")}
-          </Button>
-          <Button
-            type="button"
-            onClick={() => submitStandard(chosenPlan)}
-            disabled={pending}
-            className="bg-emerald-600 text-white hover:bg-emerald-500"
-          >
-            <RotateCcw className="size-4" />
-            {pending ? t("saving") : t("reactivateStandardConfirmButton")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -38,6 +38,7 @@ const STATUS_FILTERS = [
   "all",
   "trial",
   "active",
+  "pending_renewal",
   "past_due",
   "paused",
   "canceled",
@@ -430,6 +431,7 @@ export default async function SuperAdminHomePage({
     all: withDerived.length,
     trial: 0,
     active: 0,
+    pending_renewal: 0,
     past_due: 0,
     paused: 0,
     canceled: 0,
@@ -470,15 +472,30 @@ export default async function SuperAdminHomePage({
       }
     }
     if (status === "active" && c.subscription_ends_at) {
-      const ends = new Date(c.subscription_ends_at);
-      subText = t("subscriptionEndsAt", {
-        date: ends.toLocaleDateString(dateLocale, {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          timeZone: "Asia/Ho_Chi_Minh",
-        }),
-      });
+      // "renews in N days" is more scannable than a literal date for
+      // the centers-list at-a-glance read. Falls back to the literal
+      // date if the timestamp parsed as in-the-past (caught by the
+      // lazy-expire pass on next render).
+      const endsMs = new Date(c.subscription_ends_at).getTime();
+      const daysLeft = Math.ceil((endsMs - Date.now()) / (24 * 60 * 60 * 1000));
+      if (daysLeft > 0) {
+        subText = t("renewsInDaysShort", { n: daysLeft });
+      } else {
+        subText = t("renewsDueShort");
+      }
+    }
+    if (status === "pending_renewal") {
+      // Already past ends_at — operator needs to renew. Show how many
+      // days overdue so the urgency is visible.
+      if (c.subscription_ends_at) {
+        const endsMs = new Date(c.subscription_ends_at).getTime();
+        const daysOverdue = Math.ceil(
+          (Date.now() - endsMs) / (24 * 60 * 60 * 1000),
+        );
+        subText = t("renewalOverdueShort", { n: Math.max(0, daysOverdue) });
+      } else {
+        subText = t("renewsDueShort");
+      }
     }
 
     // Price chip — only render for active centers, and honour
@@ -531,6 +548,7 @@ export default async function SuperAdminHomePage({
               { key: "all" as const, label: t("filterAll") },
               { key: "trial" as const, label: t("statusTrial") },
               { key: "active" as const, label: t("statusActive") },
+              { key: "pending_renewal" as const, label: t("statusPendingRenewal") },
               { key: "past_due" as const, label: t("statusPastDue") },
               { key: "paused" as const, label: t("statusPaused") },
               { key: "canceled" as const, label: t("statusCanceled") },

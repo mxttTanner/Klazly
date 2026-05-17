@@ -24,7 +24,8 @@ export type RawStatus =
   | "past_due"
   | "canceled"
   | "expired"
-  | "paused";
+  | "paused"
+  | "pending_renewal";
 
 export type DerivedStatus = RawStatus | "trial_ending_soon";
 
@@ -85,7 +86,8 @@ export function deriveStatus(c: CenterSubscriptionInput): DerivedStatus {
     raw === "past_due" ||
     raw === "canceled" ||
     raw === "expired" ||
-    raw === "paused"
+    raw === "paused" ||
+    raw === "pending_renewal"
   ) {
     return raw;
   }
@@ -155,6 +157,34 @@ export function findFoundingTrialsToConvert(
 }
 
 /**
+ * Active centers past their subscription_ends_at — flipped to
+ * 'pending_renewal' so the operator gets a visible nudge to collect
+ * payment manually and re-extend the cycle.
+ *
+ * We deliberately do NOT auto-charge or auto-expire paid centers —
+ * payments at Klazly are via bank transfer / Momo / ZaloPay through
+ * a Zalo conversation, never via a stored card. 'pending_renewal' is
+ * the "needs human attention" bucket between an ended cycle and
+ * either a renewed-active row or a canceled row.
+ *
+ * Skips rows missing subscription_ends_at (e.g. design-partner free-
+ * forever, or older rows that predate the lifecycle migration).
+ */
+export function findActiveSubsToMarkRenewal(
+  centers: CenterSubscriptionInput[],
+): string[] {
+  return centers
+    .filter(
+      (c) =>
+        c.subscription_status === "active" &&
+        c.subscription_ends_at !== null &&
+        c.subscription_ends_at !== undefined &&
+        new Date(c.subscription_ends_at).getTime() < Date.now(),
+    )
+    .map((c) => c.id);
+}
+
+/**
  * Lazy auto-transition on every super-admin page render. Handles two
  * distinct overdue-trial transitions in one pass:
  *
@@ -173,6 +203,11 @@ export function findFoundingTrialsToConvert(
  *      (Per-row UPDATE because audit metadata captures each row's
  *      previous trial_ends_at separately. Founding cohort caps at 5
  *      so the loop is trivially cheap.)
+ *
+ *   3. Active centers past subscription_ends_at  →  'pending_renewal'.
+ *      Klazly never auto-charges; this just flips the status so the
+ *      operator's dashboard shows a "Renewal due" amber row. The
+ *      actual renewal collection happens out of band over Zalo.
  *
  * Writes one audit_log row per transition so each conversion is
  * traceable. All Supabase calls are best-effort — a failure inside
@@ -289,6 +324,42 @@ export async function expireOverdueTrials(
           });
         }
       }
+    }
+  }
+
+  // ----- 3. Active subs past subscription_ends_at → 'pending_renewal' -----
+  // Bulk UPDATE — every row gets the same status, no per-row data
+  // to preserve.
+  const renewalIds = findActiveSubsToMarkRenewal(centers);
+  if (renewalIds.length > 0) {
+    const { error } = await supabase
+      .from("centers")
+      .update({ subscription_status: "pending_renewal" })
+      .in("id", renewalIds);
+    if (!error) {
+      touched += renewalIds.length;
+      const rows = renewalIds.map((centerId) => ({
+        user_id: null,
+        center_id: centerId,
+        action: "subscription_status_change",
+        entity_type: "center",
+        entity_id: centerId,
+        metadata: {
+          from: "active",
+          to: "pending_renewal",
+          reason: "renewal_due",
+          auto: true,
+        },
+      }));
+      await supabase.from("audit_log").insert(rows);
+    } else if (
+      /invalid input value for enum subscription_status.*pending_renewal/i.test(
+        error.message,
+      )
+    ) {
+      // 'pending_renewal' enum value not migrated yet — silently skip
+      // this pass so the rest of the dashboard still renders. Operator
+      // needs to run db/pending-renewal.sql.
     }
   }
 
@@ -419,6 +490,13 @@ export function statusTone(s: DerivedStatus): string {
     // reads as "intentional, reversible" against the existing palette.
     case "paused":
       return "bg-indigo-50 text-indigo-800 ring-indigo-200";
+    // Renewal due = subscription_ends_at has passed. Amber/orange so
+    // the operator's eye is drawn to it but it doesn't read as
+    // urgent-failure like rose. Distinct from trial_ending_soon
+    // (which is "almost out of trial"); this is "paid term ended,
+    // collect payment + renew".
+    case "pending_renewal":
+      return "bg-orange-50 text-orange-800 ring-orange-300";
   }
 }
 
@@ -486,6 +564,8 @@ export function statusLabelKey(s: DerivedStatus): string {
       return "statusExpired";
     case "paused":
       return "statusPaused";
+    case "pending_renewal":
+      return "statusPendingRenewal";
   }
 }
 
