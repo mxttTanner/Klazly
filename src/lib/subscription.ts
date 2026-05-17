@@ -231,6 +231,11 @@ export async function expireOverdueTrials(
         .from("centers")
         .update({
           subscription_status: "active",
+          // Set the billing cadence so dashboards reading
+          // subscription_plan render "1 month" instead of an empty
+          // label. The actual ₫ contribution is read from
+          // founding_locked_price_vnd by monthlyMrrVnd() below.
+          subscription_plan: "monthly",
           subscription_started_at: nowIso,
           next_billing_at: nextBillingIso,
         })
@@ -254,12 +259,12 @@ export async function expireOverdueTrials(
           },
         });
       } else if (
-        /subscription_started_at|next_billing_at/i.test(error.message)
+        /subscription_started_at|next_billing_at|subscription_plan/i.test(error.message)
       ) {
-        // Lifecycle columns missing — fall back to a status-only flip
-        // so the founding center still moves out of 'trial' and never
-        // lands in the 'expired' bucket. The dates can be backfilled
-        // when the migration runs.
+        // Lifecycle / plan columns missing — fall back to a status-only
+        // flip so the founding center still moves out of 'trial' and
+        // never lands in the 'expired' bucket. Dates + plan can be
+        // backfilled once the migration runs.
         const retry = await supabase
           .from("centers")
           .update({ subscription_status: "active" })
@@ -286,6 +291,51 @@ export async function expireOverdueTrials(
   }
 
   return touched;
+}
+
+/**
+ * Per-month VND contribution for the standard paid plans. Six-month
+ * and annual amortise to a monthly figure so MRR is comparable across
+ * tiers. Founding/Design-Partner pricing does NOT live here — those
+ * are read per-row from founding_locked_price_vnd in `monthlyMrrVnd`.
+ */
+export const STANDARD_PLAN_MONTHLY_VND: Record<string, number> = {
+  monthly: 1_200_000,
+  six_months: 900_000,
+  annual: 825_000,
+};
+
+/** Canonical fallback for a Founding Center whose locked price column
+ *  is null (e.g. row predates the slot migration). Keeps MRR
+ *  computations sane while we wait for someone to set the real number. */
+const FOUNDING_FALLBACK_MONTHLY_VND = 600_000;
+
+/**
+ * Monthly VND contribution of a single center, used by both the org-
+ * wide MRR widget on /super-admin and the per-center MRR card on
+ * /super-admin/centers/[id]. Branching rule:
+ *
+ *   plan_tier='founding'        → founding_locked_price_vnd
+ *                                  (or 600,000 if column null/missing)
+ *   subscription_plan ∈ standard → amortised standard price
+ *   otherwise                    → 0
+ *
+ * Returns 0 (not null) for centers that don't contribute — caller
+ * sums these directly. Inactive centers should be filtered out before
+ * calling; this helper does not gate on subscription_status.
+ */
+export function monthlyMrrVnd(c: {
+  subscription_plan: string | null;
+  plan_tier?: string | null;
+  founding_locked_price_vnd?: number | null;
+}): number {
+  if (c.plan_tier === "founding") {
+    return c.founding_locked_price_vnd ?? FOUNDING_FALLBACK_MONTHLY_VND;
+  }
+  if (c.subscription_plan && STANDARD_PLAN_MONTHLY_VND[c.subscription_plan]) {
+    return STANDARD_PLAN_MONTHLY_VND[c.subscription_plan];
+  }
+  return 0;
 }
 
 /** Tailwind classes for the status badge, keyed off DerivedStatus. */

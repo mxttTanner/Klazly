@@ -22,6 +22,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import {
   deriveStatus,
+  monthlyMrrVnd,
   planLabelKey,
   statusLabelKey,
   statusTone,
@@ -36,12 +37,6 @@ import { TierBadge } from "../../tier-badge";
 import { CenterActionsBar } from "./center-actions-bar";
 
 export const dynamic = "force-dynamic";
-
-const PLAN_MONTHLY_VND: Record<string, number> = {
-  monthly: 1_200_000,
-  six_months: 900_000,
-  annual: 825_000,
-};
 
 /**
  * Super-admin per-center detail view. Everything an operator needs to
@@ -275,11 +270,12 @@ export default async function CenterDetailPage({
       timeZone: VN_TZ,
     });
 
+  // monthlyMrrVnd branches on plan_tier — Founding Centers contribute
+  // their founding_locked_price_vnd (₫600K default) instead of the
+  // standard plan ladder. Returns 0 for any non-paying row.
   const planMrr =
-    center.subscription_status === "active" && center.subscription_plan
-      ? PLAN_MONTHLY_VND[center.subscription_plan] ?? null
-      : null;
-  const mrrFormatted = planMrr
+    center.subscription_status === "active" ? monthlyMrrVnd(center) : 0;
+  const mrrFormatted = planMrr > 0
     ? new Intl.NumberFormat(dateLocale, {
         style: "currency",
         currency: "VND",

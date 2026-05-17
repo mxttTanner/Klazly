@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   deriveStatus,
   expireOverdueTrials,
+  monthlyMrrVnd,
   planLabelKey,
   statusLabelKey,
   statusTone,
@@ -30,14 +31,6 @@ import { SuperAdminTabs } from "./super-admin-tabs";
 import { TierBadge } from "./tier-badge";
 import { FoundingCenterWidget } from "./founding-widget";
 import { SourceAnalytics } from "./source-analytics";
-
-// Per-month VND contribution of each paid plan. Six-month and annual are
-// amortised so MRR is comparable across tiers.
-const PLAN_MONTHLY_VND: Record<string, number> = {
-  monthly: 1_200_000,
-  six_months: 900_000,
-  annual: 825_000,
-};
 
 export const dynamic = "force-dynamic";
 
@@ -86,10 +79,14 @@ export default async function SuperAdminHomePage({
     subscription_ends_at: string | null;
     last_payment_at: string | null;
     next_billing_at: string | null;
+    // Founding-slot tracking — null when the migration hasn't run or
+    // when the center is on the standard tier. monthlyMrrVnd reads
+    // this for plan_tier='founding' rows.
+    founding_locked_price_vnd: number | null;
     created_at: string;
   };
   const withTierSelect =
-    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, plan_tier, signup_source, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
+    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, plan_tier, signup_source, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, founding_locked_price_vnd, created_at";
   const fullSelect =
     "id, name, contact_email, contact_phone, subscription_status, subscription_plan, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
   const preLifecycleSelect =
@@ -116,8 +113,8 @@ export default async function SuperAdminHomePage({
         .select(fullSelect)
         .order("created_at", { ascending: false });
   if (!centers && !res1.error) {
-    centers = ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source">[]).map(
-      (c) => ({ ...c, plan_tier: null, signup_source: null }),
+    centers = ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source" | "founding_locked_price_vnd">[]).map(
+      (c) => ({ ...c, plan_tier: null, signup_source: null, founding_locked_price_vnd: null }),
     );
   } else if (!centers && res1.error && /subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
     const r = await supabase
@@ -134,6 +131,7 @@ export default async function SuperAdminHomePage({
           | "next_billing_at"
           | "plan_tier"
           | "signup_source"
+          | "founding_locked_price_vnd"
         >),
         subscription_started_at: null,
         subscription_ends_at: null,
@@ -141,6 +139,7 @@ export default async function SuperAdminHomePage({
         next_billing_at: null,
         plan_tier: null,
         signup_source: null,
+        founding_locked_price_vnd: null,
       }));
     }
   } else if (!centers && res1.error && /notes/i.test(res1.error.message)) {
@@ -159,6 +158,7 @@ export default async function SuperAdminHomePage({
           | "next_billing_at"
           | "plan_tier"
           | "signup_source"
+          | "founding_locked_price_vnd"
         >),
         notes: null,
         subscription_started_at: null,
@@ -167,6 +167,7 @@ export default async function SuperAdminHomePage({
         next_billing_at: null,
         plan_tier: null,
         signup_source: null,
+        founding_locked_price_vnd: null,
       }));
     }
   } else if (!centers && res1.error && /subscription_plan/i.test(res1.error.message)) {
@@ -192,6 +193,7 @@ export default async function SuperAdminHomePage({
       next_billing_at: null,
       plan_tier: null,
       signup_source: null,
+      founding_locked_price_vnd: null,
     }));
   }
 
@@ -341,9 +343,10 @@ export default async function SuperAdminHomePage({
   for (const c of withDerived) {
     if (c.derived === "active") {
       activeCount += 1;
-      if (c.subscription_plan && PLAN_MONTHLY_VND[c.subscription_plan]) {
-        mrrVnd += PLAN_MONTHLY_VND[c.subscription_plan];
-      }
+      // monthlyMrrVnd honours plan_tier='founding' → founding_locked_price_vnd
+      // (₫600K default) instead of the standard plan ladder, so a
+      // Founding row contributes its locked price, not 1.2M.
+      mrrVnd += monthlyMrrVnd(c);
     }
     if (c.derived === "trial" || c.derived === "trial_ending_soon") {
       trialCount += 1;
