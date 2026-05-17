@@ -6,26 +6,34 @@ import { Gem, Sparkles } from "lucide-react";
  * only render from super-admin pages).
  *
  * Visual contract:
- *   founding        amber/gold,    "FC"  — pilot cohort
- *   design_partner  violet/purple, "DP"  — free-forever internal use
+ *   founding        amber/gold,    "FC" (+ "#N" when slotNumber set)
+ *   design_partner  violet/purple, "DP"
  *   standard        nothing — most centers; we don't need to label them
  *
- * `size="full"` uses the long label ("Founding Center" / "Design
+ * `size="full"` uses the long label ("Founding Center #1" / "Design
  * Partner") for prominent surfaces like the detail page header.
  * `size="compact"` uses the two-letter shorthand for table rows and
- * action-panel chips.
+ * action-panel chips, with the slot tucked in as " #N".
+ *
+ * slotNumber appends the founding slot number when provided (1..N).
+ * Null/undefined means "show the badge without a slot" — useful for
+ * historical rows where the slot wasn't recorded.
  */
 export function TierBadge({
   tier,
   size = "compact",
+  slotNumber,
 }: {
   tier: string | null | undefined;
   size?: "compact" | "full";
+  slotNumber?: number | null;
 }) {
   if (tier !== "founding" && tier !== "design_partner") return null;
 
   const compact = size === "compact";
   if (tier === "founding") {
+    const slotSuffix =
+      typeof slotNumber === "number" && slotNumber > 0 ? ` #${slotNumber}` : "";
     return (
       <span
         className={
@@ -37,7 +45,7 @@ export function TierBadge({
         title="Founding Center — pilot cohort with locked discounted rate"
       >
         <Sparkles className={compact ? "size-2.5" : "size-3"} />
-        {compact ? "FC" : "Founding Center"}
+        {compact ? `FC${slotSuffix}` : `Founding Center${slotSuffix}`}
       </span>
     );
   }

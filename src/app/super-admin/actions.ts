@@ -182,6 +182,20 @@ const createCenterSchema = z.object({
   plan_type: z.enum(PLAN_TYPE_VALUES).default("trial_founding"),
   signup_source: z.enum(SIGNUP_SOURCE_VALUES).default("zalo_cold"),
   referral_note: z.string().max(280).optional().nullable(),
+  // Founding slot — only meaningful when plan_type maps to a founding
+  // tier. Coerce empty string / non-numeric to null. Range checked by
+  // the DB partial unique index + the server-side uniqueness retry.
+  founding_center_number: z
+    .preprocess(
+      (v) => {
+        if (v === "" || v === null || v === undefined) return null;
+        const n = Number(v);
+        return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
+      },
+      z.number().int().positive().nullable(),
+    )
+    .optional()
+    .nullable(),
 });
 
 export async function createCenter(_prev: unknown, formData: FormData) {
@@ -206,6 +220,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       : "zalo_cold",
     referral_note:
       String(formData.get("referral_note") ?? "").trim() || null,
+    founding_center_number: formData.get("founding_center_number"),
   });
   if (!parsed.success) return { error: t("validation") };
 
@@ -279,6 +294,14 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     subscription_status: decomposed.status,
     trial_ends_at: trialEndsAt,
   };
+  // Only attach a slot number when the plan is actually founding —
+  // standard / design-partner rows leave the column null. Saves us
+  // worrying about phantom slot reservations on non-founding tiers.
+  const foundingSlot =
+    decomposed.tier === "founding"
+      ? parsed.data.founding_center_number ?? null
+      : null;
+
   const fullInsert = {
     ...baseInsert,
     subscription_plan: decomposed.plan,
@@ -288,6 +311,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     subscription_started_at: subscriptionStartedAt,
     subscription_ends_at: subscriptionEndsAt,
     next_billing_at: nextBillingAt,
+    founding_center_number: foundingSlot,
   };
   let { data: center, error: centerErr } = await supabase
     .from("centers")
@@ -321,6 +345,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       "last_payment_at",
       "next_billing_at",
       "subscription_plan",
+      "founding_center_number",
     ];
     let attempts = 0;
     while (centerErr && attempts < optional.length) {
@@ -340,8 +365,23 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     }
   }
   if (centerErr || !center) {
+    // Special-case the slot-uniqueness collision: two operators could
+    // race on the same number; the partial unique index returns this
+    // signature. Surface a friendly error so the operator can pick a
+    // different slot rather than seeing a raw Postgres message.
+    const msg = centerErr?.message ?? "";
+    if (
+      /centers_founding_slot_uniq/i.test(msg) ||
+      /duplicate key value violates unique constraint.*founding/i.test(msg)
+    ) {
+      return {
+        error: t("foundingSlotTakenError", {
+          n: foundingSlot ?? 0,
+        }),
+      };
+    }
     return {
-      error: t("createCenterError", { message: centerErr?.message ?? "" }),
+      error: t("createCenterError", { message: msg }),
     };
   }
 
@@ -429,7 +469,7 @@ export async function updateSubscriptionStatus(formData: FormData) {
   const status = String(formData.get("status") ?? "");
   if (
     !id ||
-    !["trial", "active", "past_due", "canceled", "expired"].includes(status)
+    !["trial", "active", "past_due", "canceled", "expired", "paused"].includes(status)
   )
     return { error: "invalid input" };
 
@@ -836,4 +876,234 @@ export async function updateFoundingCenterCap(formData: FormData) {
 
   revalidatePath("/super-admin");
   return { success: true };
+}
+
+/**
+ * Pause a center. Reversible: subscription_status='paused' freezes
+ * access until reactivated, and the paid clock stops where it is
+ * (subscription_ends_at is NOT advanced or shortened). Audit log
+ * captures the previous status so Reactivate can put them back
+ * where they were.
+ *
+ * If the 'paused' enum value isn't yet present in the DB (i.e. the
+ * pause-and-cancel.sql migration hasn't run) we surface a friendly
+ * error rather than failing opaquely.
+ */
+export async function pauseCenter(formData: FormData) {
+  const owner = await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "missing id" };
+
+  const supabase = createAdminClient();
+
+  const { data: existing, error: readErr } = await supabase
+    .from("centers")
+    .select("subscription_status, subscription_plan, plan_tier")
+    .eq("id", id)
+    .single();
+  if (readErr || !existing) {
+    return { error: readErr?.message ?? "center not found" };
+  }
+  const fromStatus = String(existing.subscription_status ?? "");
+
+  // Bail early if already paused — re-pausing would still succeed
+  // but writes a noisy audit entry.
+  if (fromStatus === "paused") return { success: true };
+
+  const { error } = await supabase
+    .from("centers")
+    .update({ subscription_status: "paused" })
+    .eq("id", id);
+  if (error) {
+    if (
+      /invalid input value for enum subscription_status.*paused/i.test(
+        error.message,
+      )
+    ) {
+      return {
+        error:
+          "db/pause-and-cancel.sql migration not applied — run it in Supabase SQL Editor",
+      };
+    }
+    return { error: error.message };
+  }
+
+  await writeAuditLog(supabase, {
+    actorEmail: owner.email,
+    centerId: id,
+    action: "subscription_paused",
+    entityType: "center",
+    entityId: id,
+    metadata: {
+      from: fromStatus,
+      to: "paused",
+      prior_subscription_plan: existing.subscription_plan ?? null,
+      prior_plan_tier: existing.plan_tier ?? null,
+    },
+  });
+
+  revalidatePath("/super-admin");
+  revalidatePath(`/super-admin/centers/${id}`);
+  return { success: true };
+}
+
+/**
+ * Permanently cancel a center. Sets subscription_status='canceled'
+ * (existing enum value, American spelling) and stamps cancelled_at.
+ * Tolerant of cancelled_at column missing — flips status only and
+ * marks the audit row as degraded so a backfill can be run later.
+ *
+ * Type-name confirmation: the form must include `confirm_name`
+ * exactly matching the center's `name`. The dialog validates
+ * client-side; the server enforces too so a crafted POST can't
+ * bypass it.
+ */
+export async function cancelCenter(formData: FormData) {
+  const owner = await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  const confirmName = String(formData.get("confirm_name") ?? "").trim();
+  if (!id) return { error: "missing id" };
+  if (!confirmName) return { error: "missing confirm_name" };
+
+  const supabase = createAdminClient();
+  const { data: existing, error: readErr } = await supabase
+    .from("centers")
+    .select("name, subscription_status, subscription_plan, plan_tier")
+    .eq("id", id)
+    .single();
+  if (readErr || !existing) {
+    return { error: readErr?.message ?? "center not found" };
+  }
+  if (confirmName !== String(existing.name)) {
+    return { error: "confirm_name does not match center name" };
+  }
+
+  const fromStatus = String(existing.subscription_status ?? "");
+  if (fromStatus === "canceled") return { success: true };
+
+  const nowIso = new Date().toISOString();
+  const full = await supabase
+    .from("centers")
+    .update({
+      subscription_status: "canceled",
+      cancelled_at: nowIso,
+    })
+    .eq("id", id);
+  let degraded = false;
+  if (full.error) {
+    if (/cancelled_at/i.test(full.error.message)) {
+      const retry = await supabase
+        .from("centers")
+        .update({ subscription_status: "canceled" })
+        .eq("id", id);
+      if (retry.error) return { error: retry.error.message };
+      degraded = true;
+    } else {
+      return { error: full.error.message };
+    }
+  }
+
+  await writeAuditLog(supabase, {
+    actorEmail: owner.email,
+    centerId: id,
+    action: "subscription_canceled",
+    entityType: "center",
+    entityId: id,
+    metadata: {
+      from: fromStatus,
+      to: "canceled",
+      cancelled_at: degraded ? null : nowIso,
+      prior_subscription_plan: existing.subscription_plan ?? null,
+      prior_plan_tier: existing.plan_tier ?? null,
+      degraded,
+    },
+  });
+
+  revalidatePath("/super-admin");
+  revalidatePath(`/super-admin/centers/${id}`);
+  return { success: true };
+}
+
+/**
+ * Tier-aware reactivate. Replaces the old "always extend +7 days"
+ * behaviour. Mode is chosen by the dialog based on plan_tier +
+ * prior status:
+ *
+ *   mode='founding_active'  → flips to active at founding locked
+ *                              price. Reuses convertCenterToPaid
+ *                              under the hood (plan='founding').
+ *   mode='standard_active'  → flips to active on a specific paid
+ *                              plan (monthly | six_months | annual).
+ *                              Reuses convertCenterToPaid.
+ *   mode='resume_trial'     → just flips status back to 'trial',
+ *                              leaving trial_ends_at untouched. Use
+ *                              when paused/canceled rows still have
+ *                              an unexpired trial date and the
+ *                              operator wants them in their original
+ *                              trial state.
+ *
+ * The reactivate action itself is a thin dispatch — the real work
+ * happens in convertCenterToPaid for the two active modes, which
+ * already handles audit logging + lifecycle stamping. The trial
+ * mode writes its own audit entry.
+ */
+export async function reactivateCenter(formData: FormData) {
+  const owner = await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  const mode = String(formData.get("mode") ?? "");
+  if (!id) return { error: "missing id" };
+
+  if (mode === "founding_active") {
+    const fd = new FormData();
+    fd.append("id", id);
+    fd.append("plan", "founding");
+    return convertCenterToPaid(fd);
+  }
+
+  if (mode === "standard_active") {
+    const plan = String(formData.get("plan") ?? "");
+    if (!(PLAN_VALUES as readonly string[]).includes(plan)) {
+      return { error: "invalid plan for standard reactivation" };
+    }
+    const fd = new FormData();
+    fd.append("id", id);
+    fd.append("plan", plan);
+    return convertCenterToPaid(fd);
+  }
+
+  if (mode === "resume_trial") {
+    const supabase = createAdminClient();
+    const { data: existing, error: readErr } = await supabase
+      .from("centers")
+      .select("subscription_status, trial_ends_at")
+      .eq("id", id)
+      .single();
+    if (readErr || !existing) {
+      return { error: readErr?.message ?? "center not found" };
+    }
+    const fromStatus = String(existing.subscription_status ?? "");
+    const { error } = await supabase
+      .from("centers")
+      .update({ subscription_status: "trial" })
+      .eq("id", id);
+    if (error) return { error: error.message };
+    await writeAuditLog(supabase, {
+      actorEmail: owner.email,
+      centerId: id,
+      action: "subscription_reactivated",
+      entityType: "center",
+      entityId: id,
+      metadata: {
+        from: fromStatus,
+        to: "trial",
+        mode: "resume_trial",
+        trial_ends_at: existing.trial_ends_at ?? null,
+      },
+    });
+    revalidatePath("/super-admin");
+    revalidatePath(`/super-admin/centers/${id}`);
+    return { success: true };
+  }
+
+  return { error: "invalid mode" };
 }

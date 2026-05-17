@@ -39,6 +39,7 @@ const STATUS_FILTERS = [
   "trial",
   "active",
   "past_due",
+  "paused",
   "canceled",
   "expired",
 ] as const;
@@ -81,12 +82,14 @@ export default async function SuperAdminHomePage({
     next_billing_at: string | null;
     // Founding-slot tracking — null when the migration hasn't run or
     // when the center is on the standard tier. monthlyMrrVnd reads
-    // this for plan_tier='founding' rows.
+    // founding_locked_price_vnd for plan_tier='founding' rows;
+    // founding_center_number powers the "FC #N" badge in the card.
     founding_locked_price_vnd: number | null;
+    founding_center_number: number | null;
     created_at: string;
   };
   const withTierSelect =
-    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, plan_tier, signup_source, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, founding_locked_price_vnd, created_at";
+    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, plan_tier, signup_source, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, founding_locked_price_vnd, founding_center_number, created_at";
   const fullSelect =
     "id, name, contact_email, contact_phone, subscription_status, subscription_plan, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
   const preLifecycleSelect =
@@ -113,8 +116,8 @@ export default async function SuperAdminHomePage({
         .select(fullSelect)
         .order("created_at", { ascending: false });
   if (!centers && !res1.error) {
-    centers = ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source" | "founding_locked_price_vnd">[]).map(
-      (c) => ({ ...c, plan_tier: null, signup_source: null, founding_locked_price_vnd: null }),
+    centers = ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source" | "founding_locked_price_vnd" | "founding_center_number">[]).map(
+      (c) => ({ ...c, plan_tier: null, signup_source: null, founding_locked_price_vnd: null, founding_center_number: null }),
     );
   } else if (!centers && res1.error && /subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
     const r = await supabase
@@ -132,6 +135,7 @@ export default async function SuperAdminHomePage({
           | "plan_tier"
           | "signup_source"
           | "founding_locked_price_vnd"
+          | "founding_center_number"
         >),
         subscription_started_at: null,
         subscription_ends_at: null,
@@ -140,6 +144,7 @@ export default async function SuperAdminHomePage({
         plan_tier: null,
         signup_source: null,
         founding_locked_price_vnd: null,
+        founding_center_number: null,
       }));
     }
   } else if (!centers && res1.error && /notes/i.test(res1.error.message)) {
@@ -159,6 +164,7 @@ export default async function SuperAdminHomePage({
           | "plan_tier"
           | "signup_source"
           | "founding_locked_price_vnd"
+          | "founding_center_number"
         >),
         notes: null,
         subscription_started_at: null,
@@ -168,6 +174,7 @@ export default async function SuperAdminHomePage({
         plan_tier: null,
         signup_source: null,
         founding_locked_price_vnd: null,
+        founding_center_number: null,
       }));
     }
   } else if (!centers && res1.error && /subscription_plan/i.test(res1.error.message)) {
@@ -194,6 +201,7 @@ export default async function SuperAdminHomePage({
       plan_tier: null,
       signup_source: null,
       founding_locked_price_vnd: null,
+      founding_center_number: null,
     }));
   }
 
@@ -240,6 +248,7 @@ export default async function SuperAdminHomePage({
     name: string;
     contactPhone: string | null;
     planTier: string | null;
+    foundingCenterNumber: number | null;
     days: number; // positive = days left; for expired bucket = days since expiry
     zaloUrl: string | null;
   };
@@ -256,6 +265,7 @@ export default async function SuperAdminHomePage({
           name: c.name,
           contactPhone: c.contact_phone,
           planTier: c.plan_tier,
+          foundingCenterNumber: c.founding_center_number,
           days,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -265,6 +275,7 @@ export default async function SuperAdminHomePage({
           name: c.name,
           contactPhone: c.contact_phone,
           planTier: c.plan_tier,
+          foundingCenterNumber: c.founding_center_number,
           days,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -277,6 +288,7 @@ export default async function SuperAdminHomePage({
           name: c.name,
           contactPhone: c.contact_phone,
           planTier: c.plan_tier,
+          foundingCenterNumber: c.founding_center_number,
           days: since,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -318,6 +330,26 @@ export default async function SuperAdminHomePage({
         c.derived === "trial_ending_soon" ||
         c.derived === "active"),
   ).length;
+
+  // Which slot numbers are already taken. Used by the new-center form
+  // to auto-fill the next available slot (and block submission when
+  // the cap is full unless the operator ticks an override).
+  const foundingSlotsTaken: number[] = withDerived
+    .filter(
+      (c) =>
+        c.plan_tier === "founding" &&
+        typeof c.founding_center_number === "number" &&
+        c.founding_center_number !== null,
+    )
+    .map((c) => c.founding_center_number as number)
+    .sort((a, b) => a - b);
+  let foundingNextSlot: number | null = null;
+  for (let n = 1; n <= foundingCap; n++) {
+    if (!foundingSlotsTaken.includes(n)) {
+      foundingNextSlot = n;
+      break;
+    }
+  }
 
   // Source breakdown counts — null-safe; old centers without
   // signup_source just don't contribute.
@@ -399,6 +431,7 @@ export default async function SuperAdminHomePage({
     trial: 0,
     active: 0,
     past_due: 0,
+    paused: 0,
     canceled: 0,
     expired: 0,
   };
@@ -448,8 +481,27 @@ export default async function SuperAdminHomePage({
       });
     }
 
+    // Price chip — only render for active centers, and honour
+    // founding_locked_price_vnd via monthlyMrrVnd. Format as
+    // "₫600,000 / mo" so the operator can compare across centers
+    // at a glance without doing currency math.
+    let mrrText: string | null = null;
+    if (status === "active") {
+      const mrr = monthlyMrrVnd(c);
+      if (mrr > 0) {
+        const formatted = new Intl.NumberFormat(dateLocale, {
+          style: "currency",
+          currency: "VND",
+          maximumFractionDigits: 0,
+        }).format(mrr);
+        mrrText = t("mrrChipShort", { amount: formatted });
+      }
+    }
+
     return {
       ...c,
+      foundingCenterNumber: c.founding_center_number,
+      mrrText,
       statusBadge: {
         labelKey: statusLabelKey(status),
         tone: statusTone(status),
@@ -480,6 +532,7 @@ export default async function SuperAdminHomePage({
               { key: "trial" as const, label: t("statusTrial") },
               { key: "active" as const, label: t("statusActive") },
               { key: "past_due" as const, label: t("statusPastDue") },
+              { key: "paused" as const, label: t("statusPaused") },
               { key: "canceled" as const, label: t("statusCanceled") },
               { key: "expired" as const, label: t("statusExpired") },
             ]
@@ -535,7 +588,11 @@ export default async function SuperAdminHomePage({
   const newCenterPanel = (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">{t("createSubtitle")}</p>
-      <CenterForm />
+      <CenterForm
+        foundingCap={foundingCap}
+        foundingSlotsTaken={foundingSlotsTaken}
+        foundingNextSlot={foundingNextSlot}
+      />
     </div>
   );
 
@@ -730,6 +787,7 @@ function ActionGroup({
     name: string;
     contactPhone: string | null;
     planTier: string | null;
+    foundingCenterNumber: number | null;
     days: number;
     zaloUrl: string | null;
   }[];
@@ -803,7 +861,10 @@ function ActionGroup({
                 >
                   {c.name}
                 </Link>
-                <TierBadge tier={c.planTier} />
+                <TierBadge
+                  tier={c.planTier}
+                  slotNumber={c.foundingCenterNumber}
+                />
               </div>
               <p className={"mt-0.5 text-xs tabular-nums " + toneClasses.days}>
                 {kind === "left"

@@ -35,6 +35,13 @@ export type CenterCardData = {
   };
   /** Translated plan label ("Yearly" / "1 năm"), or null when on trial. */
   planText: string | null;
+  /** Founding slot (1..N) for plan_tier='founding'. Rendered as "FC #1"
+   *  in the TierBadge. Null for standard tiers or pre-slot rows. */
+  foundingCenterNumber: number | null;
+  /** Pre-formatted monthly contribution chip ("₫600,000 / month").
+   *  Null when the center isn't active or contributes nothing. Shows
+   *  next to the plan chip so the operator can scan price at a glance. */
+  mrrText: string | null;
   /** Deprecated — kept for backward compat. The new statusBadge already
    *  carries trial-days-left in its subText. */
   trialBadge: { text: string; tone: string } | null;
@@ -73,10 +80,17 @@ export function CenterCard({ center }: { center: CenterCardData }) {
               </h3>
               <ArrowUpRight className="text-muted-foreground group-hover/title:text-primary size-4 opacity-0 transition group-hover/title:opacity-100" />
             </Link>
-            <TierBadge tier={center.plan_tier} />
+            <TierBadge
+              tier={center.plan_tier}
+              slotNumber={center.foundingCenterNumber}
+            />
           </div>
-          {/* Status + plan combined badge — the primary at-a-glance
-              signal. "Active · Yearly" / "Trial · 4 days left" / etc. */}
+          {/* Status + plan + price combined badge — the primary
+              at-a-glance signal. "Active · Yearly · ₫1,200,000 / mo"
+              for a standard active center, or "Trial · 4 days left"
+              for a trialing one. Price chip only renders when active
+              (and uses monthlyMrrVnd, so Founding rows show their
+              locked price instead of the standard plan price). */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${center.statusBadge.tone}`}
@@ -89,6 +103,11 @@ export function CenterCard({ center }: { center: CenterCardData }) {
             {center.planText ? (
               <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium">
                 {center.planText}
+              </span>
+            ) : null}
+            {center.mrrText ? (
+              <span className="bg-emerald-50 text-emerald-800 ring-emerald-200 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 tabular-nums">
+                {center.mrrText}
               </span>
             ) : null}
             {center.statusBadge.subText ? (

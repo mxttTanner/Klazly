@@ -23,7 +23,8 @@ export type RawStatus =
   | "active"
   | "past_due"
   | "canceled"
-  | "expired";
+  | "expired"
+  | "paused";
 
 export type DerivedStatus = RawStatus | "trial_ending_soon";
 
@@ -83,7 +84,8 @@ export function deriveStatus(c: CenterSubscriptionInput): DerivedStatus {
     raw === "active" ||
     raw === "past_due" ||
     raw === "canceled" ||
-    raw === "expired"
+    raw === "expired" ||
+    raw === "paused"
   ) {
     return raw;
   }
@@ -353,6 +355,11 @@ export function statusTone(s: DerivedStatus): string {
       return "bg-slate-200 text-slate-700 ring-slate-400";
     case "expired":
       return "bg-slate-100 text-rose-700 ring-rose-300";
+    // Paused = "pressed pause, will return". Visually distinct from
+    // canceled (permanent archive) and expired (trial ran out). Indigo
+    // reads as "intentional, reversible" against the existing palette.
+    case "paused":
+      return "bg-indigo-50 text-indigo-800 ring-indigo-200";
   }
 }
 
@@ -418,6 +425,8 @@ export function statusLabelKey(s: DerivedStatus): string {
       return "statusCanceled";
     case "expired":
       return "statusExpired";
+    case "paused":
+      return "statusPaused";
   }
 }
 

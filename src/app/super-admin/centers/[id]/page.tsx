@@ -313,7 +313,11 @@ export default async function CenterDetailPage({
             <h1 className="text-3xl font-semibold tracking-tight">
               {center.name}
             </h1>
-            <TierBadge tier={center.plan_tier} size="full" />
+            <TierBadge
+              tier={center.plan_tier}
+              size="full"
+              slotNumber={center.founding_center_number}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -650,6 +654,13 @@ function renderAuditAction(
     const from = String(metadata?.from ?? "");
     const to = String(metadata?.to ?? "");
     const auto = metadata?.auto === true;
+    const reason = String(metadata?.reason ?? "");
+    // Special-case the founding-trial auto-conversion so the activity
+    // feed reads "Founding trial converted to active" instead of the
+    // generic "Auto-changed from trial to active".
+    if (auto && reason === "founding_trial_converted") {
+      return t("auditFoundingTrialConverted");
+    }
     return auto
       ? t("auditStatusChangedAuto", { from, to })
       : t("auditStatusChanged", { from, to });
@@ -658,9 +669,32 @@ function renderAuditAction(
     return t("auditTrialExtended", { days: Number(metadata?.days ?? 0) });
   }
   if (action === "subscription_converted") {
-    return t("auditSubscriptionConverted", {
-      plan: String(metadata?.plan ?? ""),
-    });
+    const plan = String(metadata?.plan ?? "");
+    if (plan === "founding") {
+      const price = Number(metadata?.locked_price_vnd ?? 0);
+      const slot = metadata?.founding_center_number;
+      // If we know the slot + price, use the rich label; otherwise
+      // fall back to a generic founding line. Slot=0 means unknown.
+      if (price > 0 && typeof slot === "number" && slot > 0) {
+        return t("auditConvertedFoundingFull", {
+          price: new Intl.NumberFormat("vi-VN").format(price),
+          n: slot,
+        });
+      }
+      return t("auditConvertedFounding");
+    }
+    return t("auditSubscriptionConverted", { plan });
+  }
+  if (action === "subscription_paused") {
+    return t("auditPaused");
+  }
+  if (action === "subscription_canceled") {
+    return t("auditCanceled");
+  }
+  if (action === "subscription_reactivated") {
+    const mode = String(metadata?.mode ?? "");
+    if (mode === "resume_trial") return t("auditReactivatedResumeTrial");
+    return t("auditReactivated");
   }
   return action;
 }

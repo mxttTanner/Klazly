@@ -37,6 +37,7 @@ export function StatusSelect({
         <option value="trial">{t("statusTrial")}</option>
         <option value="active">{t("statusActive")}</option>
         <option value="past_due">{t("statusPastDue")}</option>
+        <option value="paused">{t("statusPaused")}</option>
         <option value="canceled">{t("statusCanceled")}</option>
         <option value="expired">{t("statusExpired")}</option>
       </select>
