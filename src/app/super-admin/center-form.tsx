@@ -350,11 +350,26 @@ export function CenterForm({
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* Phone first — primary identifier for the admin we're
+                creating. Email is optional and only validated when
+                non-empty. See parent-form.tsx for the why. */}
+            <div className="space-y-2">
+              <Label htmlFor="admin_phone">{tco("phoneLabel")}</Label>
+              <Input
+                id="admin_phone"
+                name="admin_phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                required
+                placeholder="0901 234 567"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="admin_email">
                 {t("adminEmail")}{" "}
                 <span className="text-muted-foreground text-xs font-normal">
-                  {tco("orPhoneHint")}
+                  {tco("optionalHint")}
                 </span>
               </Label>
               <Input
@@ -365,19 +380,8 @@ export function CenterForm({
                 placeholder="ban@example.com"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="admin_phone">{tco("phoneLabel")}</Label>
-              <Input
-                id="admin_phone"
-                name="admin_phone"
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                placeholder="0901 234 567"
-              />
-            </div>
           </div>
-          <p className="text-muted-foreground text-xs">{tco("oneRequired")}</p>
+          <p className="text-muted-foreground text-xs">{tco("phoneRequired")}</p>
         </div>
 
         <div className="flex items-center gap-3">

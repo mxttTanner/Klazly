@@ -34,7 +34,11 @@ export async function inviteTeacher(_prev: unknown, formData: FormData) {
   const rawEmail = (parsed.data.email ?? "").trim().toLowerCase();
   const rawPhone = (parsed.data.phone ?? "").trim();
 
-  if (!rawEmail && !rawPhone) return { error: tco("required") };
+  // Phone is required — primary login identifier. Email is optional.
+  if (!rawPhone) return { error: tco("phoneRequiredError") };
+
+  const phone = normalizeVnPhone(rawPhone);
+  if (!phone) return { error: tco("invalidPhone") };
 
   let email: string | null = null;
   if (rawEmail) {
@@ -42,12 +46,6 @@ export async function inviteTeacher(_prev: unknown, formData: FormData) {
       return { error: tco("invalidEmail") };
     }
     email = rawEmail;
-  }
-
-  let phone: string | null = null;
-  if (rawPhone) {
-    phone = normalizeVnPhone(rawPhone);
-    if (!phone) return { error: tco("invalidPhone") };
   }
 
   const supabase = createAdminClient();
@@ -72,7 +70,8 @@ export async function inviteTeacher(_prev: unknown, formData: FormData) {
     if (dup.data) return { error: tco("phoneAlreadyUsed") };
   }
 
-  const authEmail = email ?? syntheticEmailForPhone(phone!);
+  // Phone is guaranteed non-null above (phone-required policy).
+  const authEmail = email ?? syntheticEmailForPhone(phone);
 
   const { data: created, error: authErr } = await supabase.auth.admin.createUser({
     email: authEmail,
@@ -81,7 +80,6 @@ export async function inviteTeacher(_prev: unknown, formData: FormData) {
   });
   if (authErr) {
     if (
-      phone &&
       !email &&
       /already.*registered|already.*used|duplicate/i.test(authErr.message)
     ) {

@@ -9,9 +9,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
 
-// Email and phone are both optional fields on the form; we enforce
-// "at least one of them" in code after parse. Reason: Zod's combined
-// validation gets clunky and the error messages need to be i18n'd.
+// Phone is now the primary identifier (Vietnam — Zalo is phone-keyed,
+// most parents don't have / don't share email). Email is truly optional
+// and only validated for shape when the field has a value. Zod's
+// combined validation can get clunky for i18n'd errors, so we keep both
+// fields optional at the schema layer and enforce phone-required +
+// email-format-if-present in code below.
 const inviteSchema = z.object({
   email: z.string().optional(),
   phone: z.string().optional(),
@@ -38,25 +41,22 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
   const rawEmail = (parsed.data.email ?? "").trim().toLowerCase();
   const rawPhone = (parsed.data.phone ?? "").trim();
 
-  // At least one contact method required.
-  if (!rawEmail && !rawPhone) {
-    return { error: tco("required") };
+  // Phone is required — it's the primary login identifier.
+  if (!rawPhone) {
+    return { error: tco("phoneRequiredError") };
   }
 
-  // Validate email shape only if provided.
+  // Normalize + validate phone.
+  const phone = normalizeVnPhone(rawPhone);
+  if (!phone) return { error: tco("invalidPhone") };
+
+  // Email: validate shape only if provided.
   let email: string | null = null;
   if (rawEmail) {
     if (!z.string().email().safeParse(rawEmail).success) {
       return { error: tco("invalidEmail") };
     }
     email = rawEmail;
-  }
-
-  // Normalize + validate phone only if provided.
-  let phone: string | null = null;
-  if (rawPhone) {
-    phone = normalizeVnPhone(rawPhone);
-    if (!phone) return { error: tco("invalidPhone") };
   }
 
   const supabase = createAdminClient();
@@ -87,7 +87,8 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
   // Determine Supabase Auth email: the real one if provided, else a
   // synthetic one tied to the phone so auth.admin.createUser succeeds
   // without an SMS provider. See db/users-phone.sql for the why.
-  const authEmail = email ?? syntheticEmailForPhone(phone!);
+  // Phone is guaranteed non-null above.
+  const authEmail = email ?? syntheticEmailForPhone(phone);
 
   const { data: created, error: authErr } = await supabase.auth.admin.createUser({
     email: authEmail,
@@ -100,7 +101,6 @@ export async function inviteParent(_prev: unknown, formData: FormData) {
     // account at another center). Surface a clearer error so the admin
     // understands the conflict isn't about THIS center's records.
     if (
-      phone &&
       !email &&
       /already.*registered|already.*used|duplicate/i.test(authErr.message)
     ) {

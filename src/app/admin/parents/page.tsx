@@ -79,10 +79,10 @@ export default async function ParentsPage({
         variant="parents"
         toggleLabel={tImport("inlineToggleParents")}
         helpText={tImport("parentsHelp")}
-        exampleCsv={`full_name,email,phone,password
-Phạm Văn Bình,binh@parent.test,0901234567,changeme123
-Nguyễn Thị Hoa,,0907654321,changeme123
-Lê Văn Long,long@parent.test,,`}
+        exampleCsv={`full_name,phone,email,password
+Phạm Văn Bình,0901234567,,changeme123
+Nguyễn Thị Hoa,0907654321,hoa@gmail.com,
+Lê Văn Long,+84987654321,,`}
         noteText={tImport("parentsPasswordNote")}
       />
 

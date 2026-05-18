@@ -93,21 +93,21 @@ export async function importParentsCsv(
     const rawEmail = parsed.data.email ?? null;
     const rawPhone = parsed.data.phone ?? null;
 
-    // At least one contact method required per row.
-    if (!rawEmail && !rawPhone) {
-      result.errors.push({ row: rowNum, message: t("rowMissingContact") });
+    // Phone is required per row (primary login identifier). Email
+    // is optional. Previous policy was "at least one of email/phone"
+    // which let email-only rows through; that ages badly in VN where
+    // the email column is mostly empty in practice.
+    if (!rawPhone) {
+      result.errors.push({ row: rowNum, message: t("rowMissingPhone") });
       continue;
     }
 
     // Normalize phone (canonical +84…) and reject malformed VN mobile
     // numbers with a clear per-row error rather than a generic auth fail.
-    let phone: string | null = null;
-    if (rawPhone) {
-      phone = normalizeVnPhone(rawPhone);
-      if (!phone) {
-        result.errors.push({ row: rowNum, message: t("rowInvalidPhone") });
-        continue;
-      }
+    const phone = normalizeVnPhone(rawPhone);
+    if (!phone) {
+      result.errors.push({ row: rowNum, message: t("rowInvalidPhone") });
+      continue;
     }
 
     // Check for in-file duplicates on either email or phone.
@@ -168,7 +168,8 @@ export async function importParentsCsv(
 
     // Auth email is the real one if provided; otherwise the deterministic
     // synthetic email tied to phone. See db/users-phone.sql.
-    const authEmail = rawEmail ?? syntheticEmailForPhone(phone!);
+    // Phone is guaranteed non-null above (phone-required policy).
+    const authEmail = rawEmail ?? syntheticEmailForPhone(phone);
 
     const { data: created, error: authErr } =
       await supabase.auth.admin.createUser({
@@ -203,9 +204,10 @@ export async function importParentsCsv(
 
     if (passwordWasGenerated) {
       (result.generated ??= []).push({
-        // Show whichever identifier exists — phone preferred for
-        // VN-first display, falls back to email.
-        email: phone ?? rawEmail!,
+        // Show the phone — the primary identifier under the new
+        // phone-first policy. Field name stays 'email' so the
+        // existing renderer doesn't churn; rename is a future cleanup.
+        email: phone,
         full_name: parsed.data.full_name,
         password,
       });

@@ -10,6 +10,16 @@ import { inviteParent } from "./actions";
 
 const initialState: { error?: string; success?: string } = {};
 
+/**
+ * Phone-first parent invite form. In Vietnam, parents reach us via
+ * Zalo (which is phone-keyed) so the phone number is the primary
+ * identifier. Email is optional and only validated when the field
+ * is non-empty.
+ *
+ * The previous design combined the two into one "Email (or phone)"
+ * field that used HTML5 type="email" validation — typing a phone
+ * number into it triggered the browser's "needs an @" message.
+ */
 export function ParentForm() {
   const t = useTranslations("admin.parents");
   const tt = useTranslations("admin.teachers");
@@ -31,21 +41,7 @@ export function ParentForm() {
         <Label htmlFor="parent_full_name">{tt("fullName")}</Label>
         <Input id="parent_full_name" name="full_name" required />
       </div>
-      <div className="space-y-2 lg:col-span-1">
-        <Label htmlFor="parent_email">
-          {tt("email")}{" "}
-          <span className="text-muted-foreground text-xs font-normal">
-            {tco("orPhoneHint")}
-          </span>
-        </Label>
-        <Input
-          id="parent_email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder="ban@example.com"
-        />
-      </div>
+      {/* Phone: required primary identifier. Comes BEFORE email. */}
       <div className="space-y-2 lg:col-span-1">
         <Label htmlFor="parent_phone">{tco("phoneLabel")}</Label>
         <Input
@@ -54,7 +50,26 @@ export function ParentForm() {
           type="tel"
           autoComplete="tel"
           inputMode="tel"
+          required
           placeholder="0901 234 567"
+        />
+      </div>
+      {/* Email: truly optional. type="email" still inlines @-validation
+          on submit, but only when the field is non-empty — so a blank
+          submission won't trip the browser's "needs an @" message. */}
+      <div className="space-y-2 lg:col-span-1">
+        <Label htmlFor="parent_email">
+          {tt("email")}{" "}
+          <span className="text-muted-foreground text-xs font-normal">
+            {tco("optionalHint")}
+          </span>
+        </Label>
+        <Input
+          id="parent_email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="ban@example.com"
         />
       </div>
       <div className="space-y-2 lg:col-span-1">
@@ -76,7 +91,7 @@ export function ParentForm() {
         />
       </div>
       <p className="text-muted-foreground sm:col-span-2 lg:col-span-5 -mt-1 text-xs">
-        {tco("oneRequired")}
+        {tco("phoneRequired")}
       </p>
       {state.error ? (
         <p

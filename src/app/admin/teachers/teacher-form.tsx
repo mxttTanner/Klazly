@@ -10,6 +10,10 @@ import { inviteTeacher } from "./actions";
 
 const initialState: { error?: string; success?: string } = {};
 
+/**
+ * Phone-first teacher invite form. Same shape as the parent form —
+ * see parent-form.tsx for the why.
+ */
 export function TeacherForm() {
   const t = useTranslations("admin.teachers");
   const tco = useTranslations("contact");
@@ -31,10 +35,22 @@ export function TeacherForm() {
         <Input id="teacher_full_name" name="full_name" required />
       </div>
       <div className="space-y-2 lg:col-span-1">
+        <Label htmlFor="teacher_phone">{tco("phoneLabel")}</Label>
+        <Input
+          id="teacher_phone"
+          name="phone"
+          type="tel"
+          autoComplete="tel"
+          inputMode="tel"
+          required
+          placeholder="0901 234 567"
+        />
+      </div>
+      <div className="space-y-2 lg:col-span-1">
         <Label htmlFor="teacher_email">
           {t("email")}{" "}
           <span className="text-muted-foreground text-xs font-normal">
-            {tco("orPhoneHint")}
+            {tco("optionalHint")}
           </span>
         </Label>
         <Input
@@ -43,17 +59,6 @@ export function TeacherForm() {
           type="email"
           autoComplete="email"
           placeholder="ban@example.com"
-        />
-      </div>
-      <div className="space-y-2 lg:col-span-1">
-        <Label htmlFor="teacher_phone">{tco("phoneLabel")}</Label>
-        <Input
-          id="teacher_phone"
-          name="phone"
-          type="tel"
-          autoComplete="tel"
-          inputMode="tel"
-          placeholder="0901 234 567"
         />
       </div>
       <div className="space-y-2 lg:col-span-1">
@@ -75,7 +80,7 @@ export function TeacherForm() {
         />
       </div>
       <p className="text-muted-foreground sm:col-span-2 lg:col-span-5 -mt-1 text-xs">
-        {tco("oneRequired")}
+        {tco("phoneRequired")}
       </p>
       {state.error ? (
         <p

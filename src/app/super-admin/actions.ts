@@ -241,7 +241,13 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   const rawEmail = (parsed.data.admin_email ?? "").trim().toLowerCase();
   const rawPhone = (parsed.data.admin_phone ?? "").trim();
 
-  if (!rawEmail && !rawPhone) return { error: tco("required") };
+  // Phone-first policy: the admin we're creating logs in by phone
+  // (Vietnam, Zalo-keyed). Email is optional and only shape-checked
+  // when present.
+  if (!rawPhone) return { error: tco("phoneRequiredError") };
+
+  const adminPhone = normalizeVnPhone(rawPhone);
+  if (!adminPhone) return { error: tco("invalidPhone") };
 
   let adminEmail: string | null = null;
   if (rawEmail) {
@@ -250,12 +256,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     }
     adminEmail = rawEmail;
   }
-  let adminPhone: string | null = null;
-  if (rawPhone) {
-    adminPhone = normalizeVnPhone(rawPhone);
-    if (!adminPhone) return { error: tco("invalidPhone") };
-  }
-  const authEmail = adminEmail ?? syntheticEmailForPhone(adminPhone!);
+  const authEmail = adminEmail ?? syntheticEmailForPhone(adminPhone);
 
   const supabase = createAdminClient();
 
