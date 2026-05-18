@@ -37,6 +37,10 @@ const initialState: { error?: string; success?: string } = {};
  * them three separate questions.
  */
 const PLAN_OPTIONS = [
+  // Default: vanilla 30-day standard trial — listed first so the
+  // dropdown opens on the safest non-committal option. The founding
+  // slot panel is hidden for this choice (isFounding=false below).
+  "trial_standard",
   "trial_founding",
   "active_monthly",
   "active_six_months",
@@ -79,7 +83,7 @@ export function CenterForm({
   // handleFormSubmit pass lets the default submit run (firing the
   // useFormState action) instead of re-opening the confirm modal.
   const skipInterceptRef = useRef(false);
-  const [planType, setPlanType] = useState<PlanOption>("trial_founding");
+  const [planType, setPlanType] = useState<PlanOption>("trial_standard");
   const [source, setSource] = useState<(typeof SOURCE_OPTIONS)[number]>(
     "zalo_cold",
   );
@@ -102,7 +106,7 @@ export function CenterForm({
   useEffect(() => {
     if (state.success) {
       formRef.current?.reset();
-      setPlanType("trial_founding");
+      setPlanType("trial_standard");
       setSource("zalo_cold");
       setSlot(foundingNextSlot !== null ? String(foundingNextSlot) : "");
       setOverrideCap(false);

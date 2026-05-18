@@ -1130,6 +1130,7 @@
     "planHint": "Để trống nếu trung tâm đang dùng thử. Cập nhật khi họ chuyển sang trả phí.",
     "planTypeLabel": "Loại gói",
     "planTypeHint": "Phân loại nội bộ — không hiển thị cho khách. Founding Center nhận giá ưu đãi khoá vĩnh viễn; Design Partner miễn phí trọn đời.",
+    "planType_trial_standard": "Dùng thử — Standard (30 ngày)",
     "planType_trial_founding": "Dùng thử — Founding Center (30 ngày)",
     "planType_active_monthly": "Trả phí — 1 tháng (1.200.000₫ / tháng)",
     "planType_active_six_months": "Trả phí — 6 tháng (5.400.000₫ / 6 tháng)",

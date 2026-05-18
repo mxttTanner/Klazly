@@ -1130,6 +1130,7 @@
     "planHint": "Leave blank while the center is on trial. Update when they convert to a paid tier.",
     "planTypeLabel": "Plan type",
     "planTypeHint": "Internal classification — never shown to the customer. Founding Centers get the locked discounted rate; Design Partners are free-forever.",
+    "planType_trial_standard": "Trial — Standard (30 days)",
     "planType_trial_founding": "Trial — Founding Center (30 days)",
     "planType_active_monthly": "Active — 1 month (1,200,000₫ / month)",
     "planType_active_six_months": "Active — 6 months (5,400,000₫ / 6mo)",
