@@ -80,7 +80,7 @@ moves to read-only.
 ## 7. Suspension and termination
 
 The Provider may suspend or terminate access if the Subscriber:
-- Fails to pay an invoice for more than 30 days past due, or
+- Fails to pay any amount due for more than 30 days past due, or
 - Breaches these Terms or the License (e.g. attempting to copy the
   Software, abuse, illegal use), or
 - Uploads content that violates Vietnamese law or third-party rights.

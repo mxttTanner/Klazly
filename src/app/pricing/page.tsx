@@ -89,7 +89,9 @@ export default async function PricingPage() {
   const faqs = [
     { q: tFaq("faq1Q"), a: tFaq("faq1A") },
     { q: tFaq("faq2Q"), a: tFaq("faq2A") },
-    { q: tFaq("faq3Q"), a: tFaq("faq3A") },
+    // faq3 intentionally omitted — covered 1:1 on Zalo for now.
+    // JSON keys for faq3Q/A were removed; numbering stays as-is to
+    // keep faq4–6 edits stable.
     { q: tFaq("faq4Q"), a: tFaq("faq4A") },
     { q: tFaq("faq5Q"), a: tFaq("faq5A") },
     { q: tFaq("faq6Q"), a: tFaq("faq6A") },

@@ -113,7 +113,9 @@ export default async function HomePage() {
   const faqs = [
     { q: tFaq("q1"), a: tFaq("a1") },
     { q: tFaq("q2"), a: tFaq("a2") },
-    { q: tFaq("q3"), a: tFaq("a3") },
+    // q3 intentionally omitted — covered 1:1 on Zalo for now.
+    // JSON keys for q3/a3 were removed; numbering stays as-is to
+    // keep q4–q8 edits stable.
     { q: tFaq("q4"), a: tFaq("a4") },
     { q: tFaq("q5"), a: tFaq("a5") },
     { q: tFaq("q6"), a: tFaq("a6") },
