@@ -28,17 +28,18 @@ export default async function SettingsPage() {
     brand_color: string | null;
     show_pdf_credit: boolean | null;
   };
-  let center: CenterRow | null = null;
-  const full = await supabase
-    .from("centers")
-    .select(
-      "name, logo_url, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right, brand_color, show_pdf_credit",
-    )
-    .eq("id", user.center_id)
-    .single();
-  if (!full.error) {
-    center = full.data as CenterRow;
-  } else if (/brand_color|show_pdf_credit/i.test(full.error.message)) {
+  // Center row fetch — wrapped in an IIFE so its (conditional) fallback
+  // chain can run in parallel with the programs catalog fetch.
+  const centerPromise: Promise<CenterRow | null> = (async () => {
+    const full = await supabase
+      .from("centers")
+      .select(
+        "name, logo_url, report_intro_text, report_footer_text, report_show_summary, report_show_signatures, report_signature_label_left, report_signature_label_right, brand_color, show_pdf_credit",
+      )
+      .eq("id", user.center_id)
+      .single();
+    if (!full.error) return full.data as CenterRow;
+    if (!/brand_color|show_pdf_credit/i.test(full.error.message)) return null;
     const fb = await supabase
       .from("centers")
       .select(
@@ -46,21 +47,23 @@ export default async function SettingsPage() {
       )
       .eq("id", user.center_id)
       .single();
-    if (!fb.error && fb.data) {
-      center = {
-        ...(fb.data as Omit<CenterRow, "brand_color" | "show_pdf_credit">),
-        brand_color: null,
-        show_pdf_credit: true,
-      };
-    }
-  }
+    if (fb.error || !fb.data) return null;
+    return {
+      ...(fb.data as Omit<CenterRow, "brand_color" | "show_pdf_credit">),
+      brand_color: null,
+      show_pdf_credit: true,
+    };
+  })();
 
-  // Programs catalog. Fall back to empty if migration hasn't been run.
-  const programsRes = await supabase
-    .from("center_programs")
-    .select("id, label, sort_order")
-    .eq("center_id", user.center_id)
-    .order("sort_order", { ascending: true });
+  const [center, programsRes] = await Promise.all([
+    centerPromise,
+    supabase
+      .from("center_programs")
+      .select("id, label, sort_order")
+      .eq("center_id", user.center_id)
+      .order("sort_order", { ascending: true }),
+  ]);
+
   const programs =
     programsRes.error || !programsRes.data
       ? []

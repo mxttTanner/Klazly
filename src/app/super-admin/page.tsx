@@ -100,73 +100,102 @@ export default async function SuperAdminHomePage({
   const basicSelect =
     "id, name, contact_email, contact_phone, subscription_status, trial_ends_at, created_at";
 
-  let centers: CenterRow[] | null = null;
-  // Attempt 0 — full select including plan_tier + signup_source.
-  // Falls through if the founding-center migration hasn't run yet.
-  const res0 = await supabase
-    .from("centers")
-    .select(withTierSelect)
-    .order("created_at", { ascending: false });
-  if (!res0.error) {
-    centers = (res0.data ?? []) as CenterRow[];
-  }
-  const res1 = centers
-    ? { error: null, data: null }
-    : await supabase
-        .from("centers")
-        .select(fullSelect)
-        .order("created_at", { ascending: false });
-  if (!centers && !res1.error) {
-    centers = ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source" | "founding_locked_price_vnd" | "founding_center_number">[]).map(
-      (c) => ({ ...c, plan_tier: null, signup_source: null, founding_locked_price_vnd: null, founding_center_number: null }),
-    );
-  } else if (!centers && res1.error && /subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
-    const r = await supabase
+  // Centers fetch with schema-migration fallback chain. The chain has
+  // to serialize within itself (each fallback uses a smaller column
+  // set), but we wrap it in an IIFE so the rest of the dashboard data
+  // (settings, kpi counts) can fetch in parallel with it.
+  const centersPromise: Promise<CenterRow[] | null> = (async () => {
+    const res0 = await supabase
       .from("centers")
-      .select(preLifecycleSelect)
+      .select(withTierSelect)
       .order("created_at", { ascending: false });
-    if (!r.error) {
-      centers = (r.data ?? []).map((c) => ({
-        ...(c as Omit<
-          CenterRow,
-          | "subscription_started_at"
-          | "subscription_ends_at"
-          | "last_payment_at"
-          | "next_billing_at"
-          | "plan_tier"
-          | "signup_source"
-          | "founding_locked_price_vnd"
-          | "founding_center_number"
-        >),
-        subscription_started_at: null,
-        subscription_ends_at: null,
-        last_payment_at: null,
-        next_billing_at: null,
-        plan_tier: null,
-        signup_source: null,
-        founding_locked_price_vnd: null,
-        founding_center_number: null,
-      }));
+    if (!res0.error) return (res0.data ?? []) as CenterRow[];
+
+    const res1 = await supabase
+      .from("centers")
+      .select(fullSelect)
+      .order("created_at", { ascending: false });
+    if (!res1.error) {
+      return ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source" | "founding_locked_price_vnd" | "founding_center_number">[]).map(
+        (c) => ({ ...c, plan_tier: null, signup_source: null, founding_locked_price_vnd: null, founding_center_number: null }),
+      );
     }
-  } else if (!centers && res1.error && /notes/i.test(res1.error.message)) {
-    const r = await supabase
-      .from("centers")
-      .select(noNotesSelect)
-      .order("created_at", { ascending: false });
-    if (!r.error) {
-      centers = (r.data ?? []).map((c) => ({
-        ...(c as Omit<
-          CenterRow,
-          | "notes"
-          | "subscription_started_at"
-          | "subscription_ends_at"
-          | "last_payment_at"
-          | "next_billing_at"
-          | "plan_tier"
-          | "signup_source"
-          | "founding_locked_price_vnd"
-          | "founding_center_number"
-        >),
+    if (/subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
+      const r = await supabase
+        .from("centers")
+        .select(preLifecycleSelect)
+        .order("created_at", { ascending: false });
+      if (!r.error) {
+        return (r.data ?? []).map((c) => ({
+          ...(c as Omit<
+            CenterRow,
+            | "subscription_started_at"
+            | "subscription_ends_at"
+            | "last_payment_at"
+            | "next_billing_at"
+            | "plan_tier"
+            | "signup_source"
+            | "founding_locked_price_vnd"
+            | "founding_center_number"
+          >),
+          subscription_started_at: null,
+          subscription_ends_at: null,
+          last_payment_at: null,
+          next_billing_at: null,
+          plan_tier: null,
+          signup_source: null,
+          founding_locked_price_vnd: null,
+          founding_center_number: null,
+        }));
+      }
+    }
+    if (/notes/i.test(res1.error.message)) {
+      const r = await supabase
+        .from("centers")
+        .select(noNotesSelect)
+        .order("created_at", { ascending: false });
+      if (!r.error) {
+        return (r.data ?? []).map((c) => ({
+          ...(c as Omit<
+            CenterRow,
+            | "notes"
+            | "subscription_started_at"
+            | "subscription_ends_at"
+            | "last_payment_at"
+            | "next_billing_at"
+            | "plan_tier"
+            | "signup_source"
+            | "founding_locked_price_vnd"
+            | "founding_center_number"
+          >),
+          notes: null,
+          subscription_started_at: null,
+          subscription_ends_at: null,
+          last_payment_at: null,
+          next_billing_at: null,
+          plan_tier: null,
+          signup_source: null,
+          founding_locked_price_vnd: null,
+          founding_center_number: null,
+        }));
+      }
+    }
+    if (/subscription_plan/i.test(res1.error.message)) {
+      const r = await supabase
+        .from("centers")
+        .select(basicSelect)
+        .order("created_at", { ascending: false });
+      return ((r.data ?? []) as Array<{
+        id: string;
+        name: string;
+        contact_email: string | null;
+        contact_phone: string | null;
+        subscription_status: string;
+        trial_ends_at: string | null;
+        created_at: string;
+      }>).map((c) => ({
+        ...c,
+        subscription_plan: null,
         notes: null,
         subscription_started_at: null,
         subscription_ends_at: null,
@@ -178,40 +207,51 @@ export default async function SuperAdminHomePage({
         founding_center_number: null,
       }));
     }
-  } else if (!centers && res1.error && /subscription_plan/i.test(res1.error.message)) {
-    const r = await supabase
-      .from("centers")
-      .select(basicSelect)
-      .order("created_at", { ascending: false });
-    centers = ((r.data ?? []) as Array<{
-      id: string;
-      name: string;
-      contact_email: string | null;
-      contact_phone: string | null;
-      subscription_status: string;
-      trial_ends_at: string | null;
-      created_at: string;
-    }>).map((c) => ({
-      ...c,
-      subscription_plan: null,
-      notes: null,
-      subscription_started_at: null,
-      subscription_ends_at: null,
-      last_payment_at: null,
-      next_billing_at: null,
-      plan_tier: null,
-      signup_source: null,
-      founding_locked_price_vnd: null,
-      founding_center_number: null,
-    }));
+    return null;
+  })();
+
+  // KPI counts + founding-center cap setting all run in parallel with
+  // the centers fetch. The setting fetch is allowed to fail (migration
+  // may not have run yet); we recover the foundingWidgetEnabled flag
+  // from the absence of data.
+  let centers: CenterRow[] | null;
+  let studentCount: number | null;
+  let lessonCount: number | null;
+  let foundingSettingRaw: unknown = null;
+  let foundingSettingOk = false;
+  {
+    const [centersResolved, studentRes, lessonRes, settingRes] =
+      await Promise.all([
+        centersPromise,
+        supabase.from("students").select("id", { count: "exact", head: true }),
+        supabase.from("lessons").select("id", { count: "exact", head: true }),
+        supabase
+          .from("app_settings")
+          .select("value")
+          .eq("key", "founding_center_cap")
+          .maybeSingle()
+          .then(
+            (r) => ({ ok: !r.error, data: r.data }),
+            () => ({ ok: false, data: null }),
+          ),
+      ]);
+    centers = centersResolved;
+    studentCount = studentRes.count ?? 0;
+    lessonCount = lessonRes.count ?? 0;
+    foundingSettingOk = settingRes.ok;
+    foundingSettingRaw = settingRes.data
+      ? (settingRes.data as { value: unknown }).value
+      : null;
   }
 
   // Lazy auto-expire: any trial whose trial_ends_at is in the past
   // gets flipped to 'expired' before the dashboard renders, with one
   // audit_log row per transition. Failures here don't block the page.
+  // Has to run after centers are loaded (needs the row set), and
+  // before withDerived is computed (so the dashboard reflects the
+  // freshly-updated statuses).
   if (centers && centers.length > 0) {
     await expireOverdueTrials(supabase, centers);
-    // Re-fetch the freshly-updated statuses for accurate display.
     const refresh = await supabase
       .from("centers")
       .select("id, subscription_status")
@@ -307,22 +347,14 @@ export default async function SuperAdminHomePage({
   // counts active+trial centers on plan_tier='founding'. Falls back
   // gracefully when the founding-center migration hasn't run yet so
   // the widget just hides.
+  // foundingSettingOk + foundingSettingRaw came from the parallel
+  // batch above — derive cap and widget-enabled flag from them.
   let foundingCap = 5;
-  let foundingWidgetEnabled = false;
-  try {
-    const { data: setting } = await supabase
-      .from("app_settings")
-      .select("value")
-      .eq("key", "founding_center_cap")
-      .maybeSingle();
-    if (setting) {
-      const v = (setting as { value: unknown }).value;
-      if (typeof v === "number") foundingCap = v;
-      else if (typeof v === "string") foundingCap = Number(v) || 5;
-    }
-    foundingWidgetEnabled = true;
-  } catch {
-    // Migration not applied — widget stays hidden.
+  const foundingWidgetEnabled = foundingSettingOk;
+  if (foundingSettingRaw !== null) {
+    if (typeof foundingSettingRaw === "number") foundingCap = foundingSettingRaw;
+    else if (typeof foundingSettingRaw === "string")
+      foundingCap = Number(foundingSettingRaw) || 5;
   }
   const foundingFilled = withDerived.filter(
     (c) =>
@@ -362,13 +394,8 @@ export default async function SuperAdminHomePage({
   }
   const sourceTotal = Object.values(sourceCounts).reduce((a, b) => a + b, 0);
 
-  // KPIs use the derived status so the dashboard reflects what the
-  // admin actually sees, not the raw DB value.
-  const [{ count: studentCount }, { count: lessonCount }] = await Promise.all([
-    supabase.from("students").select("id", { count: "exact", head: true }),
-    supabase.from("lessons").select("id", { count: "exact", head: true }),
-  ]);
-
+  // studentCount + lessonCount were fetched in the parallel batch
+  // above; they roll into the KPI cards below.
   let mrrVnd = 0;
   let activeCount = 0;
   let trialCount = 0;

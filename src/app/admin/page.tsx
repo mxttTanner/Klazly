@@ -87,86 +87,94 @@ export default async function AdminHomePage({
     "id, name, schedule_text, book, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)";
   const classesBasicSel =
     "id, name, schedule_text, teacher_id, teacher:users!classes_teacher_id_fkey(full_name)";
-  let classesWithDetails: ClassFull[] = [];
-  {
+  // Kick off three independent groups in parallel:
+  //   1. the classes-detail fallback chain (serial within itself — each
+  //      retry uses a smaller column set if the previous schema migration
+  //      hasn't run yet),
+  //   2. center_programs catalog,
+  //   3. the dashboard count + list batch.
+  // Before this, all three ran sequentially; merging them saves a round trip.
+  const classesWithDetailsPromise: Promise<ClassFull[]> = (async () => {
     const r1 = await supabase
       .from("classes")
       .select(classesFullSel)
       .order("name", { ascending: true });
-    if (r1.error) {
-      const r2 = await supabase
-        .from("classes")
-        .select(classesMidSel)
-        .order("name", { ascending: true });
-      if (r2.error) {
-        const r3 = await supabase
-          .from("classes")
-          .select(classesBasicSel)
-          .order("name", { ascending: true });
-        classesWithDetails = (
-          (r3.data ?? []) as Omit<ClassFull, "book" | "program">[]
-        ).map((c) => ({ ...c, book: null, program: null }));
-      } else {
-        classesWithDetails = ((r2.data ?? []) as Omit<ClassFull, "program">[]).map(
-          (c) => ({ ...c, program: null }),
-        );
-      }
-    } else {
-      classesWithDetails = (r1.data ?? []) as ClassFull[];
+    if (!r1.error) return (r1.data ?? []) as ClassFull[];
+    const r2 = await supabase
+      .from("classes")
+      .select(classesMidSel)
+      .order("name", { ascending: true });
+    if (!r2.error) {
+      return ((r2.data ?? []) as Omit<ClassFull, "program">[]).map((c) => ({
+        ...c,
+        program: null,
+      }));
     }
-  }
+    const r3 = await supabase
+      .from("classes")
+      .select(classesBasicSel)
+      .order("name", { ascending: true });
+    return ((r3.data ?? []) as Omit<ClassFull, "book" | "program">[]).map(
+      (c) => ({ ...c, book: null, program: null }),
+    );
+  })();
 
-  // Center's editable program catalog (admin manages in /admin/settings).
-  // Falls back to empty if the migration hasn't been run.
-  const programsRes = await supabase
-    .from("center_programs")
-    .select("id, label")
-    .order("sort_order", { ascending: true });
+  const [
+    classesWithDetails,
+    programsRes,
+    [
+      { count: teacherCount },
+      { count: parentCount },
+      { count: classCount },
+      { count: studentCount },
+      { data: teachers },
+      { data: classesList },
+      { data: studentsByClass },
+      { data: lessons },
+      { data: recentLessons },
+    ],
+  ] = await Promise.all([
+    classesWithDetailsPromise,
+    supabase
+      .from("center_programs")
+      .select("id, label")
+      .order("sort_order", { ascending: true }),
+    Promise.all([
+      supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "teacher"),
+      supabase
+        .from("users")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "parent"),
+      supabase.from("classes").select("id", { count: "exact", head: true }),
+      supabase.from("students").select("id", { count: "exact", head: true }),
+      supabase
+        .from("users")
+        .select("id, full_name")
+        .eq("role", "teacher")
+        .order("full_name", { ascending: true }),
+      supabase.from("classes").select("teacher_id"),
+      supabase.from("students").select("class_id"),
+      supabase
+        .from("lessons")
+        .select("id, teacher_id, class_id, lesson_date")
+        .order("lesson_date", { ascending: false }),
+      supabase
+        .from("lessons")
+        .select(
+          "id, lesson_date, class:classes(name), teacher:users!lessons_teacher_id_fkey(full_name)",
+        )
+        .order("lesson_date", { ascending: false })
+        .limit(5),
+    ]),
+  ]);
+
   const centerPrograms =
     programsRes.error || !programsRes.data
       ? []
       : (programsRes.data as Array<{ id: string; label: string }>);
-
-  const [
-    { count: teacherCount },
-    { count: parentCount },
-    { count: classCount },
-    { count: studentCount },
-    { data: teachers },
-    { data: classesList },
-    { data: studentsByClass },
-    { data: lessons },
-    { data: recentLessons },
-  ] = await Promise.all([
-    supabase
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "teacher"),
-    supabase
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "parent"),
-    supabase.from("classes").select("id", { count: "exact", head: true }),
-    supabase.from("students").select("id", { count: "exact", head: true }),
-    supabase
-      .from("users")
-      .select("id, full_name")
-      .eq("role", "teacher")
-      .order("full_name", { ascending: true }),
-    supabase.from("classes").select("teacher_id"),
-    supabase.from("students").select("class_id"),
-    supabase
-      .from("lessons")
-      .select("id, teacher_id, class_id, lesson_date")
-      .order("lesson_date", { ascending: false }),
-    supabase
-      .from("lessons")
-      .select(
-        "id, lesson_date, class:classes(name), teacher:users!lessons_teacher_id_fkey(full_name)",
-      )
-      .order("lesson_date", { ascending: false })
-      .limit(5),
-  ]);
 
   const allLessons = (lessons ?? []) as LessonAgg[];
 
