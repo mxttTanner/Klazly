@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getTranslations } from "next-intl/server";
@@ -9,6 +10,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
 import { csvToRecords } from "@/lib/csv";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
+
+// Generates a 14-char one-time password using crypto.randomBytes.
+// Uses url-safe base64 (A-Z a-z 0-9 - _) so the entropy is ~83 bits,
+// then suffixes "Aa1!" to satisfy any auth policy that demands an
+// upper / lower / digit / symbol mix. The parent is expected to
+// reset it on first login.
+function generateTempPassword(): string {
+  return randomBytes(12).toString("base64url").slice(0, 14) + "Aa1!";
+}
 
 // Parent rows now accept email and/or phone — at least one required.
 // CSV cells come in as "" not undefined when blank so .optional() alone
@@ -162,9 +172,7 @@ export async function importParentsCsv(
     if (phone) seenIdentifierRow.set(`phone:${phone}`, rowNum);
 
     const passwordWasGenerated = !parsed.data.password;
-    const password =
-      parsed.data.password ??
-      Math.random().toString(36).slice(-10) + "Aa1!";
+    const password = parsed.data.password ?? generateTempPassword();
 
     // Auth email is the real one if provided; otherwise the deterministic
     // synthetic email tied to phone. See db/users-phone.sql.
