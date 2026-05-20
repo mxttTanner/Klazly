@@ -48,7 +48,11 @@
     "retry": "Thử lại",
     "zalo": "Nhắn Zalo",
     "status": "Xem trạng thái",
-    "incidentId": "Mã sự cố:"
+    "incidentId": "Mã sự cố:",
+    "backToAdmin": "Về trang quản trị",
+    "backToTeacher": "Về trang giáo viên",
+    "backToParent": "Về trang phụ huynh",
+    "backToSuperAdmin": "Về trang super admin"
   },
   "statusPage": {
     "systemStatus": "Trạng thái hệ thống",

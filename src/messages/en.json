@@ -48,7 +48,11 @@
     "retry": "Try again",
     "zalo": "Message on Zalo",
     "status": "Check status",
-    "incidentId": "Reference ID:"
+    "incidentId": "Reference ID:",
+    "backToAdmin": "Back to admin",
+    "backToTeacher": "Back to teacher",
+    "backToParent": "Back to parent",
+    "backToSuperAdmin": "Back to super admin"
   },
   "statusPage": {
     "systemStatus": "System status",
