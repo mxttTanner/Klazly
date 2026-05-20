@@ -420,11 +420,11 @@ export function LessonForm({
               return (
                 <div
                   key={s.id}
-                  className="grid gap-4 rounded-md border p-4 sm:grid-cols-[10rem_10rem_1fr_auto]"
+                  className="grid gap-4 rounded-md border p-4 md:grid-cols-[10rem_10rem_1fr_auto]"
                 >
                   <input type="hidden" name="student_id" value={s.id} />
 
-                  <div className="space-y-2 sm:col-span-4">
+                  <div className="space-y-2 md:col-span-4">
                     <p className="font-medium">{s.full_name}</p>
                   </div>
 
