@@ -854,6 +854,7 @@
   },
   "parent": {
     "navTitle": "Parent portal",
+    "roleLabel": "Parent",
     "home": {
       "title": "Your children",
       "subtitle": "Pick a child to see their recent progress.",

@@ -854,6 +854,7 @@
   },
   "parent": {
     "navTitle": "Cổng phụ huynh",
+    "roleLabel": "Phụ huynh",
     "home": {
       "title": "Con của bạn",
       "subtitle": "Chọn con để xem tiến trình học tập gần đây.",
