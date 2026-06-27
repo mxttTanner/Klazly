@@ -16,7 +16,19 @@ export default async function LoginPage() {
   const tLanding = await getTranslations("landing");
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div
+      className="min-h-dvh bg-background"
+      // Scope the brand accent to emerald so the shared LoginForm submit
+      // button (and any primary element) matches the new theme instead
+      // of the app's blue --primary.
+      style={
+        {
+          "--primary": "oklch(0.54 0.12 162)",
+          "--primary-foreground": "oklch(0.99 0 0)",
+          "--ring": "oklch(0.54 0.12 162)",
+        } as React.CSSProperties
+      }
+    >
       <div className="grid min-h-dvh lg:grid-cols-[3fr_2fr]">
         {/* FORM SIDE — left (60%) */}
         <div className="relative flex flex-col">
