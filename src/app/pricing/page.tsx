@@ -106,9 +106,12 @@ export default async function PricingPage() {
       // edits. The shared dark nav/footer use their own navy tokens.
       style={
         {
-          "--primary": "oklch(0.70 0.16 162)",
-          "--primary-foreground": "oklch(0.24 0.05 160)",
-          "--ring": "oklch(0.70 0.16 162)",
+          // emerald-dark so accent text/links stay readable on white;
+          // foreground is white for any emerald fills. The highlighted
+          // annual card is navy (set explicitly below), not emerald.
+          "--primary": "oklch(0.54 0.12 162)",
+          "--primary-foreground": "oklch(0.99 0 0)",
+          "--ring": "oklch(0.54 0.12 162)",
         } as React.CSSProperties
       }
     >
@@ -198,7 +201,7 @@ export default async function PricingPage() {
             {/* 12 months — DOMINANT — solid primary fill, larger
                 padding, lifted offset and mega numerals. Dominance is
                 size + weight + fill, not glow or rainbow. */}
-            <div className="bg-primary group/tier relative flex flex-col rounded-2xl p-6 text-primary-foreground shadow-lg transition-all hover:-translate-y-0.5 sm:p-8 lg:col-span-5 lg:-mt-4">
+            <div className="bg-navy group/tier relative flex flex-col rounded-2xl p-6 text-white shadow-lg transition-all hover:-translate-y-0.5 sm:p-8 lg:col-span-5 lg:-mt-4">
               <div className="absolute inset-x-0 -top-3.5 flex justify-center">
                 <span className="bg-background text-primary inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest shadow-sm">
                   <Sparkles className="size-3.5" />
@@ -232,7 +235,7 @@ export default async function PricingPage() {
               <div className="mt-auto pt-6">
                 <PricingCtaButton
                   planKey="annual"
-                  buttonClassName="bg-background text-primary hover:bg-muted inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-md px-4 text-base font-bold shadow-sm transition"
+                  buttonClassName="bg-emerald text-[#06281f] hover:bg-emerald-light inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-md px-4 text-base font-bold shadow-sm transition"
                   showArrow
                 />
                 <p className="text-primary-foreground/90 mt-3 inline-flex w-full items-center justify-center gap-1.5 text-center text-xs font-semibold">

@@ -1,5 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import { ClipboardList, Sparkles, MessageCircle } from "lucide-react";
+import { Sparkles, MessageCircle } from "lucide-react";
 import { getFoundingStatus } from "@/lib/founding";
 
 import { ZALO_URL, ZALO_PHONE_DISPLAY as PHONE_DISPLAY } from "@/lib/zalo";
@@ -35,54 +35,14 @@ export async function LoginBrandPanel() {
           {tFounder("loginTagline")}
         </p>
 
-        {/* Floating mini-dashboard — abstracted, not the full app. */}
+        {/* Real product screenshot of the owner dashboard. */}
         <div className="mt-8 max-w-md">
-          <div className="bg-slate-800/50 ring-slate-700/50 rounded-xl p-1.5 shadow-lg ring-1">
-            <div className="bg-slate-900 mb-1 flex items-center gap-1 rounded-t-lg px-3 py-1.5">
-              <span className="bg-slate-600 size-1.5 rounded-full" />
-              <span className="bg-slate-600 size-1.5 rounded-full" />
-              <span className="bg-slate-600 size-1.5 rounded-full" />
-            </div>
-            <div className="bg-background overflow-hidden rounded-md p-3">
-              <div className="grid grid-cols-4 gap-1.5">
-                {[
-                  { l: "GV", v: "12" },
-                  { l: "PH", v: "84" },
-                  { l: "Lớp", v: "18" },
-                  { l: "HS", v: "126" },
-                ].map((card) => (
-                  <div
-                    key={card.l}
-                    className="bg-card rounded-md border p-1.5"
-                  >
-                    <div className="text-muted-foreground text-[8px] uppercase">
-                      {card.l}
-                    </div>
-                    <div className="text-foreground text-sm font-bold tabular-nums">
-                      {card.v}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-card mt-2 rounded-md border p-2">
-                <div className="mb-1 flex items-center gap-1.5 text-[9px] font-semibold">
-                  <ClipboardList className="text-emerald-dark size-2.5" />
-                  <span className="text-foreground">Hoạt động gần đây</span>
-                </div>
-                {[
-                  "Cô Linh · Senior B · Unit 5",
-                  "Cô Linh · Junior A · Unit 4",
-                ].map((line) => (
-                  <div
-                    key={line}
-                    className="text-muted-foreground border-t py-1 text-[9px] first:border-t-0"
-                  >
-                    {line}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/shots/admin.png"
+            alt={t("brandHeadline")}
+            className="w-full rounded-xl border border-white/10 shadow-2xl"
+          />
         </div>
       </div>
 

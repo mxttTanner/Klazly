@@ -140,11 +140,11 @@ export default async function AdminHomePage() {
   const recent = (recentLessons ?? []) as RecentLesson[];
 
   return (
-    // Full-bleed dark canvas: negative margins cancel the light main
-    // padding so the dashboard reads as one navy surface under the
-    // sub-nav, matching admin.png.
-    <div className="-mx-4 -my-8 min-h-[calc(100dvh-9rem)] bg-navy px-4 py-8 text-white sm:-mx-6 sm:px-6">
-      <div className="mx-auto max-w-6xl space-y-6">
+    // Full-bleed dark canvas: break out of the layout's centered
+    // max-width to span the whole viewport so the navy reaches both
+    // screen edges, matching admin.png.
+    <div className="relative left-1/2 right-1/2 -mx-[50vw] -my-8 w-screen min-h-[calc(100dvh-9rem)] bg-navy py-8 text-white">
+      <div className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6">
         {/* Stat cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {cards.map(({ label, href, count, Icon }) => (
