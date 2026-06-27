@@ -4,31 +4,44 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.18 0.02 250);
+  /* ----------------------------------------------------------------
+     Klazly design system — premium-minimal / trust & authority.
+     Single blue accent + cool-neutral ramp (tiny chroma @ hue 245 so
+     whites and grays feel cohesive, not clinical). Light mode only.
+     Full spec: /design-system/MASTER.md
+     ---------------------------------------------------------------- */
+  --background: oklch(0.99 0.003 245);
+  --foreground: oklch(0.22 0.02 245);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 250);
+  --card-foreground: oklch(0.22 0.02 245);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 250);
-  /* Brand blue — friendly, professional, education-coded for VN market. */
-  --primary: oklch(0.5 0.2 250);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.97 0.03 250);
-  --accent-foreground: oklch(0.5 0.2 250);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.5 0.2 250);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --popover-foreground: oklch(0.22 0.02 245);
+  /* Single accent — confident blue, ~1/3 less chroma than before so it
+     reads as quality software, not a consumer app. */
+  --primary: oklch(0.52 0.13 245);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.968 0.004 245);
+  --secondary-foreground: oklch(0.28 0.02 245);
+  --muted: oklch(0.968 0.004 245);
+  --muted-foreground: oklch(0.45 0.01 245);
+  --accent: oklch(0.96 0.02 245);
+  --accent-foreground: oklch(0.52 0.13 245);
+  --destructive: oklch(0.58 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  /* Semantic status — use ONLY to express real state, never decoration. */
+  --success: oklch(0.6 0.13 155);
+  --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.75 0.13 75);
+  --warning-foreground: oklch(0.26 0.04 75);
+  --border: oklch(0.92 0.004 245);
+  --input: oklch(0.92 0.004 245);
+  --ring: oklch(0.52 0.13 245);
+  /* Charts: single-hue ramp from the accent so data viz stays on-brand. */
+  --chart-1: oklch(0.52 0.13 245);
+  --chart-2: oklch(0.62 0.11 245);
+  --chart-3: oklch(0.72 0.09 245);
+  --chart-4: oklch(0.80 0.06 245);
+  --chart-5: oklch(0.87 0.04 245);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -92,6 +105,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -161,97 +178,14 @@
   }
 }
 
-/* Landing marquee — left-scrolling tape used in the trust band
-   under the hero. Duplicate the children inside the track so the
-   loop point is invisible. Pauses on hover so reading is possible.
-   Respects prefers-reduced-motion via the @media block below. */
-@keyframes klazly-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-.klazly-marquee {
-  display: flex;
-  width: max-content;
-  animation: klazly-marquee 40s linear infinite;
-}
-.klazly-marquee-container:hover .klazly-marquee {
-  animation-play-state: paused;
-}
-
-/* Conic-gradient rotating ring — wraps the dominant annual pricing
-   tier so it constantly catches the eye without flashing. The
-   --klazly-conic-angle property is animated; the ring renders
-   through a pseudo-element so the tier card content stays crisp. */
-@property --klazly-conic-angle {
-  syntax: '<angle>';
-  inherits: false;
-  initial-value: 0deg;
-}
-@keyframes klazly-spin {
-  from { --klazly-conic-angle: 0deg; }
-  to { --klazly-conic-angle: 360deg; }
-}
-.klazly-glow-ring {
-  position: relative;
-  isolation: isolate;
-}
-.klazly-glow-ring::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  padding: 2px;
-  background: conic-gradient(
-    from var(--klazly-conic-angle),
-    rgb(251 191 36 / 0.9),
-    rgb(56 189 248 / 0.5),
-    rgb(167 139 250 / 0.5),
-    rgb(251 191 36 / 0.9)
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  animation: klazly-spin 6s linear infinite;
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* Floating mesh orbs in the hero — slow drift adds ambient motion
-   without distracting from the headline. */
-@keyframes klazly-drift-a {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(40px, -30px, 0) scale(1.05); }
-}
-@keyframes klazly-drift-b {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-30px, 40px, 0) scale(1.08); }
-}
-.klazly-drift-a { animation: klazly-drift-a 12s ease-in-out infinite; }
-.klazly-drift-b { animation: klazly-drift-b 16s ease-in-out infinite; }
-
-/* Ticker rows inside the laptop mock — each row scrolls up one
-   step every interval so the dashboard feels live. */
-@keyframes klazly-ticker {
-  0%, 25% { transform: translateY(0); }
-  33%, 58% { transform: translateY(-100%); }
-  66%, 91% { transform: translateY(-200%); }
-  100% { transform: translateY(-300%); }
-}
-.klazly-ticker {
-  animation: klazly-ticker 9s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .klazly-marquee,
-  .klazly-glow-ring::before,
-  .klazly-drift-a,
-  .klazly-drift-b,
-  .klazly-ticker {
-    animation: none;
-  }
-}
+/* ------------------------------------------------------------------
+   Motion language: quiet by design. The flashy landing animations
+   (left-scrolling marquee, rotating conic glow ring, drifting mesh
+   orbs, dashboard ticker) were removed in the design-system overhaul
+   — they read as a consumer app, not paid B2B software. Motion now
+   comes from <ScrollReveal> (JS-driven, reduced-motion aware) plus
+   150–200ms hover transitions. See /design-system/MASTER.md.
+   ------------------------------------------------------------------ */
 
 /* Utility for elements that must respect the iOS safe-area inset
    (notch, Dynamic Island, home indicator). Apply with className
