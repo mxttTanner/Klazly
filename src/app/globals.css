@@ -161,6 +161,98 @@
   }
 }
 
+/* Landing marquee — left-scrolling tape used in the trust band
+   under the hero. Duplicate the children inside the track so the
+   loop point is invisible. Pauses on hover so reading is possible.
+   Respects prefers-reduced-motion via the @media block below. */
+@keyframes klazly-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.klazly-marquee {
+  display: flex;
+  width: max-content;
+  animation: klazly-marquee 40s linear infinite;
+}
+.klazly-marquee-container:hover .klazly-marquee {
+  animation-play-state: paused;
+}
+
+/* Conic-gradient rotating ring — wraps the dominant annual pricing
+   tier so it constantly catches the eye without flashing. The
+   --klazly-conic-angle property is animated; the ring renders
+   through a pseudo-element so the tier card content stays crisp. */
+@property --klazly-conic-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes klazly-spin {
+  from { --klazly-conic-angle: 0deg; }
+  to { --klazly-conic-angle: 360deg; }
+}
+.klazly-glow-ring {
+  position: relative;
+  isolation: isolate;
+}
+.klazly-glow-ring::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--klazly-conic-angle),
+    rgb(251 191 36 / 0.9),
+    rgb(56 189 248 / 0.5),
+    rgb(167 139 250 / 0.5),
+    rgb(251 191 36 / 0.9)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: klazly-spin 6s linear infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Floating mesh orbs in the hero — slow drift adds ambient motion
+   without distracting from the headline. */
+@keyframes klazly-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(40px, -30px, 0) scale(1.05); }
+}
+@keyframes klazly-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-30px, 40px, 0) scale(1.08); }
+}
+.klazly-drift-a { animation: klazly-drift-a 12s ease-in-out infinite; }
+.klazly-drift-b { animation: klazly-drift-b 16s ease-in-out infinite; }
+
+/* Ticker rows inside the laptop mock — each row scrolls up one
+   step every interval so the dashboard feels live. */
+@keyframes klazly-ticker {
+  0%, 25% { transform: translateY(0); }
+  33%, 58% { transform: translateY(-100%); }
+  66%, 91% { transform: translateY(-200%); }
+  100% { transform: translateY(-300%); }
+}
+.klazly-ticker {
+  animation: klazly-ticker 9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .klazly-marquee,
+  .klazly-glow-ring::before,
+  .klazly-drift-a,
+  .klazly-drift-b,
+  .klazly-ticker {
+    animation: none;
+  }
+}
+
 /* Utility for elements that must respect the iOS safe-area inset
    (notch, Dynamic Island, home indicator). Apply with className
    "pb-safe" or "pt-safe" on any sticky/fixed element near the

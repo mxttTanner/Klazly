@@ -16,7 +16,12 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Klazly · Cổng Phụ Huynh",
     short_name: "Klazly",
     description: "Cổng Phụ Huynh cho trung tâm tiếng Anh tại Việt Nam.",
-    start_url: "/",
+    // When launched from the home screen, skip the marketing site.
+    // /post-login is a server-side router: signed-out → /login,
+    // signed-in → role-correct portal (admin/teacher/parent/super-admin).
+    // The ?utm_source=pwa marks it as an installed-app launch in analytics.
+    start_url: "/post-login?utm_source=pwa",
+    scope: "/",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#2563eb",

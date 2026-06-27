@@ -1,8 +1,15 @@
-// Sentry — browser. Loaded automatically by @sentry/nextjs.
+// Sentry — browser. Auto-loaded by Next.js as the canonical
+// client-instrumentation entry (replaces the deprecated
+// sentry.client.config.ts location; required for Turbopack).
 // Stays a no-op if NEXT_PUBLIC_SENTRY_DSN isn't set, so local dev and
 // pre-Sentry deploys don't error out.
 
 import * as Sentry from "@sentry/nextjs";
+
+// Required export from instrumentation-client.ts so Sentry can
+// instrument App-Router navigation timing. Without this, the SDK
+// logs an ACTION REQUIRED notice on every build.
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 

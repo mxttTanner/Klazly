@@ -474,12 +474,13 @@ export default async function StudentProgressPage({
         <PrintButton label={t("print")} />
       </div>
 
-      {/* On-screen hero card — clean and calm: thin accent strip, no blur
-          circles, no rainbow gradients. Colour is reserved for the level
-          badge and behaviour dots, where it carries meaning. */}
-      <section className="bg-card relative overflow-hidden rounded-2xl border print:hidden">
-        <div className="bg-primary absolute inset-x-0 top-0 h-1" />
-        <div className="space-y-5 p-6 sm:p-7">
+      {/* On-screen hero card — soft rose wash + rose accent strip
+          to match the parent role identity (sky=admin, violet=teacher,
+          rose=parent). Avatar tone now rose-tinted so the whole hero
+          reads as one warm parent surface. */}
+      <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-rose-50/70 via-card to-card print:hidden">
+        <div className="bg-rose-500 absolute inset-x-0 top-0 h-1" />
+        <div className="space-y-5 p-5 sm:p-7">
           {center?.name ? (
             <div className="flex items-center gap-2">
               {center?.logo_url ? (
@@ -497,7 +498,7 @@ export default async function StudentProgressPage({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <div className="bg-sky-50 text-sky-700 ring-sky-100 flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-semibold ring-1 sm:size-16 sm:text-2xl">
+            <div className="bg-rose-100 text-rose-700 ring-rose-200 flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-semibold ring-1 sm:size-16 sm:text-2xl">
               {student.full_name.trim().split(/\s+/).slice(-1)[0]?.charAt(0).toUpperCase() ?? "?"}
             </div>
             <div className="flex-1 min-w-[10rem] space-y-1">
@@ -531,27 +532,41 @@ export default async function StudentProgressPage({
         </div>
       </section>
 
-      {/* Stats strip — dedicated row of cards under the hero. Pulled out
-          of the hero card so each metric gets visual weight; reads like a
-          report card rather than a sidebar widget. Hidden on print since
-          the formal letterhead already summarises the period. */}
+      {/* Stats strip — each metric gets a 1px top accent stripe in
+          its semantic color (blue=lessons, color-coded by tier for
+          attendance/homework, violet=behavior). Tighter padding on
+          mobile so two side-by-side cards aren't cramped on phones.
+          Hidden on print since the formal letterhead summarises. */}
       {lessons.length > 0 ? (
         <section className="grid grid-cols-2 gap-3 print:hidden sm:grid-cols-4">
-          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <div className="bg-card relative flex flex-col gap-1 overflow-hidden rounded-xl border p-3 shadow-sm sm:p-4">
+            <span aria-hidden="true" className="bg-sky-500 absolute inset-x-0 top-0 h-0.5" />
+            <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide sm:text-xs">
               {t("heroLessonsLabel")}
             </span>
-            <span className="text-3xl font-semibold tabular-nums">
+            <span className="text-2xl font-semibold tabular-nums sm:text-3xl">
               {monthlyLessons.length || lessons.length}
             </span>
           </div>
 
-          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <div className="bg-card relative flex flex-col gap-1 overflow-hidden rounded-xl border p-3 shadow-sm sm:p-4">
+            <span
+              aria-hidden="true"
+              className={`absolute inset-x-0 top-0 h-0.5 ${
+                monthAttendancePct === null
+                  ? "bg-muted-foreground/20"
+                  : monthAttendancePct >= 90
+                    ? "bg-emerald-500"
+                    : monthAttendancePct >= 75
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+              }`}
+            />
+            <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide sm:text-xs">
               {t("heroAttendanceLabel")}
             </span>
             <span
-              className={`text-3xl font-semibold tabular-nums ${
+              className={`text-2xl font-semibold tabular-nums sm:text-3xl ${
                 monthAttendancePct === null
                   ? ""
                   : monthAttendancePct >= 90
@@ -565,12 +580,24 @@ export default async function StudentProgressPage({
             </span>
           </div>
 
-          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <div className="bg-card relative flex flex-col gap-1 overflow-hidden rounded-xl border p-3 shadow-sm sm:p-4">
+            <span
+              aria-hidden="true"
+              className={`absolute inset-x-0 top-0 h-0.5 ${
+                monthHomeworkPct === null
+                  ? "bg-muted-foreground/20"
+                  : monthHomeworkPct >= 80
+                    ? "bg-emerald-500"
+                    : monthHomeworkPct >= 60
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+              }`}
+            />
+            <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide sm:text-xs">
               {t("heroHomeworkLabel")}
             </span>
             <span
-              className={`text-3xl font-semibold tabular-nums ${
+              className={`text-2xl font-semibold tabular-nums sm:text-3xl ${
                 monthHomeworkPct === null
                   ? ""
                   : monthHomeworkPct >= 80
@@ -584,8 +611,9 @@ export default async function StudentProgressPage({
             </span>
           </div>
 
-          <div className="bg-card flex flex-col gap-1 rounded-xl border p-4 shadow-sm">
-            <span className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+          <div className="bg-card relative flex flex-col gap-1 overflow-hidden rounded-xl border p-3 shadow-sm sm:p-4">
+            <span aria-hidden="true" className="bg-violet-500 absolute inset-x-0 top-0 h-0.5" />
+            <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide sm:text-xs">
               {t("heroBehaviorLabel")}
             </span>
             {topBehavior ? (
@@ -996,15 +1024,18 @@ export default async function StudentProgressPage({
             return (
               <li
                 key={l.id}
-                className="rounded-xl border bg-card p-4 shadow-sm sm:p-5 print:break-inside-avoid print:bg-transparent print:border-black print:p-3"
+                className="rounded-xl border bg-card p-3.5 shadow-sm transition hover:border-rose-300/50 hover:shadow-md sm:p-5 print:break-inside-avoid print:bg-transparent print:border-black print:p-3"
               >
-                {/* Header: date chip + topic title, with badges right-aligned. */}
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                {/* Header: date chip + topic on one row; badges on a
+                    second row on mobile so they don't crowd the title
+                    on a narrow viewport. Badges stay inline-with-title
+                    at sm+ where there's room. */}
+                <div className="space-y-2 sm:flex sm:flex-wrap sm:items-start sm:justify-between sm:gap-3 sm:space-y-0">
                   <div className="min-w-0 flex-1 space-y-1">
                     <span className="bg-primary/10 text-primary inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide print:bg-transparent print:border print:border-black">
                       {dateText}
                     </span>
-                    <h3 className="text-lg font-semibold leading-tight sm:text-xl">
+                    <h3 className="text-base font-semibold leading-tight sm:text-xl">
                       {titleText ?? dateText}
                     </h3>
                   </div>
@@ -1066,14 +1097,16 @@ export default async function StudentProgressPage({
                   );
                 })()}
 
-                {/* Per-child feedback (the parent only sees the unit/lesson
-                    label above plus their own child's feedback below — the
-                    vocab/grammar/etc. is for teachers, not parents). */}
+                {/* Per-child feedback (parent only sees the unit/lesson
+                    label above plus their own child's feedback below).
+                    Note callout uses a rose tint to read as personal +
+                    matches the parent role identity, and the violet
+                    avatar matches the teacher-color that authored it. */}
                 {u ? (
-                  <div className="mt-4 space-y-3 text-sm">
+                  <div className="mt-3.5 space-y-3 text-sm sm:mt-4">
                     {u.individual_note ? (
-                      <div className="bg-muted/40 border-l-4 border-primary/40 rounded-r-md p-3 print:bg-transparent print:border-black">
-                        <p className="text-muted-foreground mb-0.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
+                      <div className="bg-rose-50/60 border-l-4 border-rose-400 rounded-r-md p-3 print:bg-transparent print:border-black">
+                        <p className="text-rose-700 mb-0.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide print:text-foreground">
                           <MessageSquareText className="size-3" />
                           {t("teacherNoteLabel")}
                         </p>
@@ -1096,7 +1129,7 @@ export default async function StudentProgressPage({
                           href={ws.public_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary inline-flex items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-xs font-medium hover:bg-muted/40 print:hidden"
+                          className="text-primary inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted/40 print:hidden"
                         >
                           <FileText className="size-3.5" />
                           {tWorksheets("viewAttachment")}

@@ -69,8 +69,12 @@ export default async function AdminLayout({
           {/* Top bar — sticky frosted-glass when content scrolls under,
               plus a soft drop shadow so even with nothing scrolling the
               bar has visible depth instead of looking like a flat 1px
-              hairline. */}
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-4 py-3 shadow-[0_1px_3px_-1px_rgb(0_0_0/0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-6">
+              hairline. The 2px sky accent below identifies the OWNER
+              role at a glance; teacher uses violet, parent uses rose
+              (same role palette as the demo chooser). */}
+          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background/70 px-4 py-3 shadow-[0_2px_4px_-1px_rgb(0_0_0/0.06)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sm:px-6">
+            <span aria-hidden="true" className="from-sky-400 via-primary to-amber-400 absolute inset-x-0 top-0 h-px bg-gradient-to-r" />
+            <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-0.5 bg-sky-500" />
             <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
               <AdminMobileSidebar
                 items={items}
@@ -89,17 +93,18 @@ export default async function AdminLayout({
               </Link>
             </div>
             <div className="hidden md:block md:flex-1" />
-            {/* User cluster — avatar + name as one group, then a hairline
-                separator, then the language toggle + logout. Reads as a
-                single intentional zone instead of three floating items. */}
-            <div className="flex shrink-0 items-center gap-3">
+            {/* User cluster — avatar + name on tablet+, avatar-only tap
+                target on mobile so users can still reach /profile.
+                Hairline separator then language toggle + logout reads
+                as a single intentional zone. */}
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <Link
                 href="/profile"
-                className="hover:bg-muted hidden items-center gap-2 rounded-md px-1.5 py-1 transition sm:flex"
-                aria-label={t("navTitle")}
+                className="hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-md px-1.5 py-1 transition"
+                aria-label={user.full_name}
               >
                 <Avatar name={user.full_name} seed={user.id} size="sm" />
-                <span className="text-foreground max-w-[10rem] truncate text-sm font-medium">
+                <span className="text-foreground hidden max-w-[10rem] truncate text-sm font-medium sm:inline">
                   {user.full_name}
                 </span>
               </Link>

@@ -168,34 +168,71 @@ export default async function ParentHomePage() {
     updatesByStudent.set(u.student_id, arr);
   }
 
+  // First-letter avatar for the parent — gives the greeting card a
+  // personal feel instead of just text.
+  const parentInitial = (user.full_name?.trim()?.split(/\s+/).slice(-1)[0]?.charAt(0) ?? "P").toUpperCase();
+  const today = new Date().toLocaleDateString(dateLocale, {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="space-y-6">
-      {/* Friendly greeting — kept calm: one soft accent strip, no blurs. */}
-      <div className="bg-card relative overflow-hidden rounded-2xl border p-6 sm:p-7">
-        <div className="bg-primary absolute inset-x-0 top-0 h-1" />
-        <div className="space-y-1.5">
-          <p className="text-primary inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide">
-            <Sparkles className="size-3.5" />
-            {t("greetingEyebrow")}
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            {user.full_name
-              ? t("greetingNamed", { name: user.full_name })
-              : t("title")}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {students.length === 0
-              ? t("subtitle")
-              : students.length === 1
-                ? t("greetingOneChild")
-                : t("greetingManyChildren", { n: students.length })}
-          </p>
+      {/* Greeting card — substantial 2-column layout with a rose
+          gradient initials avatar on the right. Reads as a personal
+          welcome rather than a generic dashboard. The decorative
+          orb softens the corner. */}
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-rose-50/80 via-card to-card p-5 shadow-sm sm:p-8 lg:p-10">
+        <div className="bg-rose-500 absolute inset-x-0 top-0 h-1" />
+        <div
+          aria-hidden="true"
+          className="bg-rose-200/40 pointer-events-none absolute -top-12 -right-12 size-64 rounded-full blur-3xl"
+        />
+        <div className="relative grid items-center gap-6 sm:grid-cols-[1fr_auto]">
+          <div className="space-y-3">
+            <p className="text-rose-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+              <Sparkles className="size-3.5" />
+              {t("greetingEyebrow")}
+            </p>
+            <h1 className="text-balance text-xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
+              {user.full_name
+                ? t("greetingNamed", { name: user.full_name })
+                : t("title")}
+            </h1>
+            <p className="text-muted-foreground inline-flex items-center gap-1.5 text-xs sm:text-sm">
+              <CalendarClock className="size-3.5 shrink-0" />
+              <span className="truncate">{today}</span>
+            </p>
+            <p className="text-foreground text-sm">
+              {students.length === 0
+                ? t("subtitle")
+                : students.length === 1
+                  ? t("greetingOneChild")
+                  : t("greetingManyChildren", { n: students.length })}
+            </p>
+          </div>
+          {/* Rose initials avatar — same pattern as teacher greeting,
+              gives the greeting a warm personal anchor instead of
+              text floating in white. */}
+          <div className="hidden items-center sm:flex">
+            <div className="relative">
+              <div
+                aria-hidden="true"
+                className="bg-rose-300/40 absolute -inset-3 rounded-full blur-2xl"
+              />
+              <div className="from-rose-400 to-rose-600 text-white ring-rose-200 relative flex size-24 items-center justify-center rounded-3xl bg-gradient-to-br text-4xl font-bold shadow-xl ring-4">
+                {parentInitial}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {students.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2">
-          {students.map((s) => {
+          {students.map((s, i) => {
             const cls = Array.isArray(s.class) ? s.class[0] : s.class;
             const teacher = cls
               ? Array.isArray(cls.teacher)
@@ -227,7 +264,8 @@ export default async function ParentHomePage() {
               <Link
                 key={s.id}
                 href={`/parent/students/${s.id}`}
-                className="group bg-card relative flex flex-col overflow-hidden rounded-2xl border shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                style={{ animationDelay: `${i * 100}ms` }}
+                className="group bg-card relative flex flex-col overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-1 hover:scale-[1.01] hover:border-rose-300 hover:shadow-xl hover:shadow-rose-500/15 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
               >
                 {(unreadByStudent.get(s.id) ?? 0) > 0 ? (
                   <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">

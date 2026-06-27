@@ -63,13 +63,20 @@ export function CenterCard({ center }: { center: CenterCardData }) {
   const tc = useTranslations("common");
 
   return (
-    <article className="bg-card overflow-hidden rounded-2xl border shadow-sm">
+    <article className="bg-card group/center relative overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
+      {/* Top accent stripe — primary blue ties each center to the
+          platform identity (subtle but ties the card to the chrome
+          system). */}
+      <div
+        aria-hidden="true"
+        className="bg-primary absolute inset-x-0 top-0 h-0.5"
+      />
       {/* Header */}
       <header className="flex items-start justify-between gap-3 border-b p-4 sm:p-5">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
-            <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
-              <Building2 className="size-4" />
+            <span className="bg-primary/10 text-primary ring-primary/20 flex size-10 shrink-0 items-center justify-center rounded-lg ring-1">
+              <Building2 className="size-5" />
             </span>
             <Link
               href={`/super-admin/centers/${center.id}`}

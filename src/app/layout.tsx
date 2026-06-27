@@ -99,8 +99,15 @@ export async function generateMetadata(): Promise<Metadata> {
     // emits the legacy Apple variant, so we add the standard one
     // here. Keeps the Apple flag too — older iOS Safari still
     // honours it.
+    //
+    // google: "notranslate" + the <html translate="no"> attribute
+    // prevent Google Translate from mutating React-managed DOM nodes,
+    // which caused intermittent removeChild + null Map.get() errors
+    // in production (observed via Sentry on /admin). Redundant with
+    // the html attribute for older browsers / standalone Translate.
     other: {
       "mobile-web-app-capable": "yes",
+      google: "notranslate",
     },
     openGraph: {
       type: "website",
@@ -132,8 +139,20 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
-      <body className={`${beVietnamPro.variable} antialiased`}>
+    // translate="no" + className="notranslate" prevent Google Translate
+    // (and Chrome's built-in auto-translate, very common on VN locales)
+    // from mutating React-managed DOM. When Translate swaps text nodes,
+    // React's reconciler can't find the node it expects and throws
+    // either "removeChild ... not a child of this node" or null-Map.get()
+    // errors deep inside portals (Sheet, Dialog, Toast). Both errors are
+    // visible in Sentry on /admin. The site is fully translated in-app
+    // via next-intl already, so blocking browser translation costs us
+    // nothing.
+    <html lang={locale} translate="no" suppressHydrationWarning>
+      <body
+        className={`${beVietnamPro.variable} antialiased notranslate`}
+        suppressHydrationWarning
+      >
         <NextIntlClientProvider messages={messages} locale={locale}>
           <InAppBrowserHint />
           {children}

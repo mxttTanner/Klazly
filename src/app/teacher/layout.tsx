@@ -27,8 +27,13 @@ export default async function TeacherLayout({
   return (
     <div className="min-h-dvh bg-zinc-50 dark:bg-zinc-950/40">
       <DemoBanner email={user.email} />
-      <header className="sticky top-0 z-20 border-b border-border bg-background/85 shadow-[0_1px_3px_-1px_rgb(0_0_0/0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
+      {/* Sticky frosted header with a 2px violet accent under the
+          border. Role-palette parity with the demo chooser + landing
+          page (sky=admin, violet=teacher, rose=parent). */}
+      <header className="sticky top-0 z-20 border-b border-border bg-background/70 shadow-[0_2px_4px_-1px_rgb(0_0_0/0.06)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+        <span aria-hidden="true" className="from-sky-400 via-primary to-amber-400 absolute inset-x-0 top-0 h-px bg-gradient-to-r" />
+        <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-0.5 bg-violet-500" />
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-4">
           <Link
             href="/teacher"
             className="flex min-w-0 flex-1 items-center gap-2.5"
@@ -40,13 +45,14 @@ export default async function TeacherLayout({
               size="sm"
             />
           </Link>
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <Link
               href="/profile"
-              className="hover:bg-muted hidden items-center gap-2 rounded-md px-1.5 py-1 transition sm:flex"
+              className="hover:bg-muted inline-flex min-h-11 items-center gap-2 rounded-md px-1.5 py-1 transition"
+              aria-label={user.full_name}
             >
               <Avatar name={user.full_name} seed={user.id} size="sm" />
-              <span className="text-foreground max-w-[10rem] truncate text-sm font-medium">
+              <span className="text-foreground hidden max-w-[10rem] truncate text-sm font-medium sm:inline">
                 {user.full_name}
               </span>
             </Link>
@@ -56,7 +62,7 @@ export default async function TeacherLayout({
           </div>
         </div>
       </header>
-      <div className="mx-auto max-w-5xl px-6 py-8">{children}</div>
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
       <FeedbackWidget />
     </div>
   );

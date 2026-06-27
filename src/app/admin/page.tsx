@@ -296,35 +296,109 @@ export default async function AdminHomePage({
 
   return (
     <div className="space-y-10">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
+      {/* Greeting card — substantial 2-column treatment so the page
+          doesn't open with a tiny title floating in white space.
+          Left: eyebrow + h1 + subtitle + date chip.
+          Right: decorative summary tiles showing the four KPIs in
+          mini form so the admin sees the business at a glance the
+          second they land. Hidden on mobile (the full KPI grid
+          below is the source of truth there). */}
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-sky-50/80 via-card to-card p-5 shadow-sm sm:p-8 lg:p-10">
+        <div className="bg-sky-500 absolute inset-x-0 top-0 h-1" />
+        <div
+          aria-hidden="true"
+          className="bg-sky-200/40 pointer-events-none absolute -top-12 -right-12 size-64 rounded-full blur-3xl"
+        />
+        <div className="relative grid items-center gap-6 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
+          <div className="space-y-3">
+            <p className="text-sky-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+              <UserSquare2 className="size-3.5" />
+              {t("title")}
+            </p>
+            <h1 className="text-balance text-xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
+              {t("subtitle")}
+            </h1>
+            <p className="text-muted-foreground inline-flex items-center gap-1.5 text-xs sm:text-sm">
+              <CalendarClock className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {new Date().toLocaleDateString(dateLocale, {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </p>
+          </div>
+          {/* Right-side mini-KPI summary — sky-themed compact stat
+              chips. Same four numbers as the cards below, but here
+              they sit inside the greeting so the page has presence
+              at first paint. Hidden <lg so mobile users see the full
+              KPI grid first. */}
+          <div className="hidden grid-cols-2 gap-3 lg:grid">
+            {cards.map((c) => (
+              <div
+                key={c.href}
+                className="bg-background/80 ring-sky-200/60 flex items-center gap-3 rounded-xl p-3 ring-1 backdrop-blur-sm"
+              >
+                <span
+                  className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${c.iconBg} ${c.tone}`}
+                >
+                  <c.icon className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold tabular-nums leading-none">
+                    {c.count}
+                  </p>
+                  <p className="text-muted-foreground truncate text-[10px] font-medium uppercase tracking-wide">
+                    {c.label}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {showOnboarding ? (
-        <section className="from-primary/5 to-primary/10 ring-primary/20 relative overflow-hidden rounded-xl bg-gradient-to-br p-5 ring-1 sm:p-6">
-          <div className="mb-4 flex items-start gap-3">
-            <div className="bg-primary text-primary-foreground flex size-10 shrink-0 items-center justify-center rounded-full shadow-sm">
+        // Calmer than the prior gradient-ring treatment: plain card +
+        // primary side stripe (matches the sky role identity by being
+        // a vertical accent), with a thin progress bar under the
+        // headline so admins see momentum without reading the count.
+        <section className="bg-card relative overflow-hidden rounded-xl border p-5 shadow-sm sm:p-6">
+          <div className="bg-primary absolute inset-y-0 left-0 w-1" />
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
               <Rocket className="size-5" />
             </div>
-            <div className="flex-1 space-y-1">
-              <h2 className="text-lg font-semibold tracking-tight">
-                {t("onboardingTitle")}
-              </h2>
-              <p className="text-muted-foreground text-sm">
-                {t("onboardingSubtitle", {
-                  done: completedCount,
-                  total: onboardingSteps.length,
-                })}
-              </p>
+            <div className="flex-1 space-y-2">
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold tracking-tight">
+                  {t("onboardingTitle")}
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  {t("onboardingSubtitle", {
+                    done: completedCount,
+                    total: onboardingSteps.length,
+                  })}
+                </p>
+              </div>
+              <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
+                <div
+                  className="bg-primary h-full rounded-full transition-all"
+                  style={{
+                    width: `${(completedCount / onboardingSteps.length) * 100}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
-          <ol className="space-y-2">
+          <ol className="mt-5 grid gap-2 sm:grid-cols-2">
             {onboardingSteps.map((step, i) => (
               <li key={step.href}>
                 <Link
                   href={step.href}
-                  className={`bg-background/80 group flex items-center gap-3 rounded-lg border p-3 transition hover:border-primary/40 hover:bg-background ${
+                  className={`bg-background/60 group flex min-h-12 items-center gap-3 rounded-lg border p-3 transition hover:border-primary/40 hover:bg-background ${
                     step.done ? "opacity-60" : ""
                   }`}
                 >
@@ -354,34 +428,39 @@ export default async function AdminHomePage({
         </section>
       ) : null}
 
+      {/* KPI grid — bigger numerals, no redundant "see all" footer
+          (the entire card is already a link → click anywhere). Hover
+          reveals a chevron in the top-right instead. Tabular-nums
+          keeps the four numbers vertically aligned at a glance.
+          Staggered entrance animations: each card delays in 80ms
+          apart so the row reads as a fluid sweep on first paint. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => {
+        {cards.map((c, i) => {
           const Icon = c.icon;
           return (
-            <Link key={c.href} href={c.href} className="group">
-              <div className="bg-card relative h-full overflow-hidden rounded-xl border shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
-                {/* Colored top accent stripe — one per category. Subtle (1px)
-                    but tints the card so the four KPIs read as distinct
-                    categories at a glance. */}
-                <div className={`absolute inset-x-0 top-0 h-1 ${c.accent}`} />
-                <div className="flex items-start justify-between gap-3 p-5">
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
-                      {c.label}
-                    </p>
-                    <p className="text-3xl font-semibold tabular-nums">
-                      {c.count}
-                    </p>
-                  </div>
+            <Link
+              key={c.href}
+              href={c.href}
+              style={{ animationDelay: `${i * 80}ms` }}
+              className="group bg-card relative h-full overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
+            >
+              <div className={`absolute inset-x-0 top-0 h-1 ${c.accent}`} />
+              <div className="flex h-full flex-col gap-4 p-5">
+                <div className="flex items-start justify-between gap-3">
                   <span
                     className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.iconBg} ${c.tone}`}
                   >
                     <Icon className="size-5" />
                   </span>
+                  <ChevronRight className="text-muted-foreground/40 group-hover:text-primary mt-1 size-4 shrink-0 transition-all group-hover:translate-x-0.5" />
                 </div>
-                <div className="border-border/60 flex items-center justify-end gap-1 border-t px-5 py-2.5 text-xs font-medium text-muted-foreground/70 group-hover:text-primary">
-                  <span>{t("seeAllShort")}</span>
-                  <ChevronRight className="size-3.5 transition-all group-hover:translate-x-0.5" />
+                <div className="space-y-1">
+                  <p className="text-4xl font-semibold tabular-nums leading-none tracking-tight">
+                    {c.count}
+                  </p>
+                  <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                    {c.label}
+                  </p>
                 </div>
               </div>
             </Link>

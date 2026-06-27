@@ -46,5 +46,10 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   authToken: process.env.SENTRY_AUTH_TOKEN,
   widenClientFileUpload: true,
   hideSourceMaps: true,
-  disableLogger: true,
+  // Replaces the deprecated `disableLogger: true` — same effect (strip
+  // Sentry SDK debug-logging code from the production bundle), new
+  // canonical config path per the Sentry SDK upgrade notice.
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+  },
 });

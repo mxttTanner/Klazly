@@ -11,7 +11,9 @@ import {
 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// Card primitives removed — KPI tiles now rendered inline with
+// colored top accent + icon chip treatment matching the admin
+// dashboard for cross-segment parity.
 import {
   deriveStatus,
   expireOverdueTrials,
@@ -426,19 +428,25 @@ export default async function SuperAdminHomePage({
       label: t("statsCenters"),
       value: String(withDerived.length),
       icon: Building2,
-      tone: "text-sky-600",
+      tone: "text-sky-700",
+      iconBg: "bg-sky-50",
+      accent: "bg-sky-500",
     },
     {
       label: t("statsActive"),
       value: String(activeCount),
       icon: Sparkles,
-      tone: "text-emerald-600",
+      tone: "text-emerald-700",
+      iconBg: "bg-emerald-50",
+      accent: "bg-emerald-500",
     },
     {
       label: t("statsTrial"),
       value: String(trialCount),
       icon: AlarmClock,
-      tone: trialsExpiringSoon > 0 ? "text-amber-600" : "text-muted-foreground",
+      tone: trialsExpiringSoon > 0 ? "text-amber-700" : "text-slate-600",
+      iconBg: trialsExpiringSoon > 0 ? "bg-amber-50" : "bg-muted",
+      accent: trialsExpiringSoon > 0 ? "bg-amber-500" : "bg-muted-foreground/40",
       sub:
         trialsExpiringSoon > 0
           ? t("statsTrialEndingSoonHint", { n: trialsExpiringSoon })
@@ -448,7 +456,9 @@ export default async function SuperAdminHomePage({
       label: t("statsMrr"),
       value: mrrFormatted,
       icon: CircleDollarSign,
-      tone: "text-emerald-600",
+      tone: "text-emerald-700",
+      iconBg: "bg-emerald-50",
+      accent: "bg-amber-500",
     },
   ];
 
@@ -643,18 +653,31 @@ export default async function SuperAdminHomePage({
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
+      {/* Greeting card — amber-tinted (platform-owner identity,
+          distinct from tenant sky/violet/rose). Same shape as the
+          admin/teacher/parent greeting cards for cross-segment
+          parity. */}
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-amber-50/70 via-card to-card p-5 sm:p-8">
+        <div className="bg-amber-500 absolute inset-x-0 top-0 h-1" />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <p className="text-amber-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+              <Sparkles className="size-3.5" />
+              Platform owner
+            </p>
+            <h1 className="text-xl font-bold tracking-tight sm:text-3xl">
+              {t("title")}
+            </h1>
+            <p className="text-muted-foreground text-sm">{t("subtitle")}</p>
+          </div>
+          <Link
+            href="/super-admin/feedback"
+            className="bg-card text-foreground border-border hover:bg-muted/60 hover:border-primary/30 inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3.5 py-2 text-sm font-medium shadow-sm transition"
+          >
+            <MessageCircle className="size-4" />
+            Feedback inbox
+          </Link>
         </div>
-        <Link
-          href="/super-admin/feedback"
-          className="bg-card text-foreground border-border hover:bg-muted/60 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium shadow-sm"
-        >
-          Feedback inbox
-        </Link>
       </div>
 
       {/* Action required — trials about to lapse + recently expired
@@ -737,30 +760,44 @@ export default async function SuperAdminHomePage({
         </div>
       ) : null}
 
-      {/* Stats — always visible. The business-glance snapshot. */}
+      {/* Stats — premium KPI tiles matching the admin dashboard
+          treatment: colored top accent, icon chip, big 4xl numerals,
+          hover lift. Staggered entrance via animation-delay so the
+          row reads as one fluid sweep on first paint. */}
       <div className="space-y-3">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((s) => {
+          {stats.map((s, i) => {
             const Icon = s.icon;
             return (
-              <Card key={s.label}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-muted-foreground text-sm font-medium">
-                    {s.label}
-                  </CardTitle>
-                  <Icon className={`size-4 ${s.tone}`} />
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-semibold tabular-nums">
-                    {s.value}
-                  </p>
-                  {s.sub ? (
-                    <p className="text-muted-foreground mt-0.5 text-xs">
-                      {s.sub}
+              <div
+                key={s.label}
+                style={{ animationDelay: `${i * 80}ms` }}
+                className="bg-card group/kpi relative h-full overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
+              >
+                <div className={`absolute inset-x-0 top-0 h-1 ${s.accent}`} />
+                <div className="flex h-full flex-col gap-4 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <span
+                      className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${s.iconBg} ${s.tone}`}
+                    >
+                      <Icon className="size-5" />
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-3xl font-semibold tabular-nums leading-none tracking-tight sm:text-4xl">
+                      {s.value}
                     </p>
-                  ) : null}
-                </CardContent>
-              </Card>
+                    <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                      {s.label}
+                    </p>
+                    {s.sub ? (
+                      <p className="text-amber-700 mt-1 text-xs font-medium">
+                        {s.sub}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>

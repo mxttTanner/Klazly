@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   BookOpen,
   CalendarClock,
   ChevronRight,
   FileText,
+  GraduationCap,
   MessageSquareText,
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
@@ -65,32 +66,97 @@ export default async function TeacherHomePage() {
     }
   }
 
+  const classCount = classes?.length ?? 0;
+  const totalUnread = Array.from(unreadByClass.values()).reduce(
+    (sum, n) => sum + n,
+    0,
+  );
+  const locale = await getLocale();
+  const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
+  const firstInitial = (user.full_name?.trim()?.split(/\s+/).slice(-1)[0]?.charAt(0) ?? "T").toUpperCase();
+
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">{t("subtitle")}</p>
+      {/* Greeting card — substantial 2-column layout: large name
+          headline + date chip + class count summary on the left;
+          decorative violet initials avatar with a soft glow on the
+          right. Looks bespoke, not template-y. */}
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-violet-50/80 via-card to-card p-5 shadow-sm sm:p-8 lg:p-10">
+        <div className="bg-violet-500 absolute inset-x-0 top-0 h-1" />
+        <div
+          aria-hidden="true"
+          className="bg-violet-200/40 pointer-events-none absolute -top-12 -right-12 size-64 rounded-full blur-3xl"
+        />
+        <div className="relative grid items-center gap-6 sm:grid-cols-[1fr_auto]">
+          <div className="space-y-3">
+            <p className="text-violet-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+              <GraduationCap className="size-3.5" />
+              {t("title")}
+            </p>
+            <h1 className="text-balance text-xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
+              {user.full_name ?? t("title")}
+            </h1>
+            <p className="text-muted-foreground inline-flex items-center gap-1.5 text-xs sm:text-sm">
+              <CalendarClock className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {new Date().toLocaleDateString(dateLocale, {
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </p>
+            <p className="text-foreground text-sm">
+              {classCount === 0
+                ? t("subtitle")
+                : totalUnread > 0
+                  ? t("subtitleWithUnread", { n: classCount, unread: totalUnread })
+                  : t("subtitleWithCount", { n: classCount })}
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/teacher/report-settings"
+                className={`${buttonVariants({ variant: "outline", size: "sm" })} inline-flex items-center gap-1.5`}
+              >
+                <FileText className="size-4" />
+                {tSettings("reportSection")}
+              </Link>
+            </div>
+          </div>
+          {/* Initials avatar — gradient violet, big, with soft ring.
+              Reads as a personal greeting rather than a generic
+              dashboard. Hidden on mobile where the name + classes
+              already carry the page. */}
+          <div className="hidden items-center gap-3 sm:flex">
+            <div className="relative">
+              <div
+                aria-hidden="true"
+                className="bg-violet-300/40 absolute -inset-3 rounded-full blur-2xl"
+              />
+              <div className="from-violet-400 to-violet-600 text-white ring-violet-200 relative flex size-24 items-center justify-center rounded-3xl bg-gradient-to-br text-4xl font-bold shadow-xl ring-4">
+                {firstInitial}
+              </div>
+            </div>
+          </div>
         </div>
-        <Link
-          href="/teacher/report-settings"
-          className={`${buttonVariants({ variant: "outline", size: "sm" })} inline-flex items-center gap-1.5`}
-        >
-          <FileText className="size-4" />
-          {tSettings("reportSection")}
-        </Link>
       </div>
 
       {classes && classes.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          {classes.map((c) => {
+          {classes.map((c, i) => {
             const teacherName = Array.isArray(c.teacher)
               ? c.teacher[0]?.full_name
               : (c.teacher as { full_name: string } | null)?.full_name;
             const unread = unreadByClass.get(c.id) ?? 0;
             return (
-              <Link key={c.id} href={`/teacher/classes/${c.id}`} className="group">
-                <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
+              <Link
+                key={c.id}
+                href={`/teacher/classes/${c.id}`}
+                style={{ animationDelay: `${i * 80}ms` }}
+                className="group motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
+              >
+                <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:scale-[1.01] group-hover:border-violet-300 group-hover:shadow-lg group-hover:shadow-violet-500/10">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
                       <BookOpen className="text-violet-600 size-5" />
