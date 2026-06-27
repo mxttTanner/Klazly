@@ -65,9 +65,9 @@ export default async function HomePage() {
   ];
 
   const roles = [
-    { n: 1, title: t("role1Title"), body: t("role1Body"), well: <OwnerMock /> },
-    { n: 2, title: t("role2Title"), body: t("role2Body"), well: <TeacherMock /> },
-    { n: 3, title: t("role3Title"), body: t("role3Body"), well: <ParentMock /> },
+    { n: 1, title: t("role1Title"), body: t("role1Body"), shot: "/shots/admin.png" },
+    { n: 2, title: t("role2Title"), body: t("role2Body"), shot: "/shots/teacher.png" },
+    { n: 3, title: t("role3Title"), body: t("role3Body"), shot: "/shots/parent.png" },
   ];
 
   const pdfItems = [t("pdfItem1"), t("pdfItem2"), t("pdfItem3"), t("pdfItem4")];
@@ -172,9 +172,21 @@ export default async function HomePage() {
 
           {/* Composed product shot: dashboard frame + overlapping phone */}
           <div className="relative mx-auto w-full max-w-[480px] pb-10 lg:pb-0">
-            <HeroDashboardMock />
-            <div className="absolute -bottom-2 -right-2 w-[150px] sm:w-[160px] lg:-bottom-8 lg:-right-3">
-              <HeroPhoneMock />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/shots/admin.png"
+              alt={t("imgWellAlt")}
+              loading="lazy"
+              className="w-full rounded-2xl border border-[#243a57] shadow-[0_30px_70px_rgba(0,0,0,.55)]"
+            />
+            <div className="absolute -bottom-2 -right-2 w-[120px] sm:w-[140px] lg:-bottom-8 lg:-right-6">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/shots/parent.png"
+                alt={t("imgWellAlt")}
+                loading="lazy"
+                className="w-full rounded-[22px] shadow-[0_24px_50px_rgba(0,0,0,.6)]"
+              />
             </div>
           </div>
         </div>
@@ -220,8 +232,16 @@ export default async function HomePage() {
                 delay={(r.n - 1) * 90}
                 className="overflow-hidden rounded-2xl border border-brand-line bg-white shadow-[0_10px_30px_rgba(15,23,42,.06)]"
               >
-                <div className="flex justify-center bg-navy p-[18px]">
-                  <div className="w-full overflow-hidden rounded-lg">{r.well}</div>
+                <div className="bg-navy p-[18px]">
+                  <div className="aspect-[4/3] w-full overflow-hidden rounded-lg">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={r.shot}
+                      alt={r.title}
+                      loading="lazy"
+                      className="size-full object-cover object-top"
+                    />
+                  </div>
                 </div>
                 <div className="px-6 pb-7 pt-6">
                   <span className="inline-flex size-8 items-center justify-center rounded-[9px] bg-navy text-[15px] font-extrabold text-emerald-light">
@@ -250,7 +270,13 @@ export default async function HomePage() {
           className={`${WRAP} relative grid items-center gap-10 lg:grid-cols-[.9fr_1.1fr] lg:gap-[50px]`}
         >
           <div className="order-2 mx-auto w-[78%] min-w-[230px] lg:order-1 lg:w-[78%]">
-            <ReportMock />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/shots/pdf.png"
+              alt={t("imgWellAlt")}
+              loading="lazy"
+              className="w-full rounded-[14px] shadow-[0_30px_60px_rgba(0,0,0,.5)]"
+            />
           </div>
           <div className="order-1 lg:order-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-amber/[0.14] px-3.5 py-1.5 text-[12px] font-bold uppercase tracking-wide text-amber-light">
@@ -593,190 +619,6 @@ function PriceCard({
             : "bg-[#eef2f7] text-navy hover:bg-[#e2e8f2]"
         }`}
       />
-    </div>
-  );
-}
-
-/* --------- lightweight on-brand product mockups (image wells) --------- */
-// Representative UI sketches built from brand tokens. Swap for real
-// screenshots of the live product once captured.
-
-function MockBar({ w, tone = "line" }: { w: string; tone?: "line" | "em" | "navy" }) {
-  const bg =
-    tone === "em" ? "bg-emerald" : tone === "navy" ? "bg-navy/80" : "bg-brand-line";
-  return <div className={`h-2 rounded-full ${bg}`} style={{ width: w }} />;
-}
-
-function HeroDashboardMock() {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-[#243a57] bg-white shadow-[0_30px_70px_rgba(0,0,0,.55)]">
-      <div className="flex items-center justify-between border-b border-brand-line px-4 py-3">
-        <span className="text-[13px] font-black text-navy">
-          Klaz<span className="text-emerald">ly</span>
-        </span>
-        <div className="size-6 rounded-full bg-brand-light" />
-      </div>
-      <div className="grid grid-cols-4 gap-2 px-4 py-4">
-        {[
-          ["12", "GV"],
-          ["84", "PH"],
-          ["18", "Lớp"],
-          ["126", "HS"],
-        ].map(([n, l]) => (
-          <div key={l} className="rounded-lg bg-brand-light px-2 py-2 text-center">
-            <div className="text-[15px] font-black text-navy">{n}</div>
-            <div className="text-[9px] text-brand-slate">{l}</div>
-          </div>
-        ))}
-      </div>
-      <div className="space-y-2.5 px-4 pb-4">
-        {["72%", "60%", "84%"].map((w, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className="size-6 shrink-0 rounded-md bg-emerald/15" />
-            <div className="flex-1 space-y-1.5">
-              <MockBar w={w} tone="navy" />
-              <MockBar w="40%" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function HeroPhoneMock() {
-  return (
-    <div className="overflow-hidden rounded-[22px] border-4 border-[#0b1220] bg-white shadow-[0_24px_50px_rgba(0,0,0,.6)]">
-      <div className="bg-navy px-3 py-2.5 text-[10px] font-bold text-white">
-        Minh · Junior A
-      </div>
-      <div className="space-y-2 p-3">
-        <div className="rounded-md bg-emerald/10 px-2 py-1 text-[9px] font-bold text-emerald-dark">
-          Unit 4 — Animals
-        </div>
-        <MockBar w="90%" />
-        <MockBar w="70%" />
-        <div className="flex gap-1.5 pt-1">
-          <span className="rounded-full bg-brand-light px-2 py-0.5 text-[8px] text-brand-slate">
-            family
-          </span>
-          <span className="rounded-full bg-brand-light px-2 py-0.5 text-[8px] text-brand-slate">
-            mother
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function OwnerMock() {
-  return (
-    <div className="bg-white p-3">
-      <div className="mb-2 grid grid-cols-3 gap-1.5">
-        {["8/12", "6/24", "0/12"].map((n, i) => (
-          <div key={i} className="rounded-md bg-brand-light px-1.5 py-1.5 text-center">
-            <div
-              className={`text-[12px] font-black ${i === 2 ? "text-[#dc2626]" : "text-navy"}`}
-            >
-              {n}
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="space-y-1.5">
-        {["80%", "65%", "50%"].map((w, i) => (
-          <MockBar key={i} w={w} tone={i === 0 ? "em" : "line"} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TeacherMock() {
-  return (
-    <div className="bg-white p-3">
-      <div className="mb-2 rounded-md bg-emerald/10 px-2 py-1 text-[9px] font-bold text-emerald-dark">
-        Lưu &amp; gửi phụ huynh
-      </div>
-      <div className="space-y-1.5">
-        <MockBar w="100%" />
-        <MockBar w="85%" />
-      </div>
-      <div className="mt-2 flex gap-1">
-        {["Tốt", "Khá", "XS"].map((s) => (
-          <span
-            key={s}
-            className="rounded-full bg-brand-light px-2 py-0.5 text-[8px] font-semibold text-brand-slate"
-          >
-            {s}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ParentMock() {
-  return (
-    <div className="bg-white p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-[10px] font-black text-navy">Minh</span>
-        <span className="rounded-full bg-emerald/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-dark">
-          Tốt
-        </span>
-      </div>
-      <div className="grid grid-cols-3 gap-1.5 text-center">
-        {[
-          ["95%", "CC"],
-          ["88%", "BTVN"],
-          ["8", "Buổi"],
-        ].map(([n, l]) => (
-          <div key={l} className="rounded-md bg-brand-light py-1.5">
-            <div className="text-[11px] font-black text-navy">{n}</div>
-            <div className="text-[8px] text-brand-slate">{l}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReportMock() {
-  return (
-    <div className="overflow-hidden rounded-[14px] bg-white shadow-[0_30px_60px_rgba(0,0,0,.5)]">
-      <div className="flex items-center gap-2.5 border-b-2 border-emerald px-4 py-3">
-        <div className="flex size-8 items-center justify-center rounded-md bg-navy text-[12px] font-black text-emerald-light">
-          HM
-        </div>
-        <div>
-          <div className="text-[10px] font-black text-navy">
-            Trung Tâm Anh Ngữ Hoa Mai
-          </div>
-          <div className="text-[8px] text-brand-slate">Báo cáo tiến độ tháng</div>
-        </div>
-      </div>
-      <div className="grid grid-cols-4 gap-1.5 px-4 py-3">
-        {[
-          ["12/14", "Buổi"],
-          ["88%", "BTVN"],
-          ["95%", "CC"],
-          ["Tốt", "Thái độ"],
-        ].map(([n, l]) => (
-          <div key={l} className="rounded-md bg-brand-light px-1 py-1.5 text-center">
-            <div className="text-[11px] font-black text-navy">{n}</div>
-            <div className="text-[8px] text-brand-slate">{l}</div>
-          </div>
-        ))}
-      </div>
-      <div className="mx-4 mb-3 rounded-md bg-amber/10 px-3 py-2">
-        <div className="text-[9px] font-extrabold text-amber">
-          ★ Điểm sáng trong tháng
-        </div>
-        <div className="mt-1 space-y-1">
-          <MockBar w="80%" tone="line" />
-          <MockBar w="60%" tone="line" />
-        </div>
-      </div>
     </div>
   );
 }
