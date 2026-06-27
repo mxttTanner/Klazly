@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import {
   Check,
@@ -12,9 +11,9 @@ import {
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { ScrollReveal } from "@/components/scroll-reveal";
-import { LanguageToggle } from "@/components/language-toggle";
-import { BrandLogo } from "@/components/brand-logo";
 import { PricingCtaButton } from "@/components/pricing-cta-button";
+import { SiteNav } from "@/components/site-nav";
+import { SiteFooter } from "@/components/site-footer";
 import { FoundingSpotsCard } from "@/components/founding-spots-card";
 import { getFoundingStatus } from "@/lib/founding";
 
@@ -99,61 +98,21 @@ export default async function PricingPage() {
   ];
 
   return (
-    <div className="min-h-dvh bg-background">
-      {/* Sticky nav — glass surface with a hairline border, nav links
-          in a pill container, separators between toggle and login. */}
-      <header className="sticky top-0 z-30 border-b border-border bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-          <Link
-            href="/"
-            aria-label={t("brandAriaLabel")}
-            className="flex min-w-0 items-center gap-2.5 transition hover:opacity-80"
-          >
-            <BrandLogo size="md" />
-            <span className="border-border bg-muted text-muted-foreground hidden items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest sm:inline-flex">
-              <span className="bg-primary inline-block size-1.5 rounded-full" />
-              Live
-            </span>
-          </Link>
-          <nav className="hidden items-center rounded-full border bg-muted/40 p-1 md:flex">
-            <Link
-              href="/#features"
-              className="text-muted-foreground hover:bg-background hover:text-foreground rounded-full px-3.5 py-1.5 text-sm font-medium transition hover:shadow-sm"
-            >
-              {t("navFeatures")}
-            </Link>
-            <Link
-              href="/pricing"
-              aria-current="page"
-              className="bg-background text-primary rounded-full px-3.5 py-1.5 text-sm font-semibold shadow-sm"
-            >
-              {t("navPricing")}
-            </Link>
-            <Link
-              href="/demo"
-              className="text-muted-foreground hover:bg-background hover:text-foreground rounded-full px-3.5 py-1.5 text-sm font-medium transition hover:shadow-sm"
-            >
-              {t("navDemo")}
-            </Link>
-            <Link
-              href="/#contact"
-              className="text-muted-foreground hover:bg-background hover:text-foreground rounded-full px-3.5 py-1.5 text-sm font-medium transition hover:shadow-sm"
-            >
-              {t("navContact")}
-            </Link>
-          </nav>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <LanguageToggle />
-            <div className="bg-border hidden h-5 w-px sm:block" />
-            <Link
-              href="/login"
-              className="text-muted-foreground hover:text-foreground hover:bg-muted/60 inline-flex shrink-0 items-center rounded-md px-2.5 py-1.5 text-sm font-medium transition sm:px-3"
-            >
-              {t("heroLoginCta")}
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div
+      className="min-h-dvh bg-background"
+      // Scope the brand accent to emerald for this whole marketing page
+      // by overriding --primary on the subtree, so every bg-primary /
+      // text-primary / ring-primary lands on emerald without per-element
+      // edits. The shared dark nav/footer use their own navy tokens.
+      style={
+        {
+          "--primary": "oklch(0.70 0.16 162)",
+          "--primary-foreground": "oklch(0.24 0.05 160)",
+          "--ring": "oklch(0.70 0.16 162)",
+        } as React.CSSProperties
+      }
+    >
+      <SiteNav active="pricing" />
 
       {/* HERO + 3 PRICING CARDS — quiet off-white band, single accent.
           Tier ladder: micro (quiet outline) → 6-month (raised neutral)
@@ -510,22 +469,7 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      {/* Footer — minimal, just brand + back-to-home */}
-      <footer className="bg-slate-950 text-slate-400">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs sm:px-6">
-          <Link href="/" className="inline-flex items-center gap-2 text-white">
-            <BrandLogo size="sm" />
-          </Link>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <Link href="/legal/terms" className="hover:text-white">
-              {t("footerTerms")}
-            </Link>
-            <Link href="/legal/privacy" className="hover:text-white">
-              {t("footerPrivacy")}
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

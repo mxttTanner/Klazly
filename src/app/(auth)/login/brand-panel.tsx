@@ -21,7 +21,7 @@ export async function LoginBrandPanel() {
   const status = await getFoundingStatus();
 
   return (
-    <aside className="relative hidden overflow-hidden bg-slate-950 text-white lg:flex lg:flex-col">
+    <aside className="relative hidden overflow-hidden bg-navy text-white lg:flex lg:flex-col">
       {/* Headline + mockup */}
       <div className="relative flex flex-1 flex-col justify-center px-10 py-12">
         <span className="border-white/15 bg-white/5 inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium tracking-wide">
@@ -66,7 +66,7 @@ export async function LoginBrandPanel() {
               </div>
               <div className="bg-card mt-2 rounded-md border p-2">
                 <div className="mb-1 flex items-center gap-1.5 text-[9px] font-semibold">
-                  <ClipboardList className="text-primary size-2.5" />
+                  <ClipboardList className="text-emerald-dark size-2.5" />
                   <span className="text-foreground">Hoạt động gần đây</span>
                 </div>
                 {[
@@ -88,7 +88,7 @@ export async function LoginBrandPanel() {
 
       {/* Authentic Founding-Center panel — dark-variant card so it sits
           on the navy background without a colour clash. */}
-      <div className="relative border-white/10 border-t bg-slate-950 px-10 py-6">
+      <div className="relative border-white/10 border-t bg-navy px-10 py-6">
         <div className="ring-white/15 bg-white/5 rounded-xl p-4 ring-1">
           <div className="flex items-center gap-2.5">
             <span className="bg-white/10 text-slate-200 inline-flex size-8 items-center justify-center rounded-full ring-1 ring-white/15">
@@ -112,7 +112,7 @@ export async function LoginBrandPanel() {
             href={ZALO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold shadow-sm transition-colors"
+            className="bg-emerald hover:bg-emerald-light text-[#06281f] mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-bold shadow-sm transition-colors"
           >
             <MessageCircle className="size-3.5" />
             {status.isFull

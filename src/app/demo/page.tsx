@@ -9,10 +9,8 @@ import {
   Sparkles,
   UserSquare2,
 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { LanguageToggle } from "@/components/language-toggle";
-import { BrandLogo } from "@/components/brand-logo";
 import { ScrollReveal } from "@/components/scroll-reveal";
+import { SiteNav } from "@/components/site-nav";
 import { ZALO_URL } from "@/lib/zalo";
 
 /**
@@ -30,7 +28,6 @@ import { ZALO_URL } from "@/lib/zalo";
  */
 export default async function DemoChooserPage() {
   const t = await getTranslations("demo");
-  const tLanding = await getTranslations("landing");
 
   const roles = [
     {
@@ -61,62 +58,7 @@ export default async function DemoChooserPage() {
 
   return (
     <div className="relative min-h-dvh bg-background pb-40 sm:pb-32">
-      {/* Top nav — matches the landing page treatment so clicking
-          "Demo" from the landing doesn't lose the page chrome. The
-          active "Demo" pill gets a white background + primary text +
-          shadow so the user knows where they are. */}
-      <header className="relative border-b border-border bg-background/70 sticky top-0 z-20 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
-          <Link
-            href="/"
-            aria-label={tLanding("brandAriaLabel")}
-            className="flex min-w-0 items-center gap-2.5 transition-opacity hover:opacity-80"
-          >
-            <BrandLogo size="md" />
-            <span className="text-muted-foreground hidden items-center gap-1 rounded-full border bg-muted/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest sm:inline-flex">
-              <span className="bg-success size-1 rounded-full" />
-              Live
-            </span>
-          </Link>
-          <nav className="hidden items-center rounded-full border bg-muted/40 p-1 md:flex">
-            <Link
-              href="/#features"
-              className="text-muted-foreground hover:bg-background hover:text-foreground rounded-full px-3.5 py-1.5 text-sm font-medium transition hover:shadow-sm"
-            >
-              {tLanding("navFeatures")}
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-muted-foreground hover:bg-background hover:text-foreground rounded-full px-3.5 py-1.5 text-sm font-medium transition hover:shadow-sm"
-            >
-              {tLanding("navPricing")}
-            </Link>
-            <Link
-              href="/demo"
-              aria-current="page"
-              className="bg-background text-primary rounded-full px-3.5 py-1.5 text-sm font-semibold shadow-sm"
-            >
-              {tLanding("navDemo")}
-            </Link>
-            <Link
-              href="/#contact"
-              className="text-muted-foreground hover:bg-background hover:text-foreground rounded-full px-3.5 py-1.5 text-sm font-medium transition hover:shadow-sm"
-            >
-              {tLanding("navContact")}
-            </Link>
-          </nav>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageToggle />
-            <div className="bg-border hidden h-5 w-px sm:block" />
-            <Link
-              href="/login"
-              className="text-muted-foreground hover:text-foreground hover:bg-muted/60 inline-flex items-center rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-            >
-              {tLanding("heroLoginCta")}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteNav active="demo" />
 
       <main className="relative mx-auto max-w-5xl px-4 sm:px-6">
         {/* HERO */}
@@ -149,12 +91,12 @@ export default async function DemoChooserPage() {
                   href={r.href}
                   className={
                     "group bg-card relative flex w-full flex-col rounded-xl border shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md " +
-                    (isPrimary ? "ring-primary/40 ring-2" : "")
+                    (isPrimary ? "ring-emerald/50 ring-2" : "")
                   }
                 >
                   {/* Recommended marker — single primary accent. */}
                   {isPrimary ? (
-                    <span className="bg-primary text-primary-foreground absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest shadow-sm">
+                    <span className="bg-emerald text-[#06281f] absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest shadow-sm">
                       <Sparkles className="size-3" />
                       {t("recommended")}
                     </span>
@@ -162,7 +104,7 @@ export default async function DemoChooserPage() {
 
                   <div className="relative flex flex-1 flex-col p-5 sm:p-7">
                     {/* Neutral icon chip; accent appears on hover. */}
-                    <div className="bg-muted text-muted-foreground group-hover:text-primary flex size-12 items-center justify-center rounded-xl border transition-colors sm:size-14">
+                    <div className="bg-muted text-muted-foreground group-hover:text-emerald-dark flex size-12 items-center justify-center rounded-xl border transition-colors sm:size-14">
                       <Icon className="size-6 sm:size-7" />
                     </div>
                     <h2 className="mt-4 text-lg font-bold tracking-tight sm:mt-5 sm:text-xl">
@@ -172,7 +114,7 @@ export default async function DemoChooserPage() {
                       {r.desc}
                     </p>
                     {isPrimary ? (
-                      <p className="text-primary mt-3 inline-flex items-center gap-1.5 text-xs font-semibold">
+                      <p className="text-emerald-dark mt-3 inline-flex items-center gap-1.5 text-xs font-semibold">
                         <Sparkles className="size-3" />
                         {t("roleAdminRecommendedHint")}
                       </p>
@@ -180,10 +122,10 @@ export default async function DemoChooserPage() {
                     {/* Enter button — primary tier uses solid CTA so
                         the eye lands here first. */}
                     <span
-                      className={`mt-6 inline-flex items-center gap-1.5 self-start transition-transform group-hover:translate-x-0.5 ${
+                      className={`mt-6 inline-flex items-center gap-1.5 self-start rounded-full px-4 py-2 text-sm font-bold transition-transform group-hover:translate-x-0.5 ${
                         isPrimary
-                          ? buttonVariants({ size: "default" })
-                          : buttonVariants({ variant: "outline", size: "default" })
+                          ? "bg-emerald text-[#06281f] hover:bg-emerald-light"
+                          : "border border-border bg-background text-foreground hover:bg-muted"
                       }`}
                     >
                       {t("enterAs")} {r.title}
@@ -198,7 +140,7 @@ export default async function DemoChooserPage() {
 
         <p className="text-muted-foreground mt-14 text-center text-sm">
           {t("chooserHint")}{" "}
-          <Link href="/" className="text-foreground font-medium underline underline-offset-4 hover:text-primary">
+          <Link href="/" className="text-foreground font-medium underline underline-offset-4 hover:text-emerald-dark">
             {t("backHome")}
           </Link>
         </p>
@@ -228,7 +170,7 @@ export default async function DemoChooserPage() {
             <div className="flex shrink-0 items-center gap-2">
               <Link
                 href="/pricing"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold shadow-sm transition-colors"
+                className="bg-emerald text-[#06281f] hover:bg-emerald-light inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-bold shadow-sm transition-colors"
               >
                 {t("ctaBarPrimary")}
                 <ArrowRight className="size-3.5" />

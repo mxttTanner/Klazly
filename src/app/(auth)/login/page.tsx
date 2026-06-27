@@ -5,7 +5,7 @@ import { ArrowRight, Lock } from "lucide-react";
 import { LoginForm } from "./login-form";
 import { getCurrentUser, dashboardPathFor } from "@/lib/auth";
 import { LanguageToggle } from "@/components/language-toggle";
-import { BrandLogo } from "@/components/brand-logo";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { LoginBrandPanel } from "./brand-panel";
 
 export default async function LoginPage() {
@@ -22,14 +22,14 @@ export default async function LoginPage() {
         <div className="relative flex flex-col">
           {/* Mobile-only brand strip. Simplified navy header so the
               login keeps its identity without flashy motion. */}
-          <div className="bg-slate-950 px-6 pt-safe pb-8 pt-10 text-white sm:px-10 sm:pb-10 lg:hidden">
+          <div className="bg-navy px-6 pt-safe pb-8 pt-10 text-white sm:px-10 sm:pb-10 lg:hidden">
             <div className="flex items-center justify-between gap-3">
               <Link
                 href="/"
                 aria-label={tLanding("brandAriaLabel")}
-                className="inline-flex text-white transition-opacity hover:opacity-80"
+                className="inline-flex transition-opacity hover:opacity-80"
               >
-                <BrandLogo size="md" />
+                <BrandWordmark className="text-[22px]" />
               </Link>
               <div className="[&_button]:bg-white/5 [&_button]:text-white [&_button]:border-white/15 [&_button:hover]:bg-white/10">
                 <LanguageToggle />
@@ -54,7 +54,7 @@ export default async function LoginPage() {
               aria-label={tLanding("brandAriaLabel")}
               className="inline-flex transition-opacity hover:opacity-80"
             >
-              <BrandLogo size="md" />
+              <BrandWordmark tone="light" className="text-[22px]" />
             </Link>
           </header>
 
@@ -91,7 +91,7 @@ export default async function LoginPage() {
                 {t("newHere")}{" "}
                 <Link
                   href="/pricing"
-                  className="text-primary hover:text-primary/80 inline-flex items-center gap-0.5 font-semibold underline underline-offset-4 transition-colors"
+                  className="text-emerald-dark hover:text-emerald-dark/80 inline-flex items-center gap-0.5 font-semibold underline underline-offset-4 transition-colors"
                 >
                   {t("startTrialLink")}
                   <ArrowRight className="size-3.5" />
