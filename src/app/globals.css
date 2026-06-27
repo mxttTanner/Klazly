@@ -51,6 +51,33 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* ----------------------------------------------------------------
+     Marketing / brand redesign palette — navy + emerald + amber.
+     ADDITIVE: the logged-in app keeps the blue --primary ramp above;
+     the public marketing surface (landing, pricing, demo, login,
+     legal) consumes these tokens via the bg-navy / text-emerald / …
+     utilities mapped in @theme below. Single source of truth — never
+     hardcode these hexes in components. Values from the approved
+     reference (Klazly-Site-Redesign-Reference). 60/30/10: navy on the
+     dark bands, white/brand-light on content, emerald as the lone
+     ~10% accent; amber only for the PDF/"Điểm sáng" + "before" motif.
+     ---------------------------------------------------------------- */
+  --navy: #0f172a;
+  --navy-2: #13203b;
+  --panel: #172339;
+  --ink: #1e293b;
+  --emerald: #10b981;
+  --emerald-light: #34d399;
+  --emerald-dark: #047857;
+  --amber: #f59e0b;
+  --amber-light: #fcd34d;
+  --brand-slate: #64748b;
+  --brand-mut: #94a3b8;
+  --brand-mut-2: #b6c2d4;
+  --brand-light: #f6f8fb;
+  --brand-line: #e4e9f0;
+  --brand-line-dark: #1c2840;
 }
 
 .dark {
@@ -112,6 +139,23 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* Marketing/brand redesign utilities — bg-navy, text-emerald,
+     border-brand-line, text-brand-mut-2, bg-amber, etc. */
+  --color-navy: var(--navy);
+  --color-navy-2: var(--navy-2);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-emerald: var(--emerald);
+  --color-emerald-light: var(--emerald-light);
+  --color-emerald-dark: var(--emerald-dark);
+  --color-amber: var(--amber);
+  --color-amber-light: var(--amber-light);
+  --color-brand-slate: var(--brand-slate);
+  --color-brand-mut: var(--brand-mut);
+  --color-brand-mut-2: var(--brand-mut-2);
+  --color-brand-light: var(--brand-light);
+  --color-brand-line: var(--brand-line);
+  --color-brand-line-dark: var(--brand-line-dark);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);

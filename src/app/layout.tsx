@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Inter } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { ClarityScript } from "@/components/clarity-script";
@@ -31,9 +31,12 @@ export const viewport: Viewport = {
   ],
 };
 
-const beVietnamPro = Be_Vietnam_Pro({
+// Inter with the Vietnamese subset — the redesign's typeface. The
+// weights load the Vietnamese glyph coverage so diacritics render
+// correctly in every weight, including the 800/900 display numerals.
+const inter = Inter({
   subsets: ["latin", "vietnamese"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "700", "800", "900"],
   variable: "--font-sans",
   display: "swap",
 });
@@ -150,7 +153,7 @@ export default async function RootLayout({
     // nothing.
     <html lang={locale} translate="no" suppressHydrationWarning>
       <body
-        className={`${beVietnamPro.variable} antialiased notranslate`}
+        className={`${inter.variable} antialiased notranslate`}
         suppressHydrationWarning
       >
         <NextIntlClientProvider messages={messages} locale={locale}>
