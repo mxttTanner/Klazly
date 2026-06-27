@@ -798,6 +798,7 @@
       "saveSuccess": "Đã lưu mẫu '{name}'."
     },
     "lessonForm": {
+      "eyebrow": "Ghi bài",
       "title": "Ghi nhận bài học mới",
       "editTitle": "Sửa bài học",
       "edit": "Sửa",

@@ -184,6 +184,25 @@
     @apply bg-background text-foreground;
   }
 
+  /* Scoped dark-form skin. Wrap a form in `.app-dark-form` to recolor
+     the shared shadcn inputs/labels for a navy canvas (teacher lesson
+     log) without overriding every control individually. Higher
+     specificity than the single-class Tailwind utilities, so it wins. */
+  .app-dark-form input:not([type="checkbox"]):not([type="radio"]),
+  .app-dark-form textarea,
+  .app-dark-form select {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+  .app-dark-form input::placeholder,
+  .app-dark-form textarea::placeholder {
+    color: var(--brand-mut);
+  }
+  .app-dark-form .text-muted-foreground {
+    color: var(--brand-mut);
+  }
+
   /* iOS Safari auto-zooms when a focused form control has font-size
      under 16px. Force 16px on mobile across all native form controls
      regardless of any Tailwind text-xs / text-sm utility applied

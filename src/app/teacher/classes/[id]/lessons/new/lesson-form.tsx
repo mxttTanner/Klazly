@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useFormState } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
-import { Bookmark, FileText, Sparkles } from "lucide-react";
+import { Bookmark, Check, FileText, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SubmitButton } from "@/components/submit-button";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { createLesson, saveLessonTemplate, updateLesson } from "./actions";
 import type { Template } from "./page";
 
@@ -159,10 +159,18 @@ export function LessonForm({
   }, [formKey]);
 
   return (
-    <div className="space-y-6">
+    <div className="app-dark-form -mx-4 -my-6 min-h-[calc(100dvh-7rem)] space-y-6 bg-navy px-4 py-6 text-white sm:-mx-6 sm:px-6 sm:py-8">
+      <div>
+        <p className="text-[11px] font-extrabold uppercase tracking-[1px] text-emerald-light">
+          {t("eyebrow")} · {className}
+        </p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight text-white">
+          {isEdit ? t("editTitle") : t("title")}
+        </h1>
+      </div>
       {!isEdit && templates.length > 0 ? (
-        <div className="bg-card flex flex-wrap items-center gap-3 rounded-lg border p-4">
-          <Sparkles className="text-primary size-4" />
+        <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-brand-line-dark bg-navy-2 p-4">
+          <Sparkles className="size-4 text-emerald-light" />
           <Label htmlFor="template-picker" className="font-medium">
             {tTemplates("pickerLabel")}
           </Label>
@@ -188,7 +196,7 @@ export function LessonForm({
           <input type="hidden" name="lesson_id" value={lessonId} />
         ) : null}
 
-        <section className="space-y-4 rounded-lg border bg-card p-6">
+        <section className="space-y-4 rounded-2xl border border-brand-line-dark bg-navy-2 p-6">
           <div>
             <h2 className="text-lg font-medium">{t("generalHeader")}</h2>
             <p className="text-muted-foreground text-sm">
@@ -301,9 +309,9 @@ export function LessonForm({
             />
           </div>
 
-          <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+          <div className="space-y-3 rounded-xl border border-brand-line-dark bg-white/[0.02] p-3">
             <div className="flex items-center gap-2">
-              <FileText className="text-primary size-4" />
+              <FileText className="size-4 text-emerald-light" />
               <Label className="font-medium">{tWorksheets("lessonAttach")}</Label>
             </div>
             <p className="text-muted-foreground text-xs">
@@ -346,7 +354,7 @@ export function LessonForm({
           </div>
         </section>
 
-        <section className="space-y-4 rounded-lg border bg-card p-6">
+        <section className="space-y-4 rounded-2xl border border-brand-line-dark bg-navy-2 p-6">
           <div>
             <h2 className="text-lg font-medium">{t("perStudentHeader")}</h2>
             <p className="text-muted-foreground text-sm">
@@ -355,7 +363,7 @@ export function LessonForm({
           </div>
 
           {students.length > 1 ? (
-            <div className="bg-muted/40 flex flex-wrap items-center gap-2 rounded-md border border-dashed p-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-white/15 bg-white/[0.02] p-3 text-sm">
               <span className="text-muted-foreground">{t("bulkLabel")}</span>
               <Button
                 type="button"
@@ -377,11 +385,11 @@ export function LessonForm({
                   const v = e.target.value;
                   if (v === "none") return;
                   document
-                    .querySelectorAll<HTMLSelectElement>(
-                      'select[name^="behavior_"]',
+                    .querySelectorAll<HTMLInputElement>(
+                      `input[type="radio"][name^="behavior_"][value="${v}"]`,
                     )
                     .forEach((el) => {
-                      el.value = v;
+                      el.checked = true;
                     });
                   e.target.value = "none";
                 }}
@@ -420,7 +428,7 @@ export function LessonForm({
               return (
                 <div
                   key={s.id}
-                  className="grid gap-4 rounded-md border p-4 md:grid-cols-[10rem_10rem_1fr_auto]"
+                  className="grid gap-4 rounded-xl border border-brand-line-dark bg-white/[0.02] p-4 md:grid-cols-[10rem_1fr_auto]"
                 >
                   <input type="hidden" name="student_id" value={s.id} />
 
@@ -444,21 +452,24 @@ export function LessonForm({
                     </select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor={`behavior_${s.id}`}>{t("behavior")}</Label>
-                    <select
-                      id={`behavior_${s.id}`}
-                      name={`behavior_${s.id}`}
-                      defaultValue={su?.behavior_rating ?? "none"}
-                      className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-                    >
-                      <option value="none">{t("behaviorNone")}</option>
+                  <div className="space-y-2 md:col-span-3">
+                    <Label>{t("behavior")}</Label>
+                    <div role="radiogroup" className="flex flex-wrap gap-1.5">
                       {behaviorOptions.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
+                        <label key={o.value} className="cursor-pointer">
+                          <input
+                            type="radio"
+                            name={`behavior_${s.id}`}
+                            value={o.value}
+                            defaultChecked={su?.behavior_rating === o.value}
+                            className="peer sr-only"
+                          />
+                          <span className="inline-flex min-h-11 items-center rounded-lg border border-white/15 px-3 text-sm text-brand-mut-2 transition peer-checked:border-emerald peer-checked:bg-emerald/15 peer-checked:font-semibold peer-checked:text-emerald-light">
+                            {o.label}
+                          </span>
+                        </label>
                       ))}
-                    </select>
+                    </div>
                   </div>
 
                   <div className="space-y-2">
@@ -497,39 +508,36 @@ export function LessonForm({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {!isEdit ? (
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowSaveTpl((v) => !v)}
-              className="inline-flex items-center gap-1.5"
+              className="inline-flex items-center gap-1.5 border-white/15 bg-transparent text-brand-mut-2 hover:bg-white/5 hover:text-white"
             >
               <Bookmark className="size-4" />
               {tTemplates("saveButton")}
             </Button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-3">
-            <Link
-              href={`/teacher/classes/${classId}`}
-              className={buttonVariants({ variant: "outline" })}
-            >
-              {tCommon("cancel")}
-            </Link>
-            <SubmitButton
-              idleLabel={isEdit ? tCommon("save") : t("submit")}
-              pendingLabel={t("submitting")}
-            />
-          </div>
+          ) : null}
+          <Link
+            href={`/teacher/classes/${classId}`}
+            className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-4 text-sm font-medium text-brand-mut-2 transition hover:bg-white/5 hover:text-white"
+          >
+            {tCommon("cancel")}
+          </Link>
         </div>
+
+        <SaveBar
+          idle={isEdit ? tCommon("save") : t("submit")}
+          pending={t("submitting")}
+        />
       </form>
 
       {!isEdit && showSaveTpl ? (
         <form
           action={tplSaveAction}
-          className="space-y-3 rounded-lg border bg-muted/30 p-4"
+          className="space-y-3 rounded-2xl border border-brand-line-dark bg-navy-2 p-4"
         >
           <p className="text-sm font-medium">{tTemplates("saveDialogTitle")}</p>
           <p className="text-muted-foreground text-xs">
@@ -565,10 +573,37 @@ export function LessonForm({
             </p>
           ) : null}
           {tplSaveState.success ? (
-            <p className="text-sm text-emerald-600">{tplSaveState.success}</p>
+            <p className="text-sm text-emerald-light">{tplSaveState.success}</p>
           ) : null}
         </form>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Sticky emerald save bar (matches teacher.png). Uses useFormStatus so
+ * it reflects the parent <form>'s pending state — must render inside
+ * the form.
+ */
+function SaveBar({ idle, pending }: { idle: string; pending: string }) {
+  const { pending: isPending } = useFormStatus();
+  return (
+    <div className="sticky bottom-0 -mx-4 mt-2 border-t border-brand-line-dark bg-navy/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+      <button
+        type="submit"
+        disabled={isPending}
+        className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full bg-emerald px-6 text-base font-bold text-[#06281f] transition hover:bg-emerald-light disabled:opacity-60"
+      >
+        {isPending ? (
+          pending
+        ) : (
+          <>
+            {idle}
+            <Check className="size-4" strokeWidth={3} />
+          </>
+        )}
+      </button>
     </div>
   );
 }
