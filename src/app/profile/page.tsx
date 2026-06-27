@@ -54,7 +54,7 @@ export default async function ProfilePage() {
           Surface this so they know to add an email if they want that
           ability. When SMS OTP ships, drop this note. */}
       {!visibleEmail && user.phone ? (
-        <div className="bg-amber-50 text-amber-900 rounded-lg border border-amber-200 p-3 text-sm">
+        <div className="bg-warning/10 text-foreground rounded-lg border border-warning/30 p-3 text-sm">
           {tco("phoneOnlyResetNote")}
         </div>
       ) : null}

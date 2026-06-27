@@ -140,19 +140,14 @@ export function CenterActionsBar({
         <Button
           type="button"
           onClick={() => setOpen("manage")}
-          className={
-            (manageTone === "amber"
-              ? "bg-orange-600 text-white hover:bg-orange-500"
-              : "bg-emerald-600 text-white hover:bg-emerald-500") +
-            " relative"
-          }
+          className="relative"
           size="lg"
         >
           <CircleDollarSign className="size-4" />
           {manageLabel}
           {manageTone === "amber" ? (
             <span
-              className="ml-1 inline-flex size-2 animate-pulse rounded-full bg-amber-200 ring-2 ring-orange-700/30"
+              className="bg-amber-400 ml-1 inline-flex size-2 rounded-full"
               aria-hidden="true"
             />
           ) : null}
@@ -174,7 +169,6 @@ export function CenterActionsBar({
             variant="outline"
             onClick={() => setOpen("pause")}
             size="lg"
-            className="border-indigo-200 text-indigo-800 hover:bg-indigo-50"
           >
             <Pause className="size-4" />
             {t("actionPause")}
@@ -188,7 +182,7 @@ export function CenterActionsBar({
           <button
             type="button"
             onClick={() => setOpen("cancel")}
-            className="text-muted-foreground hover:text-rose-700 text-xs underline-offset-2 hover:underline"
+            className="text-muted-foreground hover:text-destructive text-xs underline-offset-2 hover:underline"
           >
             {t("actionCancel")}
           </button>
@@ -420,7 +414,6 @@ function ManageDialog({
               type="button"
               onClick={submitRevert}
               disabled={pending}
-              className="bg-sky-600 text-white hover:bg-sky-500"
             >
               <RotateCcw className="size-4" />
               {pending ? t("saving") : t("revertConfirmButton")}
@@ -467,7 +460,7 @@ function ManageDialog({
                   />
                   {t(planLabelKey(p) as Parameters<typeof t>[0])}
                   {isCurrent ? (
-                    <span className="bg-sky-100 text-sky-800 ring-sky-200 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1">
+                    <span className="bg-primary/10 text-primary ring-primary/20 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1">
                       {t("manageCurrentPlanBadge")}
                     </span>
                   ) : null}
@@ -487,12 +480,12 @@ function ManageDialog({
 
           <label
             className={
-              "flex items-center justify-between gap-3 rounded-lg border-2 px-3.5 py-2.5 transition " +
+              "flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 transition " +
               (foundingDisabled
                 ? "cursor-not-allowed border-muted bg-muted/30 opacity-60"
                 : choice === "founding"
-                  ? "border-amber-400 bg-amber-50/40 cursor-pointer"
-                  : "border-amber-200 hover:bg-amber-50/40 cursor-pointer")
+                  ? "border-primary bg-primary/5 cursor-pointer"
+                  : "hover:bg-muted/40 cursor-pointer")
             }
           >
             <span className="flex min-w-0 items-start gap-2.5">
@@ -503,19 +496,19 @@ function ManageDialog({
                 checked={choice === "founding"}
                 onChange={() => setChoice("founding")}
                 disabled={foundingDisabled}
-                className="mt-0.5 size-4 accent-amber-600"
+                className="mt-0.5 size-4 accent-primary"
               />
               <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-amber-900">
-                  <Sparkles className="size-3.5 text-amber-700" />
+                <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <Sparkles className="size-3.5 text-amber-600" />
                   {t("convertFoundingOptionTitle")}
                   {currentChoice === "founding" ? (
-                    <span className="bg-sky-100 text-sky-800 ring-sky-200 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1">
+                    <span className="bg-primary/10 text-primary ring-primary/20 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1">
                       {t("manageCurrentPlanBadge")}
                     </span>
                   ) : null}
                 </span>
-                <span className="text-amber-900/80 mt-0.5 block text-xs">
+                <span className="text-muted-foreground mt-0.5 block text-xs">
                   {t("convertFoundingOptionPrice", { price: formattedLockedPrice })}
                 </span>
                 <span className="text-muted-foreground mt-1 block text-[11px]">
@@ -548,7 +541,7 @@ function ManageDialog({
               type="button"
               onClick={() => setRevertConfirmOpen(true)}
               disabled={pending}
-              className="text-sky-700 hover:text-sky-800 mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline disabled:opacity-50"
+              className="text-primary hover:text-primary/80 mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-2 hover:underline disabled:opacity-50"
             >
               <RotateCcw className="size-3.5" />
               {t("revertSectionButton")}
@@ -564,7 +557,6 @@ function ManageDialog({
             type="button"
             onClick={submit}
             disabled={pending || choice === null}
-            className="bg-emerald-600 text-white hover:bg-emerald-500"
           >
             <Check className="size-4" />
             {pending ? t("saving") : t("convertConfirmButton")}
@@ -746,7 +738,6 @@ function PauseDialog({
             type="button"
             onClick={submit}
             disabled={pending}
-            className="bg-indigo-600 text-white hover:bg-indigo-500"
           >
             <Pause className="size-4" />
             {pending ? t("saving") : t("pauseConfirmButton")}
@@ -815,7 +806,7 @@ function CancelDialog({
             className={
               "border-input bg-background h-10 w-full rounded-md border px-3 text-sm focus:outline-none focus:ring-2 " +
               (matches
-                ? "border-rose-400 focus:ring-rose-300"
+                ? "border-destructive focus:ring-destructive/40"
                 : "focus:ring-primary")
             }
           />

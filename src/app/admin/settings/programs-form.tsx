@@ -109,7 +109,7 @@ export function ProgramsForm({ programs }: { programs: Program[] }) {
           </p>
         ) : null}
         {addState.success ? (
-          <p className="text-sm text-emerald-600">{addState.success}</p>
+          <p className="text-sm text-success">{addState.success}</p>
         ) : null}
       </form>
     </div>

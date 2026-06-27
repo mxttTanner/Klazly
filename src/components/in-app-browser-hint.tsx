@@ -50,7 +50,7 @@ export function InAppBrowserHint() {
   return (
     <div
       role="status"
-      className="bg-amber-50 text-amber-900 border-b border-amber-200 fixed inset-x-0 top-0 z-50 print:hidden"
+      className="bg-warning/10 text-foreground border-b border-warning/30 fixed inset-x-0 top-0 z-50 print:hidden"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
       <div className="mx-auto flex max-w-3xl items-start gap-3 px-4 py-2.5 text-xs sm:px-6 sm:text-sm">
@@ -60,7 +60,7 @@ export function InAppBrowserHint() {
           type="button"
           onClick={dismiss}
           aria-label={t("dismiss")}
-          className="text-amber-700 hover:text-amber-900 shrink-0 -mr-1"
+          className="text-muted-foreground hover:text-foreground shrink-0 -mr-1"
         >
           <X className="size-4" />
         </button>

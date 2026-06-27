@@ -57,7 +57,7 @@ export default function GlobalError({
   return (
     <div className="bg-background flex min-h-dvh items-center justify-center px-4">
       <div className="bg-card w-full max-w-md space-y-5 rounded-2xl border p-6 shadow-sm sm:p-7">
-        <div className="bg-rose-50 text-rose-700 ring-rose-200 inline-flex size-12 items-center justify-center rounded-full ring-1">
+        <div className="bg-destructive/10 text-destructive ring-destructive/20 inline-flex size-12 items-center justify-center rounded-full ring-1">
           <AlertTriangle className="size-6" />
         </div>
         <div className="space-y-2">
@@ -67,7 +67,7 @@ export default function GlobalError({
           <p className="text-muted-foreground text-sm leading-relaxed">
             {t("body")}
           </p>
-          <p className="text-emerald-700 text-sm font-medium">
+          <p className="text-success text-sm font-medium">
             {t("dataSafe")}
           </p>
         </div>
@@ -85,7 +85,7 @@ export default function GlobalError({
             href={ZALO_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-emerald-600 text-white inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium hover:bg-emerald-500"
+            className="border-border bg-background text-foreground hover:bg-muted inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium"
           >
             <MessageCircle className="size-4" />
             {t("zalo")}

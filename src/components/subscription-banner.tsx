@@ -43,8 +43,8 @@ export async function SubscriptionBanner({
         className={
           "border-b text-sm print:hidden " +
           (expired
-            ? "bg-rose-50 text-rose-900"
-            : "bg-sky-50 text-sky-900")
+            ? "bg-destructive/10 text-destructive"
+            : "bg-warning/10 text-warning-foreground")
         }
       >
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6">
@@ -67,7 +67,7 @@ export async function SubscriptionBanner({
 
   if (center.subscription_status === "past_due") {
     return (
-      <div className="bg-rose-50 text-rose-900 border-b text-sm print:hidden">
+      <div className="bg-destructive/10 text-destructive border-b text-sm print:hidden">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6">
           <AlertTriangle className="size-4 shrink-0" />
           <p>{t("pastDue")}</p>
@@ -78,7 +78,7 @@ export async function SubscriptionBanner({
 
   if (center.subscription_status === "canceled") {
     return (
-      <div className="bg-slate-100 text-slate-800 border-b text-sm print:hidden">
+      <div className="bg-muted text-foreground border-b text-sm print:hidden">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:px-6">
           <XCircle className="size-4 shrink-0" />
           <p>{t("canceled")}</p>

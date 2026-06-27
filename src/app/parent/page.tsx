@@ -12,38 +12,27 @@ import {
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseDateOnly } from "@/lib/utils";
+import { ScrollReveal } from "@/components/scroll-reveal";
 
 export const dynamic = "force-dynamic";
 
-// Soft avatar tones — each child gets a consistent colour from a small,
-// muted palette. Fewer tones = a calmer, less circus-like wall of cards.
-const AVATAR_TONES = [
-  "bg-sky-50 text-sky-700 ring-sky-100",
-  "bg-emerald-50 text-emerald-700 ring-emerald-100",
-  "bg-violet-50 text-violet-700 ring-violet-100",
-  "bg-amber-50 text-amber-700 ring-amber-100",
-];
+// Single neutral avatar tone — child initials sit on a quiet primary
+// tint. No per-child hue (that was decoration, not information).
+const AVATAR_TONE = "bg-primary/10 text-primary ring-primary/20";
 
-function hashIndex(s: string, mod: number) {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = (h << 5) - h + s.charCodeAt(i);
-    h |= 0;
-  }
-  return Math.abs(h) % mod;
-}
-
+// overall_level is real information → restrained green/amber/red scale.
 const LEVEL_TONES: Record<string, string> = {
   good: "bg-emerald-100 text-emerald-800 border-emerald-200",
   okay: "bg-amber-100 text-amber-800 border-amber-200",
-  needs_attention: "bg-rose-100 text-rose-800 border-rose-200",
+  needs_attention: "bg-red-100 text-red-800 border-red-200",
 };
 
+// Behavior rating is real information → green (positive) → amber → red.
 const BEHAVIOR_DOT: Record<string, string> = {
   great: "bg-emerald-500",
-  good: "bg-sky-500",
+  good: "bg-emerald-400",
   okay: "bg-amber-500",
-  needs_attention: "bg-rose-500",
+  needs_attention: "bg-red-500",
 };
 
 function initial(name: string): string {
@@ -180,19 +169,12 @@ export default async function ParentHomePage() {
 
   return (
     <div className="space-y-6">
-      {/* Greeting card — substantial 2-column layout with a rose
-          gradient initials avatar on the right. Reads as a personal
-          welcome rather than a generic dashboard. The decorative
-          orb softens the corner. */}
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-rose-50/80 via-card to-card p-5 shadow-sm sm:p-8 lg:p-10">
-        <div className="bg-rose-500 absolute inset-x-0 top-0 h-1" />
-        <div
-          aria-hidden="true"
-          className="bg-rose-200/40 pointer-events-none absolute -top-12 -right-12 size-64 rounded-full blur-3xl"
-        />
-        <div className="relative grid items-center gap-6 sm:grid-cols-[1fr_auto]">
+      {/* Greeting card — calm white surface, single-accent initials
+          avatar. Personal welcome without decorative washes or orbs. */}
+      <ScrollReveal as="div" className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-8 lg:p-10">
+        <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto]">
           <div className="space-y-3">
-            <p className="text-rose-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+            <p className="text-primary inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
               <Sparkles className="size-3.5" />
               {t("greetingEyebrow")}
             </p>
@@ -213,22 +195,15 @@ export default async function ParentHomePage() {
                   : t("greetingManyChildren", { n: students.length })}
             </p>
           </div>
-          {/* Rose initials avatar — same pattern as teacher greeting,
-              gives the greeting a warm personal anchor instead of
-              text floating in white. */}
+          {/* Single-accent initials avatar — a warm personal anchor
+              without the gradient/glow. */}
           <div className="hidden items-center sm:flex">
-            <div className="relative">
-              <div
-                aria-hidden="true"
-                className="bg-rose-300/40 absolute -inset-3 rounded-full blur-2xl"
-              />
-              <div className="from-rose-400 to-rose-600 text-white ring-rose-200 relative flex size-24 items-center justify-center rounded-3xl bg-gradient-to-br text-4xl font-bold shadow-xl ring-4">
-                {parentInitial}
-              </div>
+            <div className="bg-primary/10 text-primary ring-1 ring-primary/20 flex size-24 items-center justify-center rounded-3xl text-4xl font-bold">
+              {parentInitial}
             </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
 
       {students.length > 0 ? (
         <div className="grid gap-5 sm:grid-cols-2">
@@ -239,7 +214,7 @@ export default async function ParentHomePage() {
                 ? cls.teacher[0]
                 : cls.teacher
               : null;
-            const avatarTone = AVATAR_TONES[hashIndex(s.full_name, AVATAR_TONES.length)];
+            const avatarTone = AVATAR_TONE;
 
             // Trend = behavior ratings for this student in the last 3 of their
             // class's lessons (already sorted desc by date).
@@ -261,14 +236,13 @@ export default async function ParentHomePage() {
               : null;
 
             return (
+              <ScrollReveal key={s.id} delay={Math.min(i * 100, 300)}>
               <Link
-                key={s.id}
                 href={`/parent/students/${s.id}`}
-                style={{ animationDelay: `${i * 100}ms` }}
-                className="group bg-card relative flex flex-col overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-1 hover:scale-[1.01] hover:border-rose-300 hover:shadow-xl hover:shadow-rose-500/15 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
+                className="group bg-card relative flex h-full flex-col overflow-hidden rounded-2xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
                 {(unreadByStudent.get(s.id) ?? 0) > 0 ? (
-                  <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-rose-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                  <span className="bg-primary text-primary-foreground absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow-sm">
                     <MessageSquareText className="size-3" />
                     {unreadByStudent.get(s.id)}
                   </span>
@@ -311,7 +285,7 @@ export default async function ParentHomePage() {
                     {cls ? (
                       <>
                         <p className="inline-flex items-center gap-2">
-                          <BookOpen className="text-violet-600 size-3.5" />
+                          <BookOpen className="text-muted-foreground size-3.5" />
                           <span className="text-foreground font-medium">
                             {cls.name}
                           </span>
@@ -390,6 +364,7 @@ export default async function ParentHomePage() {
                   ) : null}
                 </div>
               </Link>
+              </ScrollReveal>
             );
           })}
         </div>

@@ -213,11 +213,11 @@ export function CenterForm({
               operator can override (e.g. reserve a specific number).
               The override checkbox unlocks submission past the cap. */}
           {isFounding ? (
-            <div className="border-amber-300 bg-amber-50/40 space-y-3 rounded-lg border p-4">
+            <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
               <div className="flex items-start gap-2">
-                <Sparkles className="text-amber-700 mt-0.5 size-4 shrink-0" />
+                <Sparkles className="text-muted-foreground mt-0.5 size-4 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-amber-900 text-sm font-semibold">
+                  <p className="text-foreground text-sm font-semibold">
                     {t("foundingSlotPanelTitle")}
                   </p>
                   <p className="text-muted-foreground mt-0.5 text-xs">
@@ -264,12 +264,12 @@ export function CenterForm({
               </div>
 
               {allSlotsTaken ? (
-                <label className="text-amber-900 mt-1 inline-flex items-start gap-2 text-xs">
+                <label className="text-foreground mt-1 inline-flex items-start gap-2 text-xs">
                   <input
                     type="checkbox"
                     checked={overrideCap}
                     onChange={(e) => setOverrideCap(e.target.checked)}
-                    className="mt-0.5 size-3.5 accent-amber-600"
+                    className="mt-0.5 size-3.5 accent-primary"
                   />
                   <span>
                     {t("foundingOverrideLabel", { cap: foundingCap })}
@@ -278,7 +278,7 @@ export function CenterForm({
               ) : null}
 
               {slotIsTaken ? (
-                <p className="text-rose-700 inline-flex items-center gap-1.5 text-xs">
+                <p className="text-destructive inline-flex items-center gap-1.5 text-xs">
                   <AlertTriangle className="size-3" />
                   {t("foundingSlotTakenInlineWarn", { n: slotNum })}
                 </p>
@@ -404,7 +404,7 @@ export function CenterForm({
         </div>
 
         <p className="text-muted-foreground inline-flex items-center gap-1.5 text-[11px]">
-          <Sparkles className="size-3 text-amber-500" />
+          <Sparkles className="text-muted-foreground size-3" />
           {t("foundingFootnote")}
         </p>
       </form>
@@ -428,14 +428,14 @@ export function CenterForm({
           </DialogHeader>
 
           {isFounding && slot ? (
-            <p className="text-foreground bg-amber-50 ring-amber-200 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ring-1">
-              <Sparkles className="text-amber-700 size-3.5" />
+            <p className="text-foreground bg-muted ring-border inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ring-1">
+              <Sparkles className="text-muted-foreground size-3.5" />
               {t("createConfirmFoundingSlot", { n: slotNum })}
             </p>
           ) : null}
 
           {submitDisabledReason ? (
-            <p className="text-rose-700 bg-rose-50 ring-rose-200 inline-flex items-start gap-1.5 rounded-md px-3 py-2 text-sm ring-1">
+            <p className="text-destructive bg-destructive/10 ring-destructive/20 inline-flex items-start gap-1.5 rounded-md px-3 py-2 text-sm ring-1">
               <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
               {submitDisabledReason}
             </p>
@@ -453,7 +453,6 @@ export function CenterForm({
               type="button"
               onClick={actuallySubmit}
               disabled={submitDisabledReason !== null}
-              className="bg-emerald-600 text-white hover:bg-emerald-500"
             >
               <Check className="size-4" />
               {t("createConfirmButton")}

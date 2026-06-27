@@ -63,14 +63,7 @@ export function CenterCard({ center }: { center: CenterCardData }) {
   const tc = useTranslations("common");
 
   return (
-    <article className="bg-card group/center relative overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
-      {/* Top accent stripe — primary blue ties each center to the
-          platform identity (subtle but ties the card to the chrome
-          system). */}
-      <div
-        aria-hidden="true"
-        className="bg-primary absolute inset-x-0 top-0 h-0.5"
-      />
+    <article className="bg-card group/center relative overflow-hidden rounded-2xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md">
       {/* Header */}
       <header className="flex items-start justify-between gap-3 border-b p-4 sm:p-5">
         <div className="min-w-0 flex-1 space-y-2">
@@ -113,7 +106,7 @@ export function CenterCard({ center }: { center: CenterCardData }) {
               </span>
             ) : null}
             {center.mrrText ? (
-              <span className="bg-emerald-50 text-emerald-800 ring-emerald-200 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 tabular-nums">
+              <span className="bg-muted text-muted-foreground inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium tabular-nums">
                 {center.mrrText}
               </span>
             ) : null}

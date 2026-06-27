@@ -308,7 +308,7 @@ export default async function ClassDetailPage({
                         className={
                           "tabular-nums rounded-full px-1.5 text-[10px] font-semibold " +
                           (tab.urgent
-                            ? "bg-rose-500 text-white"
+                            ? "bg-primary text-primary-foreground"
                             : active
                               ? "bg-primary/15 text-primary"
                               : "bg-muted text-muted-foreground")
@@ -523,7 +523,7 @@ export default async function ClassDetailPage({
                             {l.vocabulary || l.grammar_point || l.general_note ? (
                               <div className="mt-4 space-y-2.5 text-sm">
                                 {l.vocabulary ? (
-                                  <div className="bg-muted/40 rounded-lg border-l-4 border-sky-400 p-3">
+                                  <div className="bg-muted/40 rounded-lg border-l-4 border-primary/40 p-3">
                                     <p className="text-muted-foreground mb-0.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
                                       {t("vocabulary")}
                                     </p>
@@ -533,7 +533,7 @@ export default async function ClassDetailPage({
                                   </div>
                                 ) : null}
                                 {l.grammar_point ? (
-                                  <div className="bg-muted/40 rounded-lg border-l-4 border-violet-400 p-3">
+                                  <div className="bg-muted/40 rounded-lg border-l-4 border-primary/40 p-3">
                                     <p className="text-muted-foreground mb-0.5 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide">
                                       {t("grammar")}
                                     </p>
@@ -625,7 +625,7 @@ export default async function ClassDetailPage({
                         <Link
                           href={`/teacher/classes/${cls.id}/messages/${s.id}`}
                           className={`bg-card hover:bg-muted/40 flex items-center justify-between gap-3 rounded-lg border p-3 transition ${
-                            unread > 0 ? "border-rose-200" : ""
+                            unread > 0 ? "border-primary/30" : ""
                           }`}
                         >
                           <div className="min-w-0 flex-1 space-y-0.5">
@@ -634,7 +634,7 @@ export default async function ClassDetailPage({
                                 {s.full_name}
                               </p>
                               {unread > 0 ? (
-                                <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                                <span className="bg-primary text-primary-foreground inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
                                   {unread}
                                 </span>
                               ) : null}

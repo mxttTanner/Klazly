@@ -1,23 +1,9 @@
 import { cn } from "@/lib/utils";
 
-// Six brand-friendly tones the avatar picks from deterministically based
-// on the seed string (usually the user's name or id). Same input → same
-// colour every render, so a given person looks consistent across pages
-// without us having to store an avatar_color column.
-const AVATAR_TONES = [
-  "bg-sky-100 text-sky-700 ring-sky-200",
-  "bg-violet-100 text-violet-700 ring-violet-200",
-  "bg-emerald-100 text-emerald-700 ring-emerald-200",
-  "bg-amber-100 text-amber-800 ring-amber-200",
-  "bg-rose-100 text-rose-700 ring-rose-200",
-  "bg-indigo-100 text-indigo-700 ring-indigo-200",
-] as const;
-
-function pickTone(seed: string): string {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-  return AVATAR_TONES[Math.abs(h) % AVATAR_TONES.length];
-}
+// Single on-system tone. The design system is single-accent, so avatars no
+// longer pick a per-person hue — every initial circle shares one quiet
+// primary tint. Wayfinding/identity comes from the name label, not colour.
+const AVATAR_TONE = "bg-primary/10 text-primary ring-primary/15";
 
 function initial(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -45,18 +31,19 @@ export function Avatar({
   className,
 }: {
   name: string;
-  /** Optional seed override; defaults to name. Use the user id for
-   *  deterministic colour stability even if name changes. */
+  /** Accepted for API stability; no longer affects colour now that avatars
+   *  use a single tone. Safe to keep passing the user id. */
   seed?: string;
   size?: keyof typeof SIZE_CLASSES;
   className?: string;
 }) {
+  void seed;
   return (
     <span
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full font-semibold ring-1",
         SIZE_CLASSES[size],
-        pickTone(seed ?? name),
+        AVATAR_TONE,
         className,
       )}
       aria-hidden="true"

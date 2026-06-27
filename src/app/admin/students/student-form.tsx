@@ -83,7 +83,7 @@ export function StudentForm({
         </p>
       ) : null}
       {state.success ? (
-        <p className="sm:col-span-2 lg:col-span-5 text-sm text-emerald-600">
+        <p className="sm:col-span-2 lg:col-span-5 text-sm text-success">
           {state.success}
         </p>
       ) : null}

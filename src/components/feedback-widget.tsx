@@ -99,7 +99,7 @@ export function FeedbackWidget() {
           </DialogHeader>
 
           {done ? (
-            <p className="text-emerald-700 py-6 text-center text-sm font-medium">
+            <p className="text-success py-6 text-center text-sm font-medium">
               {t("thanks")}
             </p>
           ) : (

@@ -31,7 +31,7 @@ export default async function ImportLegacyPage() {
           href="/admin/parents"
           className="bg-card group rounded-lg border p-5 shadow-sm transition hover:shadow-md"
         >
-          <div className="bg-rose-50 text-rose-700 inline-flex size-10 items-center justify-center rounded-lg">
+          <div className="bg-primary/10 text-primary inline-flex size-10 items-center justify-center rounded-lg">
             <Heart className="size-5" />
           </div>
           <h2 className="mt-3 text-base font-semibold">
@@ -52,7 +52,7 @@ export default async function ImportLegacyPage() {
           href="/admin/students"
           className="bg-card group rounded-lg border p-5 shadow-sm transition hover:shadow-md"
         >
-          <div className="bg-amber-50 text-amber-700 inline-flex size-10 items-center justify-center rounded-lg">
+          <div className="bg-primary/10 text-primary inline-flex size-10 items-center justify-center rounded-lg">
             <GraduationCap className="size-5" />
           </div>
           <h2 className="mt-3 text-base font-semibold">

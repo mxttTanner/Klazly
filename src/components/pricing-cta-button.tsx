@@ -124,7 +124,7 @@ export function PricingCtaButton({
             />
             <p className="text-muted-foreground text-xs">{t("fillInHint")}</p>
             {autoCopied ? (
-              <p className="text-emerald-600 inline-flex items-center gap-1 text-xs font-medium">
+              <p className="text-success inline-flex items-center gap-1 text-xs font-medium">
                 <Check className="size-3.5" />
                 {t("autoCopiedHint")}
               </p>
@@ -153,7 +153,7 @@ export function PricingCtaButton({
             <Button
               type="button"
               onClick={handleOpenZalo}
-              className="bg-emerald-500 text-white hover:bg-emerald-600 inline-flex items-center gap-1.5 shadow-sm"
+              className="inline-flex items-center gap-1.5"
             >
               <MessageCircle className="size-4" />
               {t("openZalo")}

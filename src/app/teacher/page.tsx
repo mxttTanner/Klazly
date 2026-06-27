@@ -77,19 +77,12 @@ export default async function TeacherHomePage() {
 
   return (
     <div className="space-y-8">
-      {/* Greeting card — substantial 2-column layout: large name
-          headline + date chip + class count summary on the left;
-          decorative violet initials avatar with a soft glow on the
-          right. Looks bespoke, not template-y. */}
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-violet-50/80 via-card to-card p-5 shadow-sm sm:p-8 lg:p-10">
-        <div className="bg-violet-500 absolute inset-x-0 top-0 h-1" />
-        <div
-          aria-hidden="true"
-          className="bg-violet-200/40 pointer-events-none absolute -top-12 -right-12 size-64 rounded-full blur-3xl"
-        />
+      {/* Greeting card — large name headline + date + class count
+          summary on the left; a quiet initials avatar on the right. */}
+      <div className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="relative grid items-center gap-6 sm:grid-cols-[1fr_auto]">
           <div className="space-y-3">
-            <p className="text-violet-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+            <p className="text-primary inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
               <GraduationCap className="size-3.5" />
               {t("title")}
             </p>
@@ -124,19 +117,12 @@ export default async function TeacherHomePage() {
               </Link>
             </div>
           </div>
-          {/* Initials avatar — gradient violet, big, with soft ring.
-              Reads as a personal greeting rather than a generic
-              dashboard. Hidden on mobile where the name + classes
-              already carry the page. */}
+          {/* Initials avatar — quiet single-accent tile. Reads as a
+              personal greeting. Hidden on mobile where the name +
+              classes already carry the page. */}
           <div className="hidden items-center gap-3 sm:flex">
-            <div className="relative">
-              <div
-                aria-hidden="true"
-                className="bg-violet-300/40 absolute -inset-3 rounded-full blur-2xl"
-              />
-              <div className="from-violet-400 to-violet-600 text-white ring-violet-200 relative flex size-24 items-center justify-center rounded-3xl bg-gradient-to-br text-4xl font-bold shadow-xl ring-4">
-                {firstInitial}
-              </div>
+            <div className="bg-primary text-primary-foreground flex size-24 items-center justify-center rounded-3xl text-4xl font-bold shadow-sm">
+              {firstInitial}
             </div>
           </div>
         </div>
@@ -156,13 +142,13 @@ export default async function TeacherHomePage() {
                 style={{ animationDelay: `${i * 80}ms` }}
                 className="group motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
               >
-                <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:scale-[1.01] group-hover:border-violet-300 group-hover:shadow-lg group-hover:shadow-violet-500/10">
+                <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/30 group-hover:shadow-md">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
-                      <BookOpen className="text-violet-600 size-5" />
+                      <BookOpen className="text-primary size-5" />
                       {c.name}
                       {unread > 0 ? (
-                        <span className="bg-rose-500 text-white inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold">
+                        <span className="bg-primary text-primary-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold">
                           <MessageSquareText className="size-3" />
                           {unread}
                         </span>

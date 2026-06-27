@@ -173,7 +173,7 @@ export default async function StatusPage() {
               {recent.map((i) => (
                 <li
                   key={i.id}
-                  className="border-l-2 border-slate-200 pl-4"
+                  className="border-border border-l-2 pl-4"
                 >
                   <p className="text-xs uppercase tracking-widest opacity-70">
                     {new Date(i.startedAtIso).toLocaleString(dateLocale, {
@@ -213,23 +213,23 @@ export default async function StatusPage() {
               href="https://zalo.me/84862404036"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-emerald-600 text-white hover:bg-emerald-500 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold shadow-sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold shadow-sm transition"
             >
               <MessageCircle className="size-4" />
               {t("zaloButton")}
             </a>
             <a
               href="tel:+84862404036"
-              className="border-border bg-background hover:bg-muted inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+              className="border-border bg-background hover:bg-muted inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition"
             >
-              <Phone className="size-4 text-emerald-600" />
+              <Phone className="text-muted-foreground size-4" />
               +84 86 240 4036
             </a>
             <a
               href="mailto:matthewstadlers14@gmail.com"
-              className="border-border bg-background hover:bg-muted inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+              className="border-border bg-background hover:bg-muted inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition"
             >
-              <Mail className="size-4 text-emerald-600" />
+              <Mail className="text-muted-foreground size-4" />
               matthewstadlers14@gmail.com
             </a>
           </div>

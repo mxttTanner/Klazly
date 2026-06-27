@@ -40,11 +40,11 @@ export async function FoundingSpotsCard({
     return (
       <div className="ring-white/15 bg-white/5 rounded-xl p-5 ring-1 backdrop-blur-sm">
         <div className="flex items-start gap-2.5">
-          <span className="bg-amber-400/15 text-amber-300 inline-flex size-9 items-center justify-center rounded-full ring-1 ring-amber-300/30">
+          <span className="bg-white/10 text-white inline-flex size-9 items-center justify-center rounded-full ring-1 ring-white/20">
             <Sparkles className="size-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-amber-200 text-xs font-semibold uppercase tracking-widest">
+            <p className="text-white/70 text-xs font-semibold uppercase tracking-widest">
               {t("programName")}
             </p>
             <p className="text-white mt-1 text-sm font-semibold">
@@ -60,7 +60,7 @@ export async function FoundingSpotsCard({
           aria-valuemax={100}
         >
           <div
-            className="bg-amber-400 h-full rounded-full"
+            className="bg-white h-full rounded-full"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -68,7 +68,7 @@ export async function FoundingSpotsCard({
           href={ZALO_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-emerald-500 hover:bg-emerald-400 text-white mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold shadow-sm transition"
+          className="bg-white text-foreground hover:bg-white/90 mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold shadow-sm transition"
         >
           <MessageCircle className="size-3.5" />
           {isFull ? t("waitlistCta") : t("zaloCta")}
@@ -78,13 +78,13 @@ export async function FoundingSpotsCard({
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50/60 to-white p-6 shadow-sm sm:p-7">
+    <div className="bg-card border-border rounded-2xl border p-6 shadow-sm sm:p-7">
       <div className="flex items-start gap-3">
-        <span className="bg-amber-100 text-amber-700 ring-amber-200 inline-flex size-10 items-center justify-center rounded-full ring-1">
+        <span className="bg-primary/10 text-primary ring-primary/20 inline-flex size-10 items-center justify-center rounded-full ring-1">
           <Sparkles className="size-5" />
         </span>
         <div className="min-w-0">
-          <p className="text-amber-900 text-xs font-semibold uppercase tracking-widest">
+          <p className="text-primary text-xs font-semibold uppercase tracking-widest">
             {t("programName")}
           </p>
           <p className="text-foreground mt-1 text-lg font-semibold">
@@ -104,7 +104,7 @@ export async function FoundingSpotsCard({
           aria-valuemax={100}
         >
           <div
-            className="bg-amber-500 h-full rounded-full transition-all"
+            className="bg-primary h-full rounded-full transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -118,7 +118,7 @@ export async function FoundingSpotsCard({
           href={ZALO_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-emerald-600 hover:bg-emerald-500 text-white inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-sm transition"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-sm transition"
         >
           <MessageCircle className="size-4" />
           {isFull ? t("waitlistCta") : t("zaloCta")}
@@ -133,7 +133,7 @@ export async function FoundingSpotsCard({
       </div>
 
       {showQr ? (
-        <div className="border-amber-100 mt-5 flex items-center gap-4 border-t pt-5">
+        <div className="border-border mt-5 flex items-center gap-4 border-t pt-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/zalo-qr.jpg"

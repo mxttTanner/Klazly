@@ -76,7 +76,7 @@ export function InboxList({
                   (active
                     ? "bg-primary-foreground/20"
                     : c.value === "unread" && c.count > 0
-                      ? "bg-rose-500 text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground")
                 }
               >
@@ -105,7 +105,7 @@ export function InboxList({
                   href={`/admin/messages/${thread.studentId}`}
                   className={
                     "bg-card flex items-start gap-3 rounded-xl border p-3 transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md " +
-                    (thread.unread > 0 ? "border-rose-200" : "")
+                    (thread.unread > 0 ? "border-primary/40" : "")
                   }
                 >
                   <Avatar
@@ -118,7 +118,7 @@ export function InboxList({
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{thread.studentName}</p>
                       {thread.unread > 0 ? (
-                        <span className="bg-rose-500 text-white inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                        <span className="bg-primary text-primary-foreground inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
                           {thread.unread}
                         </span>
                       ) : null}

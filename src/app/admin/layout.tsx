@@ -31,7 +31,7 @@ export default async function AdminLayout({
     .single();
 
   return (
-    <div className="min-h-dvh bg-zinc-50 dark:bg-zinc-950/40">
+    <div className="min-h-dvh bg-background">
       <DemoBanner email={user.email} />
       <SubscriptionBanner centerId={user.center_id} userEmail={user.email} />
 
@@ -41,12 +41,10 @@ export default async function AdminLayout({
             theme tokens that happen to share a value. Right edge gets a
             soft shadow in addition to the hairline border so the panel
             feels lifted instead of stencil-cut. */}
-        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r border-border bg-background shadow-[1px_0_4px_-2px_rgb(0_0_0/0.06)] md:flex md:flex-col dark:bg-zinc-900">
-          {/* Logo header: matched to the topbar with the same soft drop
-              shadow + bg gradient tint so it reads as a distinct sub-panel
-              within the sidebar, not just a section above a plain
-              border-b. */}
-          <div className="border-b border-border bg-gradient-to-b from-zinc-50/60 to-transparent p-4 shadow-[0_1px_2px_-1px_rgb(0_0_0/0.05)] dark:from-zinc-800/40">
+        <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 border-r border-border bg-card shadow-[1px_0_4px_-2px_rgb(0_0_0/0.06)] md:flex md:flex-col">
+          {/* Logo header: a plain hairline-divided sub-panel at the top of
+              the sidebar. */}
+          <div className="border-b border-border p-4">
             <Link
               href="/admin"
               className="flex min-w-0 max-w-full items-center gap-2.5"
@@ -69,12 +67,9 @@ export default async function AdminLayout({
           {/* Top bar — sticky frosted-glass when content scrolls under,
               plus a soft drop shadow so even with nothing scrolling the
               bar has visible depth instead of looking like a flat 1px
-              hairline. The 2px sky accent below identifies the OWNER
-              role at a glance; teacher uses violet, parent uses rose
-              (same role palette as the demo chooser). */}
+              hairline. Single hairline border; wayfinding between areas is
+              done with text labels, not a role-color accent. */}
           <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background/70 px-4 py-3 shadow-[0_2px_4px_-1px_rgb(0_0_0/0.06)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 sm:px-6">
-            <span aria-hidden="true" className="from-sky-400 via-primary to-amber-400 absolute inset-x-0 top-0 h-px bg-gradient-to-r" />
-            <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-0.5 bg-sky-500" />
             <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
               <AdminMobileSidebar
                 items={items}

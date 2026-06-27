@@ -154,13 +154,6 @@ export default async function HomePage() {
           toggle + login wear a subtle separator, primary CTA gets
           its own visual weight with shadow + ring. */}
       <header className="sticky top-0 z-30 border-b border-border bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-        {/* Animated gradient hairline at the very top of the page —
-            ties to the role-color system (sky → primary → violet →
-            amber). Static class, browser-painted. */}
-        <div
-          aria-hidden="true"
-          className="from-sky-400 via-primary to-amber-400 absolute inset-x-0 top-0 h-px bg-gradient-to-r"
-        />
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
           <Link
             href="/"
@@ -168,14 +161,10 @@ export default async function HomePage() {
             className="group flex min-w-0 items-center gap-2.5 transition hover:opacity-80"
           >
             <BrandLogo size="md" />
-            {/* Live status chip — small but signals "active product"
-                next to the brand. Pulsing emerald dot makes the nav
-                feel alive without being noisy. */}
-            <span className="border-emerald-200 bg-emerald-50 text-emerald-700 hidden items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest sm:inline-flex">
-              <span className="relative inline-flex size-1">
-                <span className="bg-emerald-500 absolute inset-0 rounded-full motion-safe:animate-ping motion-safe:opacity-75" />
-                <span className="bg-emerald-500 relative inline-block size-1 rounded-full" />
-              </span>
+            {/* Live status chip — small, static success dot signals
+                "active product" next to the brand without noise. */}
+            <span className="border-border bg-muted text-muted-foreground hidden items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest sm:inline-flex">
+              <span className="bg-success size-1.5 rounded-full" />
               Live
             </span>
           </Link>
@@ -213,7 +202,7 @@ export default async function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={t("ctaStartTrial")}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold shadow-md shadow-primary/25 ring-1 ring-primary/40 transition hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30 sm:px-4"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-md px-3 text-sm font-semibold shadow-sm transition hover:shadow-md sm:px-4"
             >
               <MessageCircle className="size-4 sm:hidden" />
               <span className="hidden sm:inline">{t("ctaStartTrial")}</span>
@@ -233,32 +222,11 @@ export default async function HomePage() {
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_at_center_top,black_30%,transparent_70%)]"
         />
-        {/* Mesh orbs — slowly drift instead of sitting static.
-            Three layers: primary blue (top), violet (bottom-right),
-            amber (bottom-left). Combined they create an animated
-            color-mesh feel that never quite repeats. Reduced-motion
-            users get the static positions. */}
-        <div
-          aria-hidden="true"
-          className="klazly-drift-a from-primary/25 absolute -top-32 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-gradient-to-br to-transparent blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="klazly-drift-b absolute bottom-0 right-1/4 size-[28rem] rounded-full bg-violet-500/15 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="klazly-drift-a absolute bottom-10 left-10 size-[22rem] rounded-full bg-amber-500/10 blur-3xl"
-        />
-
         <div className="relative mx-auto max-w-6xl px-4 pb-24 pt-20 sm:px-6 sm:pb-32 sm:pt-28">
           <div className="mx-auto max-w-4xl text-center motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700">
-            {/* Eyebrow — refined: amber dot pulse + frosted pill */}
+            {/* Eyebrow — frosted pill with a single static accent dot */}
             <span className="border-white/15 bg-white/5 inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest backdrop-blur-sm">
-              <span className="relative inline-flex size-1.5">
-                <span className="bg-amber-400 absolute inset-0 rounded-full motion-safe:animate-ping motion-safe:opacity-75" />
-                <span className="bg-amber-400 relative inline-block size-1.5 rounded-full" />
-              </span>
+              <span className="bg-white/70 size-1.5 rounded-full" />
               {t("heroEyebrow")}
             </span>
             {/* Headline — bigger, gradient text fill. Cleaner without
@@ -271,12 +239,12 @@ export default async function HomePage() {
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-700 motion-safe:delay-200">
-              {/* Primary CTA — bigger, bolder, with amber ring glow */}
+              {/* Primary CTA — the one prominent action in the hero */}
               <a
                 href={ZALO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 group/cta inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-bold shadow-2xl shadow-primary/40 ring-2 ring-primary/30 transition-all hover:scale-[1.03] hover:ring-primary/50"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 group/cta inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-bold shadow-lg transition hover:-translate-y-0.5"
               >
                 {t("ctaStartTrial")}
                 <ArrowRight className="size-4 transition-transform group-hover/cta:translate-x-0.5" />
@@ -292,7 +260,7 @@ export default async function HomePage() {
             <ul className="text-slate-400 mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
               {trustStripItems.map((item) => (
                 <li key={item} className="inline-flex items-center gap-1.5">
-                  <Check className="size-3.5 text-emerald-400" />
+                  <Check className="text-slate-400 size-3.5" />
                   {item}
                 </li>
               ))}
@@ -304,11 +272,6 @@ export default async function HomePage() {
               The phone tucks behind the laptop's bottom-right corner
               to give depth without crowding the headline. */}
           <div className="relative mx-auto mt-16 max-w-4xl motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-6 motion-safe:duration-1000 motion-safe:delay-300">
-            {/* Soft underglow for the mockup */}
-            <div
-              aria-hidden="true"
-              className="bg-primary/20 pointer-events-none absolute -inset-x-8 -bottom-8 -top-4 rounded-[3rem] blur-3xl"
-            />
             <div className="relative">
               <LaptopMock />
               <div className="absolute -bottom-12 -right-4 hidden lg:block">
@@ -323,19 +286,15 @@ export default async function HomePage() {
       </section>
 
       {/* ============================================================
-          PRODUCT-FACT STATS + LIVE MARQUEE
+          PRODUCT-FACT STATS + STATIC TRUST STRIP
           ============================================================
-          Top: four product-fact numerals (60s, 1 chạm, VI·EN, 30
-          phút). Bottom: a slow horizontal marquee of feature pills
-          coloured by role (sky=admin, violet=teacher, rose=parent,
-          amber=Klazly platform facts). The marquee gives the page
-          movement so it doesn't read like a static brochure; hover
-          pauses it so prospects can actually read. Reduced-motion
-          respected via globals.css. */}
+          Four product-fact numerals (60s, 1 chạm, VI·EN, 30 phút)
+          above a calm, static single row of feature pills. No
+          marquee — the row sits still so prospects can read it. */}
       <section className="relative overflow-hidden bg-slate-950 text-white">
         <div aria-hidden="true" className="from-slate-900 absolute inset-x-0 top-0 h-16 bg-gradient-to-b to-transparent" />
         <div className="relative mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-          <p className="text-amber-300 text-center text-xs font-semibold uppercase tracking-widest">
+          <p className="text-slate-400 text-center text-xs font-semibold uppercase tracking-widest">
             {t("statsBandLabel")}
           </p>
           <dl className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4 sm:gap-x-8">
@@ -355,25 +314,31 @@ export default async function HomePage() {
               </div>
             ))}
           </dl>
+          {/* Static trust strip — a single calm row of capability
+              pills. Replaces the old scrolling marquee. */}
+          <ul className="mt-10 flex flex-wrap items-center justify-center gap-2.5">
+            {[
+              "Ghi bài học từ điện thoại · 60 giây",
+              "PDF có letterhead riêng · một chạm",
+              "Gửi báo cáo qua Zalo",
+              "Song ngữ Việt · Anh",
+              "Bảo mật RLS tại cơ sở dữ liệu",
+            ].map((label) => (
+              <li
+                key={label}
+                className="border-white/10 bg-white/5 text-slate-300 inline-flex items-center rounded-full border px-3.5 py-1.5 text-sm font-medium"
+              >
+                {label}
+              </li>
+            ))}
+          </ul>
         </div>
-        <FeaturePillMarquee />
       </section>
 
       {/* ============================================================
           THREE VIEWS — owner featured (60%), teacher + parent stacked
           ============================================================ */}
       <section className="bg-background relative overflow-hidden border-b border-border">
-        {/* Three faint floating orbs — one per role color — anchored
-            to the section corners. Pure decoration, blurred enough
-            that they don't compete with the cards. */}
-        <div
-          aria-hidden="true"
-          className="bg-sky-100/40 pointer-events-none absolute -top-32 -left-32 size-96 rounded-full blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="bg-rose-100/40 pointer-events-none absolute top-1/2 -right-32 size-96 rounded-full blur-3xl"
-        />
         <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
           <ScrollReveal className="mx-auto max-w-3xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
@@ -385,15 +350,11 @@ export default async function HomePage() {
           </ScrollReveal>
 
           <div className="mt-12 grid gap-5 lg:grid-cols-5">
-            {/* Owner — large card, sky-tinted gradient + corner orb */}
-            <div className="group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-sky-50/80 via-card to-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg lg:col-span-3">
-              <div className="bg-sky-500 absolute inset-x-0 top-0 h-1" />
-              <div
-                aria-hidden="true"
-                className="bg-sky-200/30 pointer-events-none absolute -bottom-16 -right-16 size-48 rounded-full blur-3xl"
-              />
+            {/* Owner — the large, lead card. Neutral white surface,
+                single primary accent, labelled clearly. */}
+            <div className="group bg-card relative overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-3">
               <div className="relative grid gap-5 p-7 sm:grid-cols-[auto_1fr] sm:items-start">
-                <div className="bg-sky-100 text-sky-700 ring-sky-200 flex size-12 shrink-0 items-center justify-center rounded-xl ring-1">
+                <div className="bg-primary/10 text-primary flex size-12 shrink-0 items-center justify-center rounded-xl">
                   <UserCog className="size-6" />
                 </div>
                 <div>
@@ -410,29 +371,24 @@ export default async function HomePage() {
                       t("audienceOwnerBullet3"),
                     ].map((b) => (
                       <li key={b} className="flex items-start gap-2">
-                        <Check className="text-sky-600 mt-0.5 size-4 shrink-0" />
+                        <Check className="text-primary mt-0.5 size-4 shrink-0" />
                         <span>{b}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
               </div>
-              <div className="bg-zinc-50 border-t p-4 sm:p-6">
+              <div className="bg-muted/40 border-t p-4 sm:p-6">
                 <MiniDashboardMock />
               </div>
             </div>
 
-            {/* Teacher + Parent — stacked, each with role-tinted
-                gradient wash + corner orb for visual life. */}
+            {/* Teacher + Parent — stacked neutral cards. Same calm
+                surface; the role is named in the heading, not the hue. */}
             <div className="grid gap-5 lg:col-span-2">
-              <div className="group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-violet-50/80 via-card to-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                <div className="bg-violet-500 absolute inset-x-0 top-0 h-1" />
-                <div
-                  aria-hidden="true"
-                  className="bg-violet-200/30 pointer-events-none absolute -bottom-12 -right-12 size-40 rounded-full blur-3xl"
-                />
+              <div className="group bg-card relative overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="relative p-6">
-                  <div className="bg-violet-100 text-violet-700 ring-violet-200 flex size-10 items-center justify-center rounded-lg ring-1">
+                  <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
                     <GraduationCap className="size-5" />
                   </div>
                   <h3 className="mt-4 text-lg font-semibold">
@@ -443,14 +399,9 @@ export default async function HomePage() {
                   </p>
                 </div>
               </div>
-              <div className="group relative overflow-hidden rounded-2xl border bg-gradient-to-br from-rose-50/80 via-card to-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
-                <div className="bg-rose-500 absolute inset-x-0 top-0 h-1" />
-                <div
-                  aria-hidden="true"
-                  className="bg-rose-200/30 pointer-events-none absolute -bottom-12 -right-12 size-40 rounded-full blur-3xl"
-                />
+              <div className="group bg-card relative overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
                 <div className="relative p-6">
-                  <div className="bg-rose-100 text-rose-700 ring-rose-200 flex size-10 items-center justify-center rounded-lg ring-1">
+                  <div className="bg-primary/10 text-primary flex size-10 items-center justify-center rounded-lg">
                     <Heart className="size-5" />
                   </div>
                   <h3 className="mt-4 text-lg font-semibold">
@@ -476,20 +427,7 @@ export default async function HomePage() {
           navy to a tinted white-on-gradient so it flows with the
           rest of the page instead of feeling like a hard break.
           ============================================================ */}
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-white via-slate-50 to-white">
-        {/* Three faint role-tinted orbs — corner anchors */}
-        <div
-          aria-hidden="true"
-          className="bg-sky-100/40 pointer-events-none absolute -top-32 -left-32 size-[28rem] rounded-full blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="bg-violet-100/30 pointer-events-none absolute top-1/3 left-1/2 size-[24rem] -translate-x-1/2 rounded-full blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="bg-rose-100/40 pointer-events-none absolute -bottom-32 -right-32 size-[28rem] rounded-full blur-3xl"
-        />
+      <section className="relative overflow-hidden border-b border-border bg-muted/30">
         <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
           <ScrollReveal className="mx-auto max-w-3xl text-center">
             <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
@@ -502,21 +440,18 @@ export default async function HomePage() {
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             {[
               {
-                tone: "sky" as const,
                 time: t("dayMorningTime"),
                 role: t("dayMorningRole"),
                 body: t("dayMorningBody"),
                 icon: UserCog,
               },
               {
-                tone: "violet" as const,
                 time: t("dayAfternoonTime"),
                 role: t("dayAfternoonRole"),
                 body: t("dayAfternoonBody"),
                 icon: GraduationCap,
               },
               {
-                tone: "rose" as const,
                 time: t("dayEveningTime"),
                 role: t("dayEveningRole"),
                 body: t("dayEveningBody"),
@@ -524,42 +459,17 @@ export default async function HomePage() {
               },
             ].map((d, i) => {
               const Icon = d.icon;
-              const toneMap: Record<
-                typeof d.tone,
-                { bar: string; pill: string; iconBg: string; wash: string }
-              > = {
-                sky: {
-                  bar: "bg-sky-500",
-                  pill: "bg-sky-100 text-sky-800 ring-sky-200",
-                  iconBg: "bg-sky-100 text-sky-700 ring-sky-200",
-                  wash: "from-sky-50/80 via-card to-card",
-                },
-                violet: {
-                  bar: "bg-violet-500",
-                  pill: "bg-violet-100 text-violet-800 ring-violet-200",
-                  iconBg: "bg-violet-100 text-violet-700 ring-violet-200",
-                  wash: "from-violet-50/80 via-card to-card",
-                },
-                rose: {
-                  bar: "bg-rose-500",
-                  pill: "bg-rose-100 text-rose-800 ring-rose-200",
-                  iconBg: "bg-rose-100 text-rose-700 ring-rose-200",
-                  wash: "from-rose-50/80 via-card to-card",
-                },
-              };
-              const c = toneMap[d.tone];
               return (
                 <article
                   key={i}
                   style={{ animationDelay: `${i * 100}ms` }}
-                  className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br ${c.wash} p-6 shadow-md ring-1 ring-black/[0.03] transition-all duration-300 hover:-translate-y-1.5 hover:scale-[1.02] hover:shadow-xl motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-700 motion-safe:fill-mode-backwards sm:p-7`}
+                  className="group bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-3 motion-safe:duration-700 motion-safe:fill-mode-backwards sm:p-7"
                 >
-                  <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 ${c.bar}`} />
                   <div className="flex items-center justify-between gap-3">
-                    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1 ${c.pill}`}>
+                    <span className="bg-muted text-muted-foreground inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest tabular-nums">
                       {d.time}
                     </span>
-                    <span className={`flex size-10 shrink-0 items-center justify-center rounded-lg ring-1 ${c.iconBg}`}>
+                    <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
                       <Icon className="size-5" />
                     </span>
                   </div>
@@ -607,7 +517,6 @@ export default async function HomePage() {
                 t("feat1B4"),
               ]}
               icon={Printer}
-              tone="sky"
               visual={<PdfReportMock />}
               layout="right"
             />
@@ -617,7 +526,6 @@ export default async function HomePage() {
               body={t("feat2Body")}
               bullets={[t("feat2B1"), t("feat2B2"), t("feat2B3")]}
               icon={Heart}
-              tone="rose"
               visual={<ParentPhoneMock />}
               layout="left"
             />
@@ -627,7 +535,6 @@ export default async function HomePage() {
               body={t("feat3Body")}
               bullets={[t("feat3B1"), t("feat3B2"), t("feat3B3")]}
               icon={BarChart3}
-              tone="violet"
               visual={<AnalyticsMock />}
               layout="right"
             />
@@ -637,7 +544,6 @@ export default async function HomePage() {
               body={t("feat4Body")}
               bullets={[t("feat4B1"), t("feat4B2"), t("feat4B3")]}
               icon={MessageCircle}
-              tone="emerald"
               visual={<ZaloShareMock />}
               layout="left"
             />
@@ -650,7 +556,7 @@ export default async function HomePage() {
               feat5 and feat6 share equal weight. */}
           <div className="mt-20 space-y-10 sm:mt-28">
             <ScrollReveal className="mx-auto max-w-2xl text-center">
-              <p className="text-amber-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+              <p className="text-primary inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
                 <Sparkles className="size-3.5" />
                 {t("featuresAlsoLabel")}
               </p>
@@ -658,21 +564,18 @@ export default async function HomePage() {
             <div className="grid gap-5 lg:grid-cols-3">
               <ExtraCard
                 icon={Languages}
-                tone="amber"
                 eyebrow={t("feat5Eyebrow")}
                 title={t("feat5Title")}
                 bullets={[t("feat5B1"), t("feat5B2"), t("feat5B3")]}
               />
               <ExtraCard
                 icon={Lock}
-                tone="indigo"
                 eyebrow={t("feat6Eyebrow")}
                 title={t("feat6Title")}
                 bullets={[t("feat6B1"), t("feat6B2"), t("feat6B3")]}
               />
               <ExtraCard
                 icon={Zap}
-                tone="emerald"
                 eyebrow={t("howFooterLabel")}
                 title={t("howStep1Title")}
                 bullets={[
@@ -762,34 +665,28 @@ export default async function HomePage() {
             </p>
           </ScrollReveal>
 
-          {/* Split-screen comparison — left card is desaturated +
-              tinted with a faint rose wash (the "chaos" state), right
-              card glows emerald with a brand-blue ring (the "after"
-              state). The VS coin in the center makes the comparison
-              read as one decisive moment rather than two side-by-side
-              lists. */}
+          {/* Split-screen comparison — two neutral cards. The "before"
+              state stays quiet; the "after" state reads as dominant
+              through a heavier shadow + primary accents. The VS coin
+              in the center frames it as one decisive choice. */}
           <div className="relative mx-auto mt-12 max-w-5xl">
             <div className="grid items-stretch gap-5 md:grid-cols-2">
-              <div className="relative overflow-hidden rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50/60 via-card to-card p-6 shadow-sm sm:p-8">
-                <div
-                  aria-hidden="true"
-                  className="bg-rose-200/30 pointer-events-none absolute -top-12 -right-12 size-40 rounded-full blur-3xl"
-                />
+              <div className="bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm sm:p-8">
                 <div className="relative">
-                  <div className="bg-rose-100 text-rose-800 ring-rose-200 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1">
+                  <div className="bg-muted text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
                     <X className="size-3.5" />
                     {t("compareWithoutLabel")}
                   </div>
-                  <h3 className="text-rose-950 mt-3 text-lg font-semibold">
+                  <h3 className="text-foreground mt-3 text-lg font-semibold">
                     {t("compareWithoutTitle")}
                   </h3>
                   <ul className="mt-5 space-y-3 text-sm">
                     {withoutUs.map((item) => (
                       <li key={item} className="flex items-start gap-2.5">
-                        <span className="bg-rose-100 text-rose-600 mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full">
+                        <span className="bg-muted text-muted-foreground mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full">
                           <X className="size-3" />
                         </span>
-                        <span className="text-muted-foreground leading-relaxed line-through decoration-rose-300/60 decoration-1 underline-offset-2">
+                        <span className="text-muted-foreground leading-relaxed line-through decoration-border underline-offset-2">
                           {item}
                         </span>
                       </li>
@@ -797,23 +694,19 @@ export default async function HomePage() {
                   </ul>
                 </div>
               </div>
-              <div className="border-emerald-200/60 ring-emerald-200/50 relative overflow-hidden rounded-2xl border bg-gradient-to-br from-emerald-50/70 via-card to-card p-6 shadow-xl ring-1 sm:p-8">
-                <div
-                  aria-hidden="true"
-                  className="bg-emerald-200/40 pointer-events-none absolute -bottom-12 -left-12 size-40 rounded-full blur-3xl"
-                />
+              <div className="bg-card relative overflow-hidden rounded-2xl border p-6 shadow-md sm:p-8">
                 <div className="relative">
-                  <div className="bg-emerald-100 text-emerald-800 ring-emerald-200 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1">
+                  <div className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
                     <Check className="size-3.5" />
                     {t("compareWithLabel")}
                   </div>
-                  <h3 className="text-emerald-950 mt-3 text-lg font-semibold">
+                  <h3 className="text-foreground mt-3 text-lg font-semibold">
                     {t("compareWithTitle")}
                   </h3>
                   <ul className="mt-5 space-y-3 text-sm">
                     {withUs.map((item) => (
                       <li key={item} className="flex items-start gap-2.5">
-                        <span className="bg-emerald-500 text-white mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full shadow-sm">
+                        <span className="bg-primary text-primary-foreground mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full">
                           <Check className="size-3" />
                         </span>
                         <span className="text-foreground leading-relaxed">
@@ -845,14 +738,7 @@ export default async function HomePage() {
           tell the truth instead and actively recruit Founding
           Centers from this page.
           ============================================================ */}
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-br from-amber-50/50 via-background to-background">
-        {/* Soft amber orb behind the founder block — reinforces the
-            "warm + personal" tone of the first-person Vietnamese
-            copy without competing with the headline. */}
-        <div
-          aria-hidden="true"
-          className="bg-amber-200/40 pointer-events-none absolute -top-20 -left-20 size-[28rem] rounded-full blur-3xl"
-        />
+      <section className="relative overflow-hidden border-b border-border bg-background">
         <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
           <div className="grid gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-14">
             {/* Founder narrative */}
@@ -877,7 +763,7 @@ export default async function HomePage() {
                   tFounder("benefit4"),
                 ].map((b) => (
                   <li key={b} className="flex items-start gap-2">
-                    <Check className="text-emerald-600 mt-0.5 size-4 shrink-0" />
+                    <Check className="text-primary mt-0.5 size-4 shrink-0" />
                     <span>{b}</span>
                   </li>
                 ))}
@@ -914,27 +800,12 @@ export default async function HomePage() {
           ============================================================ */}
       <section
         id="pricing"
-        className="relative overflow-hidden border-b border-border bg-gradient-to-b from-zinc-50 via-zinc-50 to-zinc-100"
+        className="relative overflow-hidden border-b border-border bg-muted/30"
       >
-        {/* Two soft pricing-section orbs (primary + amber) for depth.
-            A diagonal stripe pattern overlay gives the section a
-            "premium tag" feel without being literal about it. */}
-        <div
-          aria-hidden="true"
-          className="bg-primary/10 pointer-events-none absolute -top-32 left-1/4 size-[32rem] rounded-full blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="bg-amber-200/30 pointer-events-none absolute -bottom-32 right-1/4 size-[28rem] rounded-full blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:repeating-linear-gradient(45deg,currentColor_0px,currentColor_1px,transparent_1px,transparent_14px)] text-foreground"
-        />
         <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
           <ScrollReveal className="mx-auto max-w-2xl text-center">
-            <span className="bg-amber-100 text-amber-800 ring-amber-200 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide shadow-sm ring-1">
-              <Sparkles className="size-3.5 motion-safe:animate-pulse" />
+            <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+              <Sparkles className="size-3.5" />
               {t("pricingLaunchBadge")}
             </span>
             <h2 className="mt-4 text-balance text-3xl font-bold tracking-tight sm:text-5xl">
@@ -978,16 +849,14 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* 6 months — middle tier. Gets a soft emerald wash + a
-                larger emerald savings badge with a tiny pointing-arrow
-                graphic so the eye understands the badge refers to the
-                price beneath. */}
-            <div className="group/tier relative flex flex-col rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50/60 via-card to-card p-6 shadow-md transition-all hover:-translate-y-1 hover:shadow-lg lg:col-span-4">
-              <span className="bg-emerald-500 text-white absolute -top-3.5 left-6 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold shadow-lg shadow-emerald-500/30">
+            {/* 6 months — middle tier. Calm white card with a single
+                primary savings badge pinned above the price. */}
+            <div className="bg-card group/tier relative flex flex-col rounded-2xl border p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md lg:col-span-4">
+              <span className="bg-primary/10 text-primary absolute -top-3.5 left-6 inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold">
                 <Sparkles className="size-3" />
                 {t("pricingMonthlyBadge")}
               </span>
-              <div className="text-emerald-700 inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest">
+              <div className="bg-muted text-muted-foreground inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest">
                 {t("pricingMonthlyName")}
               </div>
               <div className="mt-4">
@@ -1012,41 +881,30 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* 12 months — DOMINANT. Now wears:
-                • the rotating conic-gradient ring (klazly-glow-ring)
-                • a centered floating "Most popular" ribbon at the top
-                  (was a corner pill — recentered for symmetry)
-                • a much bigger price numeral (5xl/6xl)
-                • a soft inner radial highlight for depth
-                The lg:-mt-4 lifts it slightly above the row so the
-                eye lands here first. */}
-            <div className="klazly-glow-ring group/tier relative flex flex-col rounded-2xl bg-gradient-to-br from-primary via-primary to-blue-700 p-6 text-primary-foreground shadow-2xl shadow-primary/40 transition-all hover:-translate-y-1.5 hover:shadow-2xl sm:p-8 lg:col-span-5 lg:-mt-4">
-              {/* Centered top ribbon — floats above the card, anchored
-                  to the horizontal center so the "Most popular" claim
-                  feels declarative, not tucked. */}
+            {/* 12 months — DOMINANT. Solid primary fill, the widest
+                column, a bigger price numeral, and lg:-mt-4 lifting it
+                above the row so the eye lands here first. Confidence
+                from size + weight, not glow. */}
+            <div className="bg-primary group/tier relative flex flex-col rounded-2xl p-6 text-primary-foreground shadow-lg transition-all hover:-translate-y-0.5 sm:p-8 lg:col-span-5 lg:-mt-4">
+              {/* Centered top ribbon — declarative "Most popular". */}
               <div className="absolute inset-x-0 -top-4 flex justify-center">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-amber-950 shadow-xl shadow-amber-500/40 ring-2 ring-amber-300/60">
-                  <Sparkles className="size-3.5 motion-safe:animate-pulse" />
+                <span className="bg-background text-foreground inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest shadow-sm">
+                  <Sparkles className="size-3.5" />
                   {t("pricingAnnualBadge")}
                 </span>
               </div>
-              {/* Inner radial highlight for depth */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_top_right,rgb(255_255_255/0.12),transparent_50%)]"
-              />
-              <div className="relative mt-3 text-amber-200 inline-flex w-fit items-center gap-1.5 rounded-full bg-amber-400/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ring-1 ring-amber-300/40">
+              <div className="bg-white/15 text-primary-foreground relative mt-3 inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest">
                 {t("pricingAnnualName")}
               </div>
               <div className="relative mt-4">
-                <div className="from-white via-white bg-gradient-to-b to-blue-100 bg-clip-text text-5xl font-bold tracking-tight tabular-nums text-transparent sm:text-6xl">
+                <div className="text-5xl font-bold tracking-tight tabular-nums sm:text-6xl">
                   {t("pricingAnnualPrice")}
                 </div>
                 <div className="text-primary-foreground/80 mt-1 text-sm">
                   {t("pricingAnnualPeriod")}
                 </div>
               </div>
-              <div className="relative mt-2 inline-flex w-fit items-center gap-1.5 rounded-md bg-amber-400/20 px-2.5 py-1 text-xs font-semibold text-amber-200 ring-1 ring-amber-300/30">
+              <div className="text-primary-foreground relative mt-2 inline-flex w-fit items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-semibold">
                 <Sparkles className="size-3" />
                 {t("pricingAnnualEquivalent")}
               </div>
@@ -1056,7 +914,7 @@ export default async function HomePage() {
               <div className="relative mt-auto pt-6">
                 <PricingCtaButton
                   planKey="annual"
-                  buttonClassName="bg-white text-primary hover:bg-amber-50 inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-md px-4 text-base font-bold shadow-lg ring-2 ring-white/20 transition hover:scale-[1.02]"
+                  buttonClassName="bg-background text-primary hover:bg-background/90 inline-flex h-12 w-full items-center justify-center gap-1.5 rounded-md px-4 text-base font-bold shadow-sm transition"
                   showArrow
                 />
                 <p className="text-primary-foreground/90 mt-3 inline-flex w-full items-center justify-center gap-1.5 text-center text-xs font-semibold">
@@ -1071,23 +929,19 @@ export default async function HomePage() {
               check pills so it reads as the "every plan ships with" guarantee
               rather than a footnote. */}
           <div className="mx-auto mt-12 max-w-4xl">
-            <div className="relative overflow-hidden rounded-2xl border bg-card/80 p-6 shadow-sm backdrop-blur-sm sm:p-8">
-              <div
-                aria-hidden="true"
-                className="from-primary absolute inset-x-0 top-0 h-1 bg-gradient-to-r via-emerald-500 to-amber-500"
-              />
+            <div className="bg-card relative overflow-hidden rounded-2xl border p-6 shadow-sm sm:p-8">
               <p className="text-foreground text-center text-sm font-semibold">
                 {t("pricingNote")}
               </p>
               <ul className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
                 {[
-                  { item: t("pricingItem1"), tone: "bg-sky-100 text-sky-700" },
-                  { item: t("pricingItem2"), tone: "bg-violet-100 text-violet-700" },
-                  { item: t("pricingItem3"), tone: "bg-rose-100 text-rose-700" },
-                  { item: t("pricingItem4"), tone: "bg-amber-100 text-amber-700" },
-                ].map(({ item, tone }) => (
+                  t("pricingItem1"),
+                  t("pricingItem2"),
+                  t("pricingItem3"),
+                  t("pricingItem4"),
+                ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
-                    <span className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full ${tone}`}>
+                    <span className="bg-primary/10 text-primary mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full">
                       <Check className="size-3" />
                     </span>
                     <span className="text-foreground leading-relaxed">
@@ -1105,19 +959,9 @@ export default async function HomePage() {
           FAQ ACCORDION
           ============================================================ */}
       <section className="relative overflow-hidden border-b border-border bg-background">
-        {/* Soft primary orb at one corner so the section doesn't feel
-            flat against the dark CTA that follows. */}
-        <div
-          aria-hidden="true"
-          className="bg-primary/5 pointer-events-none absolute -top-32 right-0 size-[28rem] rounded-full blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="bg-violet-200/20 pointer-events-none absolute -bottom-32 -left-32 size-[28rem] rounded-full blur-3xl"
-        />
         <div className="relative mx-auto max-w-3xl px-4 py-20 sm:px-6 sm:py-24">
           <ScrollReveal className="text-center">
-            <span className="bg-primary/10 text-primary ring-primary/20 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1">
+            <span className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest">
               {tFaq("eyebrow")}
             </span>
             <h2 className="mt-4 text-balance text-3xl font-bold tracking-tight sm:text-5xl">
@@ -1137,10 +981,10 @@ export default async function HomePage() {
             {faqs.map((f, i) => (
               <details
                 key={i}
-                className="group bg-card rounded-xl border shadow-sm transition-all open:-translate-y-0.5 open:border-primary/40 open:shadow-lg open:ring-1 open:ring-primary/20 hover:border-primary/20 hover:shadow-md"
+                className="group bg-card rounded-xl border shadow-sm transition-all open:-translate-y-0.5 open:border-primary/40 open:shadow-md hover:shadow-md"
               >
-                <summary className="flex min-h-14 cursor-pointer items-center gap-4 rounded-xl px-5 py-4 text-sm font-semibold transition group-open:bg-gradient-to-r group-open:from-primary/[0.04] group-open:to-transparent hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
-                  <span className="bg-primary/10 text-primary group-open:bg-primary group-open:text-primary-foreground group-open:shadow-md group-open:shadow-primary/30 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums transition-all">
+                <summary className="flex min-h-14 cursor-pointer items-center gap-4 rounded-xl px-5 py-4 text-sm font-semibold transition hover:bg-muted/30 [&::-webkit-details-marker]:hidden">
+                  <span className="bg-primary/10 text-primary group-open:bg-primary group-open:text-primary-foreground inline-flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums transition-all">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span className="flex-1 text-balance text-base">{f.q}</span>
@@ -1159,14 +1003,11 @@ export default async function HomePage() {
               between FAQ and the founder-as-real-person promise.
               Personal, first-person voice, drives to Zalo (not a
               ticket queue). */}
-          <div className="mt-10 overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/5 via-card to-amber-50/40 p-6 shadow-sm sm:p-7">
+          <div className="bg-card mt-10 overflow-hidden rounded-2xl border p-6 shadow-sm sm:p-7">
             <div className="grid items-center gap-5 sm:grid-cols-[1fr_auto]">
               <div className="space-y-1.5">
-                <p className="text-amber-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
-                  <span className="relative inline-flex size-1.5">
-                    <span className="bg-amber-500 absolute inset-0 rounded-full motion-safe:animate-ping motion-safe:opacity-75" />
-                    <span className="bg-amber-500 relative inline-block size-1.5 rounded-full" />
-                  </span>
+                <p className="text-primary inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+                  <span className="bg-primary size-1.5 rounded-full" />
                   Klazly
                 </p>
                 <h3 className="text-xl font-bold tracking-tight">
@@ -1180,7 +1021,7 @@ export default async function HomePage() {
                 href={ZALO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-emerald-500 text-white hover:bg-emerald-400 inline-flex shrink-0 items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-bold shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex shrink-0 items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-bold shadow-sm transition hover:shadow-md"
               >
                 <MessageCircle className="size-4" />
                 {tFaq("stillHaveCta")}
@@ -1197,36 +1038,19 @@ export default async function HomePage() {
         id="contact"
         className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white"
       >
-        {/* Layered drifting mesh — three orbs (primary, amber,
-            emerald) that gently float in different cadences. Plus a
-            radial dot-grid backdrop for texture, masked to fade
+        {/* Static dot-grid backdrop for texture, masked to fade
             toward the edges so it doesn't distract from the CTA. */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:32px_32px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
         />
-        <div
-          aria-hidden="true"
-          className="klazly-drift-a from-primary/30 absolute -top-20 left-1/2 size-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-br to-transparent blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="klazly-drift-b absolute bottom-0 right-10 size-[28rem] rounded-full bg-amber-500/15 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="klazly-drift-a absolute bottom-10 -left-20 size-[24rem] rounded-full bg-emerald-500/10 blur-3xl"
-        />
         <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-24">
           <div className="grid items-center gap-10 md:grid-cols-[1fr_auto]">
             <div className="text-center md:text-left">
-              {/* Pulsing amber dot eyebrow matches the hero — visual
-                  bookend on the page. */}
+              {/* Static accent-dot eyebrow — visual bookend with the
+                  hero eyebrow. */}
               <span className="border-white/15 bg-white/5 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-widest backdrop-blur-sm">
-                <span className="relative inline-flex size-1.5">
-                  <span className="bg-amber-400 absolute inset-0 rounded-full motion-safe:animate-ping motion-safe:opacity-75" />
-                  <span className="bg-amber-400 relative inline-block size-1.5 rounded-full" />
-                </span>
+                <span className="bg-white/70 size-1.5 rounded-full" />
                 {t("trustTrial")}
               </span>
               <h2 className="mt-5 text-balance bg-gradient-to-br from-white via-white to-slate-300 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-5xl md:text-6xl">
@@ -1236,16 +1060,15 @@ export default async function HomePage() {
                 {t("finalCtaSubtitle")}
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3 md:justify-start">
-                {/* Primary CTA — bigger, with amber glow ring +
-                    scale on hover for tactile response. */}
+                {/* Primary CTA — the one prominent action here. */}
                 <a
                   href={ZALO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-base font-bold shadow-2xl shadow-primary/40 ring-2 ring-primary/30 transition-all hover:scale-[1.03] hover:ring-primary/50"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 group/cta inline-flex items-center gap-2 rounded-lg px-7 py-3.5 text-base font-bold shadow-lg transition hover:-translate-y-0.5"
                 >
                   {t("ctaStartTrial")}
-                  <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className="size-4 transition-transform group-hover/cta:translate-x-0.5" />
                 </a>
                 <a
                   href={ZALO_URL}
@@ -1258,38 +1081,27 @@ export default async function HomePage() {
                 </a>
               </div>
               <p className="text-slate-400 mt-6 inline-flex items-center gap-1.5 text-sm">
-                <Lock className="size-3.5 text-emerald-400" />
+                <Lock className="text-slate-400 size-3.5" />
                 {t("finalCtaTrust")}
               </p>
             </div>
 
-            {/* Contact card — Zalo QR is the centerpiece. Card now
-                wears a subtle inner glow + emerald-tinted ring so it
-                visually pulls toward "scan me" without being garish. */}
-            <aside className="ring-emerald-400/20 relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white/[0.06] p-6 shadow-2xl shadow-black/40 ring-1 backdrop-blur-md">
-              <div
-                aria-hidden="true"
-                className="bg-emerald-500/20 pointer-events-none absolute -bottom-12 -right-12 size-40 rounded-full blur-3xl"
-              />
+            {/* Contact card — Zalo QR is the centerpiece. Calm frosted
+                panel with a hairline border, no glow. */}
+            <aside className="ring-white/10 relative mx-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white/[0.06] p-6 shadow-lg ring-1 backdrop-blur-md">
               <div className="relative">
                 <p className="text-slate-300 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
-                  <span className="relative inline-flex size-1.5">
-                    <span className="bg-emerald-400 absolute inset-0 rounded-full motion-safe:animate-ping motion-safe:opacity-75" />
-                    <span className="bg-emerald-400 relative inline-block size-1.5 rounded-full" />
-                  </span>
+                  <span className="bg-white/70 size-1.5 rounded-full" />
                   {t("contactCardLabel")}
                 </p>
                 <div className="mt-4 flex flex-col items-center text-center">
-                  {/* QR image with a subtle amber ring + scale on
-                      hover so it reads "tap or scan, this is the
-                      handle" instead of decoration. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/zalo-qr.jpg"
                     alt={t("zaloQrAlt")}
                     width={220}
                     height={220}
-                    className="bg-white ring-amber-300/40 h-[220px] w-[220px] rounded-xl object-contain p-2 shadow-2xl ring-4 transition-transform hover:scale-[1.03]"
+                    className="bg-white ring-white/10 h-[220px] w-[220px] rounded-xl object-contain p-2 shadow-md ring-1"
                   />
                   <p className="text-slate-200 mt-3 text-sm font-medium">
                     {t("contactCardScanHint")}
@@ -1298,7 +1110,7 @@ export default async function HomePage() {
                     href="https://zalo.me/84862404036"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="bg-emerald-500 text-white hover:bg-emerald-400 mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold shadow-lg shadow-emerald-500/40 ring-1 ring-emerald-400/50 transition hover:scale-[1.02]"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold shadow-sm transition hover:shadow-md"
                   >
                     <MessageCircle className="size-4" />
                     {t("contactCardOpenZalo")}
@@ -1309,7 +1121,7 @@ export default async function HomePage() {
                     href="tel:+84862404036"
                     className="text-slate-200 hover:bg-white/5 hover:text-white -mx-2 flex items-center gap-2.5 rounded-md px-2 py-2 transition"
                   >
-                    <span className="bg-emerald-500/15 text-emerald-300 ring-emerald-400/30 flex size-7 shrink-0 items-center justify-center rounded-md ring-1">
+                    <span className="bg-white/10 text-slate-200 flex size-7 shrink-0 items-center justify-center rounded-md">
                       <Phone className="size-3.5" />
                     </span>
                     <span className="font-medium tabular-nums">+84 86 240 4036</span>
@@ -1318,7 +1130,7 @@ export default async function HomePage() {
                     href="mailto:matthewstadlers14@gmail.com"
                     className="text-slate-200 hover:bg-white/5 hover:text-white -mx-2 flex items-center gap-2.5 break-all rounded-md px-2 py-2 transition"
                   >
-                    <span className="bg-emerald-500/15 text-emerald-300 ring-emerald-400/30 flex size-7 shrink-0 items-center justify-center rounded-md ring-1">
+                    <span className="bg-white/10 text-slate-200 flex size-7 shrink-0 items-center justify-center rounded-md">
                       <Mail className="size-3.5" />
                     </span>
                     <span className="break-all font-medium">matthewstadlers14@gmail.com</span>
@@ -1341,7 +1153,7 @@ export default async function HomePage() {
       <div className="fixed inset-x-0 bottom-0 z-40 print:hidden lg:hidden">
         <div className="border-white/10 from-slate-950/95 to-slate-900/95 mx-auto flex max-w-2xl items-center justify-between gap-2 border-t bg-gradient-to-r px-4 py-3 pb-safe text-white shadow-[0_-4px_24px_-8px_rgb(0_0_0/0.3)] backdrop-blur-md sm:rounded-t-2xl">
           <p className="text-xs font-medium leading-snug">
-            <span className="text-amber-300 block text-[10px] font-semibold uppercase tracking-widest">
+            <span className="text-slate-400 block text-[10px] font-semibold uppercase tracking-widest">
               {t("trustTrial")}
             </span>
             <span className="text-slate-200 line-clamp-1">
@@ -1398,7 +1210,7 @@ export default async function HomePage() {
                     rel="noopener noreferrer"
                     className="text-slate-200 border-slate-700 bg-slate-800/60 hover:bg-slate-800 inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-medium transition"
                   >
-                    <MessageCircle className="size-4 text-emerald-400" />
+                    <MessageCircle className="text-slate-300 size-4" />
                     {t("footerZalo")}
                   </a>
                   <p className="text-slate-500 text-[11px] leading-snug">
@@ -1480,7 +1292,6 @@ function FeatureBlock({
   body,
   bullets,
   icon: Icon,
-  tone,
   visual,
   layout,
 }: {
@@ -1489,34 +1300,12 @@ function FeatureBlock({
   body: string;
   bullets: string[];
   icon: React.ComponentType<{ className?: string }>;
-  tone: "sky" | "rose" | "violet" | "emerald" | "amber" | "indigo";
   visual: React.ReactNode;
   layout: "left" | "right";
 }) {
-  const toneClasses: Record<typeof tone, { bg: string; text: string }> = {
-    sky: { bg: "bg-sky-50", text: "text-sky-700" },
-    rose: { bg: "bg-rose-50", text: "text-rose-700" },
-    violet: { bg: "bg-violet-50", text: "text-violet-700" },
-    emerald: { bg: "bg-emerald-50", text: "text-emerald-700" },
-    amber: { bg: "bg-amber-50", text: "text-amber-700" },
-    indigo: { bg: "bg-indigo-50", text: "text-indigo-700" },
-  };
-  const cls = toneClasses[tone];
-  // Map tone → orb color for the visual's decorative corner glow.
-  const orbColors: Record<typeof tone, string> = {
-    sky: "bg-sky-200/40",
-    rose: "bg-rose-200/40",
-    violet: "bg-violet-200/40",
-    emerald: "bg-emerald-200/40",
-    amber: "bg-amber-200/40",
-    indigo: "bg-indigo-200/40",
-  };
   const copy = (
     <div className="max-w-lg">
-      <div
-        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ring-1 ${cls.bg} ${cls.text}`}
-        style={{ boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 0.5)" }}
-      >
+      <div className="bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest">
         <Icon className="size-3.5" />
         {eyebrow}
       </div>
@@ -1529,7 +1318,7 @@ function FeatureBlock({
       <ul className="mt-6 space-y-2.5 text-sm">
         {bullets.map((b) => (
           <li key={b} className="flex items-start gap-2.5">
-            <span className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full ${cls.bg} ${cls.text}`}>
+            <span className="bg-primary/10 text-primary mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full">
               <Check className="size-3" />
             </span>
             <span className="text-foreground leading-relaxed">{b}</span>
@@ -1538,15 +1327,11 @@ function FeatureBlock({
       </ul>
     </div>
   );
-  // Visual container — soft outer wrapper with a corner orb in the
-  // tone color so each feature block has its own visual personality.
+  // Visual container — neutral white card, hairline border, neutral
+  // shadow that lifts on hover.
   const visualEl = (
     <div className="relative w-full">
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute -inset-6 rounded-3xl ${orbColors[tone]} blur-3xl`}
-      />
-      <div className="bg-card group/visual relative overflow-hidden rounded-2xl border shadow-2xl shadow-slate-900/10 ring-1 ring-black/[0.03] transition-all hover:-translate-y-1 hover:shadow-[0_30px_60px_-15px_rgb(15_23_42/0.18)]">
+      <div className="bg-card group/visual relative overflow-hidden rounded-2xl border shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
         {visual}
       </div>
     </div>
@@ -1576,48 +1361,29 @@ function FeatureBlock({
  */
 function ExtraCard({
   icon: Icon,
-  tone,
   eyebrow,
   title,
   bullets,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  tone: "sky" | "rose" | "violet" | "emerald" | "amber" | "indigo";
   eyebrow: string;
   title: string;
   bullets: string[];
 }) {
-  const toneClasses: Record<
-    typeof tone,
-    { bg: string; text: string; orb: string; bar: string }
-  > = {
-    sky: { bg: "bg-sky-100", text: "text-sky-700", orb: "bg-sky-200/40", bar: "bg-sky-500" },
-    rose: { bg: "bg-rose-100", text: "text-rose-700", orb: "bg-rose-200/40", bar: "bg-rose-500" },
-    violet: { bg: "bg-violet-100", text: "text-violet-700", orb: "bg-violet-200/40", bar: "bg-violet-500" },
-    emerald: { bg: "bg-emerald-100", text: "text-emerald-700", orb: "bg-emerald-200/40", bar: "bg-emerald-500" },
-    amber: { bg: "bg-amber-100", text: "text-amber-700", orb: "bg-amber-200/40", bar: "bg-amber-500" },
-    indigo: { bg: "bg-indigo-100", text: "text-indigo-700", orb: "bg-indigo-200/40", bar: "bg-indigo-500" },
-  };
-  const c = toneClasses[tone];
   return (
-    <article className="bg-card group/extra relative overflow-hidden rounded-2xl border p-6 shadow-md ring-1 ring-black/[0.03] transition-all hover:-translate-y-1 hover:shadow-xl sm:p-7">
-      <span aria-hidden="true" className={`absolute inset-x-0 top-0 h-1 ${c.bar}`} />
-      <div
-        aria-hidden="true"
-        className={`pointer-events-none absolute -bottom-12 -right-12 size-32 rounded-full ${c.orb} blur-3xl`}
-      />
+    <article className="bg-card group/extra relative overflow-hidden rounded-2xl border p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:p-7">
       <div className="relative">
-        <div className={`inline-flex size-10 items-center justify-center rounded-xl ring-1 ${c.bg} ${c.text} ring-current/20`}>
+        <div className="bg-primary/10 text-primary inline-flex size-10 items-center justify-center rounded-xl">
           <Icon className="size-5" />
         </div>
-        <p className={`mt-4 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${c.text}`}>
+        <p className="text-primary mt-4 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
           {eyebrow}
         </p>
         <h3 className="mt-1 text-lg font-semibold tracking-tight">{title}</h3>
         <ul className="text-muted-foreground mt-4 space-y-2 text-sm">
           {bullets.map((b) => (
             <li key={b} className="flex items-start gap-2">
-              <Check className={`mt-0.5 size-4 shrink-0 ${c.text}`} />
+              <Check className="text-primary mt-0.5 size-4 shrink-0" />
               <span className="leading-relaxed">{b}</span>
             </li>
           ))}
@@ -1632,73 +1398,12 @@ function ExtraCard({
    CSS-only fake screenshots — replace with real ones later.
    ============================================================ */
 
-/**
- * Horizontal scrolling pill marquee used at the bottom of the
- * stats band. Pills are coloured by role so the page is visibly
- * "owned by the role-color system" even at a distance:
- *   sky    = admin/owner facing
- *   violet = teacher facing
- *   rose   = parent facing
- *   amber  = platform/operational
- * Pauses on hover (class hook in globals.css). Pills are duplicated
- * once inside the track so the -50% translate animation loops
- * seamlessly. Edges fade out via a mask-image gradient.
- */
-function FeaturePillMarquee() {
-  const pills: Array<{ label: string; tone: "sky" | "violet" | "rose" | "amber" }> = [
-    { label: "Bảng phân tích giáo viên · tuần & tháng", tone: "sky" },
-    { label: "Ghi bài học từ điện thoại · 60 giây", tone: "violet" },
-    { label: "Phụ huynh đăng nhập bằng số điện thoại", tone: "rose" },
-    { label: "PDF có letterhead riêng · một chạm", tone: "amber" },
-    { label: "Gửi báo cáo qua Zalo · không cần app khác", tone: "amber" },
-    { label: "Cảnh báo giáo viên chưa ghi bài 7 ngày", tone: "sky" },
-    { label: "Tin nhắn riêng tư phụ huynh ↔ giáo viên", tone: "violet" },
-    { label: "Theo dõi tiến độ con · từ vựng + ngữ pháp", tone: "rose" },
-    { label: "Song ngữ Việt · Anh · đổi một nút", tone: "amber" },
-    { label: "Tuỳ chỉnh logo & màu thương hiệu", tone: "sky" },
-    { label: "Nhập học sinh hàng loạt qua CSV", tone: "violet" },
-    { label: "Bảo mật RLS tại lớp cơ sở dữ liệu", tone: "amber" },
-  ];
-  const tones: Record<typeof pills[number]["tone"], string> = {
-    sky: "border-sky-400/30 bg-sky-500/10 text-sky-200",
-    violet: "border-violet-400/30 bg-violet-500/10 text-violet-200",
-    rose: "border-rose-400/30 bg-rose-500/10 text-rose-200",
-    amber: "border-amber-400/30 bg-amber-500/10 text-amber-200",
-  };
-  const Track = () => (
-    <ul className="klazly-marquee flex items-center gap-3 pr-3">
-      {pills.map((p, i) => (
-        <li
-          key={i}
-          className={
-            "inline-flex shrink-0 items-center rounded-full border px-4 py-2 text-sm font-medium backdrop-blur-sm " +
-            tones[p.tone]
-          }
-        >
-          {p.label}
-        </li>
-      ))}
-    </ul>
-  );
-  return (
-    <div
-      aria-hidden="true"
-      className="klazly-marquee-container relative overflow-hidden border-t border-white/5 pb-10 pt-8 [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]"
-    >
-      <div className="flex w-max">
-        <Track />
-        <Track />
-      </div>
-    </div>
-  );
-}
-
 function LaptopMock() {
   return (
     <div className="relative motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-6 motion-safe:duration-1000 motion-safe:delay-300">
       {/* Outer device frame — more refined silver/dark bezel. The
           two-tone gradient suggests a real laptop edge. */}
-      <div className="from-slate-700 via-slate-800 to-slate-900 ring-slate-600/40 relative rounded-2xl bg-gradient-to-b p-2 shadow-2xl shadow-slate-950/60 ring-1">
+      <div className="from-slate-700 via-slate-800 to-slate-900 ring-slate-600/40 relative rounded-2xl bg-gradient-to-b p-2 shadow-lg ring-1">
         {/* Browser chrome — refined with URL bar + lock icon for
             "this is a real product on a real domain" credibility. */}
         <div className="bg-slate-900 ring-slate-700/40 mb-1 flex items-center gap-2 rounded-t-lg px-3 py-2 ring-1">
@@ -1717,12 +1422,9 @@ function LaptopMock() {
             </span>
             <span className="text-slate-500 text-[10px]">/admin</span>
           </div>
-          {/* LIVE pulse */}
-          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-emerald-300 ring-1 ring-emerald-500/30">
-            <span className="relative inline-flex size-1.5">
-              <span className="bg-emerald-400 absolute inset-0 rounded-full motion-safe:animate-ping motion-safe:opacity-75" />
-              <span className="bg-emerald-400 relative inline-block size-1.5 rounded-full" />
-            </span>
+          {/* LIVE chip — static success dot */}
+          <span className="bg-slate-800 text-slate-300 ring-slate-700/50 inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider ring-1">
+            <span className="bg-success size-1.5 rounded-full" />
             LIVE
           </span>
         </div>
@@ -1759,18 +1461,16 @@ function LaptopMock() {
           <div className="space-y-3 bg-zinc-50 p-4">
             <div className="grid grid-cols-4 gap-2">
               {[
-                { label: "Giáo viên", value: "12", accent: "bg-sky-500" },
-                { label: "Phụ huynh", value: "84", accent: "bg-rose-500" },
-                { label: "Lớp", value: "18", accent: "bg-violet-500" },
-                { label: "Học sinh", value: "126", accent: "bg-amber-500" },
+                { label: "Giáo viên", value: "12" },
+                { label: "Phụ huynh", value: "84" },
+                { label: "Lớp", value: "18" },
+                { label: "Học sinh", value: "126" },
               ].map((c) => (
                 <div
                   key={c.label}
                   className="bg-card relative overflow-hidden rounded-md border p-2"
                 >
-                  <div
-                    className={`absolute inset-x-0 top-0 h-0.5 ${c.accent}`}
-                  />
+                  <div className="bg-primary absolute inset-x-0 top-0 h-0.5" />
                   <div className="text-muted-foreground text-[9px] uppercase">
                     {c.label}
                   </div>
@@ -1780,30 +1480,24 @@ function LaptopMock() {
                 </div>
               ))}
             </div>
-            {/* Live activity ticker — rows rotate up via a CSS
-                keyframe so the mockup feels active. The visible
-                viewport is 3 rows tall (h-[5.25rem] = ~3×28px) and
-                the track loops through 4 windowed states. Static
-                under prefers-reduced-motion. */}
+            {/* Recent activity — static list (3 rows). */}
             <div className="bg-card rounded-md border p-2.5">
               <div className="mb-2 flex items-center justify-between gap-1.5 text-[10px] font-semibold">
                 <span className="inline-flex items-center gap-1.5">
                   <ClipboardList className="text-primary size-3" />
                   Hoạt động gần đây
                 </span>
-                <span className="inline-flex items-center gap-1 text-[8px] font-medium uppercase tracking-wider text-emerald-600">
-                  <span className="bg-emerald-500 size-1 rounded-full motion-safe:animate-pulse" />
+                <span className="text-muted-foreground inline-flex items-center gap-1 text-[8px] font-medium uppercase tracking-wider">
+                  <span className="bg-success size-1 rounded-full" />
                   Live
                 </span>
               </div>
-              <div className="relative h-[3.6rem] overflow-hidden">
-                <div className="klazly-ticker">
+              <div className="relative overflow-hidden">
+                <div>
                   {[
                     "Cô Linh · Junior A · Unit 4 — Animals",
                     "Cô Tú · Senior B · Unit 5 — KET Practice",
                     "Cô Hà · Junior B · Unit 3 — Daily Routines",
-                    "Cô Linh · Senior B · Unit 4 — Books & Films",
-                    "Cô Linh · Junior A · Unit 4 — Animals",
                   ].map((line, i) => (
                     <div
                       key={i}
@@ -1825,7 +1519,7 @@ function LaptopMock() {
 
 function PhoneMock() {
   return (
-    <div className="from-slate-700 via-slate-800 to-slate-900 ring-slate-600/40 mx-auto w-[14rem] rounded-[2rem] bg-gradient-to-b p-2 shadow-2xl shadow-slate-950/60 ring-1">
+    <div className="from-slate-700 via-slate-800 to-slate-900 ring-slate-600/40 mx-auto w-[14rem] rounded-[2rem] bg-gradient-to-b p-2 shadow-lg ring-1">
       <div className="bg-background relative overflow-hidden rounded-[1.6rem]">
         {/* Dynamic-island style top pill */}
         <div className="bg-slate-900 absolute left-1/2 top-1.5 h-1.5 w-16 -translate-x-1/2 rounded-full" />
@@ -1882,20 +1576,16 @@ function MiniDashboardMock() {
   return (
     <div className="grid grid-cols-4 gap-2">
       {[
-        { label: "GV", value: "12", accent: "bg-sky-500", iconBg: "bg-sky-50" },
-        { label: "PH", value: "84", accent: "bg-rose-500", iconBg: "bg-rose-50" },
-        { label: "Lớp", value: "18", accent: "bg-violet-500", iconBg: "bg-violet-50" },
-        { label: "HS", value: "126", accent: "bg-amber-500", iconBg: "bg-amber-50" },
+        { label: "GV", value: "12" },
+        { label: "PH", value: "84" },
+        { label: "Lớp", value: "18" },
+        { label: "HS", value: "126" },
       ].map((c) => (
         <div
           key={c.label}
-          className="bg-card relative overflow-hidden rounded-lg border p-2.5 shadow-sm ring-1 ring-black/[0.02] transition hover:-translate-y-0.5 hover:shadow-md"
+          className="bg-card relative overflow-hidden rounded-lg border p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
         >
-          <div className={`absolute inset-x-0 top-0 h-0.5 ${c.accent}`} />
-          <div
-            aria-hidden="true"
-            className={`pointer-events-none absolute -right-4 -bottom-4 size-10 rounded-full ${c.iconBg} opacity-60`}
-          />
+          <div className="bg-primary absolute inset-x-0 top-0 h-0.5" />
           <div className="text-muted-foreground relative text-[10px] font-bold uppercase tracking-wider">
             {c.label}
           </div>
@@ -2069,12 +1759,7 @@ function PdfReportMock() {
 
 function ParentPhoneMock() {
   return (
-    <div className="from-rose-50/50 to-amber-50/30 relative flex items-center justify-center bg-gradient-to-br p-6 sm:p-10">
-      {/* Soft rose orb behind the phone for warmth */}
-      <div
-        aria-hidden="true"
-        className="bg-rose-200/40 pointer-events-none absolute inset-0 mx-auto my-auto size-64 rounded-full blur-3xl"
-      />
+    <div className="bg-muted/40 relative flex items-center justify-center p-6 sm:p-10">
       <div className="relative">
         <PhoneMock />
       </div>
@@ -2098,7 +1783,7 @@ function AnalyticsMock() {
           <div className="text-sm font-bold">Hoạt động giáo viên</div>
           <div className="text-muted-foreground text-xs">Tuần này</div>
         </div>
-        <span className="bg-violet-100 text-violet-800 ring-violet-200 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 tabular-nums">
+        <span className="bg-primary/10 text-primary inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums">
           8/12 ghi bài
         </span>
       </div>
@@ -2111,21 +1796,21 @@ function AnalyticsMock() {
               key={row.name}
               className="bg-card relative flex items-center gap-3 overflow-hidden rounded-lg border p-2.5"
             >
-              {/* Inline bar chart — width proportional to weekly count.
-                  Rose = compliance issue, violet = on track. */}
+              {/* Inline bar — width proportional to weekly count.
+                  Primary = on track, warning tint = needs attention. */}
               <div
                 aria-hidden="true"
-                className={`absolute inset-y-0 left-0 ${ok ? "bg-violet-500/10" : "bg-rose-500/10"}`}
+                className={`absolute inset-y-0 left-0 ${ok ? "bg-primary/10" : "bg-warning/15"}`}
                 style={{ width: ok ? `${widthPct}%` : "100%" }}
               />
-              <div className={`relative flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ring-1 ${ok ? "bg-violet-50 text-violet-700 ring-violet-200" : "bg-rose-50 text-rose-700 ring-rose-200"}`}>
+              <div className={`relative flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${ok ? "bg-primary/10 text-primary" : "bg-warning/20 text-foreground"}`}>
                 {row.name.split(/\s+/).slice(-1)[0]?.charAt(0) ?? "?"}
               </div>
               <div className="relative flex-1 truncate text-sm font-medium">
                 {row.name}
               </div>
               <div
-                className={`relative text-xs font-bold tabular-nums ${ok ? "text-violet-700" : "text-rose-600"}`}
+                className={`relative text-xs font-bold tabular-nums ${ok ? "text-primary" : "text-foreground"}`}
               >
                 {row.week}
               </div>
@@ -2136,9 +1821,9 @@ function AnalyticsMock() {
           );
         })}
       </div>
-      <div className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-rose-50 px-2.5 py-1.5 text-xs ring-1 ring-rose-200">
-        <span className="bg-rose-500 size-1.5 rounded-full" />
-        <span className="text-rose-700">
+      <div className="bg-warning/10 mt-4 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs">
+        <span className="bg-warning size-1.5 rounded-full" />
+        <span className="text-foreground">
           <span className="font-bold">2 giáo viên</span> chưa ghi bài tuần này — nhắc qua Zalo
         </span>
       </div>
@@ -2148,12 +1833,12 @@ function AnalyticsMock() {
 
 function ZaloShareMock() {
   return (
-    <div className="from-emerald-50/40 to-sky-50/40 bg-gradient-to-br p-6 sm:p-10">
+    <div className="bg-muted/40 p-6 sm:p-10">
       <div className="mx-auto max-w-xs space-y-3">
         {/* Faux Zalo chat header — "Phụ huynh: Mai" so the mockup
             reads as a real conversation, not a generic share dialog. */}
         <div className="bg-card flex items-center gap-2 rounded-xl border p-2.5 shadow-sm">
-          <span className="bg-rose-100 text-rose-700 ring-rose-200 inline-flex size-7 items-center justify-center rounded-full text-[10px] font-bold ring-1">
+          <span className="bg-primary/10 text-primary inline-flex size-7 items-center justify-center rounded-full text-[10px] font-bold">
             M
           </span>
           <div className="min-w-0 flex-1">

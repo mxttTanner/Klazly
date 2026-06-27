@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
-import { ArrowLeft, MessageSquareHeart } from "lucide-react";
+import {
+  ArrowLeft,
+  Frown,
+  Meh,
+  MessageSquareHeart,
+  Smile,
+  type LucideIcon,
+} from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
 
@@ -18,15 +25,17 @@ type FeedbackRow = {
   created_at: string;
 };
 
+// Sentiment is real state, so it keeps a restrained semantic color
+// scale (destructive / warning / success). Icons are Lucide, not emoji.
 const RATING_TONES: Record<FeedbackRow["rating"], string> = {
   sad: "bg-rose-50 text-rose-700 ring-rose-200",
   meh: "bg-amber-50 text-amber-800 ring-amber-200",
   happy: "bg-emerald-50 text-emerald-700 ring-emerald-200",
 };
-const RATING_EMOJI: Record<FeedbackRow["rating"], string> = {
-  sad: "😞",
-  meh: "😐",
-  happy: "😊",
+const RATING_ICON: Record<FeedbackRow["rating"], LucideIcon> = {
+  sad: Frown,
+  meh: Meh,
+  happy: Smile,
 };
 
 /**
@@ -130,14 +139,14 @@ export default async function FeedbackInboxPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <SummaryCard
           tone="rose"
-          emoji="😞"
+          icon={Frown}
           label="Frustrating"
           value={counts.sad}
         />
-        <SummaryCard tone="amber" emoji="😐" label="OK" value={counts.meh} />
+        <SummaryCard tone="amber" icon={Meh} label="OK" value={counts.meh} />
         <SummaryCard
           tone="emerald"
-          emoji="😊"
+          icon={Smile}
           label="Great"
           value={counts.happy}
         />
@@ -149,19 +158,21 @@ export default async function FeedbackInboxPage() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {feedback.map((row) => (
+          {feedback.map((row) => {
+            const RowIcon = RATING_ICON[row.rating];
+            return (
             <li
               key={row.id}
               className="bg-card flex flex-col gap-2 rounded-2xl border p-4 shadow-sm sm:flex-row sm:gap-4"
             >
               <span
                 className={
-                  "inline-flex size-10 shrink-0 items-center justify-center rounded-full text-lg ring-1 " +
+                  "inline-flex size-10 shrink-0 items-center justify-center rounded-full ring-1 " +
                   RATING_TONES[row.rating]
                 }
                 aria-label={row.rating}
               >
-                {RATING_EMOJI[row.rating]}
+                <RowIcon className="size-5" />
               </span>
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
@@ -192,7 +203,8 @@ export default async function FeedbackInboxPage() {
                 ) : null}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
@@ -201,12 +213,12 @@ export default async function FeedbackInboxPage() {
 
 function SummaryCard({
   tone,
-  emoji,
+  icon: Icon,
   label,
   value,
 }: {
   tone: "rose" | "amber" | "emerald";
-  emoji: string;
+  icon: LucideIcon;
   label: string;
   value: number;
 }) {
@@ -216,6 +228,12 @@ function SummaryCard({
       : tone === "amber"
         ? "border-amber-200 bg-amber-50/40"
         : "border-emerald-200 bg-emerald-50/40";
+  const iconClass =
+    tone === "rose"
+      ? "text-rose-600"
+      : tone === "amber"
+        ? "text-amber-600"
+        : "text-emerald-600";
   return (
     <div
       className={
@@ -229,7 +247,7 @@ function SummaryCard({
         </p>
         <p className="text-2xl font-semibold tabular-nums">{value}</p>
       </div>
-      <span className="text-2xl">{emoji}</span>
+      <Icon className={"size-7 " + iconClass} />
     </div>
   );
 }

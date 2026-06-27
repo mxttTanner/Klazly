@@ -26,19 +26,12 @@ export default async function LockedPage() {
   const tLanding = await getTranslations("landing");
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white">
+    <div className="min-h-dvh bg-slate-950 text-white">
       <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
         <LanguageToggle />
       </div>
 
       <div className="relative mx-auto flex min-h-dvh max-w-2xl flex-col items-center justify-center px-4 py-12 sm:px-6">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 -z-10"
-        >
-          <div className="from-primary/20 absolute -top-32 left-1/2 size-[40rem] -translate-x-1/2 rounded-full bg-gradient-to-br to-transparent blur-3xl" />
-        </div>
-
         <Link
           href="/"
           className="mb-10 inline-flex items-center text-white"
@@ -49,7 +42,7 @@ export default async function LockedPage() {
 
         <div className="bg-white/5 ring-white/10 w-full rounded-2xl p-6 backdrop-blur-sm ring-1 sm:p-8">
           <div className="flex flex-col items-center text-center">
-            <div className="bg-rose-500/20 text-rose-300 ring-rose-500/30 flex size-14 items-center justify-center rounded-full ring-1">
+            <div className="bg-white/10 ring-white/15 flex size-14 items-center justify-center rounded-full text-white ring-1">
               <Lock className="size-7" />
             </div>
             <h1 className="mt-5 text-balance text-2xl font-bold tracking-tight sm:text-3xl">
@@ -84,7 +77,7 @@ export default async function LockedPage() {
                   href={ZALO_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-emerald-500 text-white hover:bg-emerald-400 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-md transition"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold shadow-sm transition"
                 >
                   <MessageCircle className="size-4" />
                   {t("zaloButton")}
@@ -94,14 +87,14 @@ export default async function LockedPage() {
                     href="tel:+84862404036"
                     className="text-slate-200 hover:text-white flex items-center gap-2"
                   >
-                    <Phone className="size-4 text-emerald-400" />
+                    <Phone className="size-4 text-slate-400" />
                     +84 86 240 4036
                   </a>
                   <a
                     href="mailto:matthewstadlers14@gmail.com"
                     className="text-slate-200 hover:text-white flex items-center gap-2 break-all"
                   >
-                    <Mail className="size-4 text-emerald-400" />
+                    <Mail className="size-4 text-slate-400" />
                     matthewstadlers14@gmail.com
                   </a>
                 </div>

@@ -157,7 +157,7 @@ export function WorksheetsLibraryGrid({
                       className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
                   ) : (
-                    <div className="from-rose-50 to-rose-100 text-rose-700 flex size-full items-center justify-center bg-gradient-to-br">
+                    <div className="bg-muted text-muted-foreground flex size-full items-center justify-center">
                       <FileText className="size-14 opacity-80" />
                     </div>
                   )}
@@ -186,13 +186,14 @@ export function WorksheetsLibraryGrid({
                     {w.name}
                   </a>
                   {/* Usage chip — the admin's signal for "is this worksheet
-                      pulling weight?". Emerald if attached, muted if not. */}
+                      pulling weight?". Success token if attached, muted if
+                      not. */}
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span
                       className={
                         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium " +
                         (w.usage_count > 0
-                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                          ? "bg-success/10 text-success ring-1 ring-success/20"
                           : "bg-muted text-muted-foreground")
                       }
                     >

@@ -64,88 +64,61 @@ export function LoginForm() {
 
   // Demo quick-pick chips. Each links to /demo/<role> which already
   // handles signing in as the demo account and redirecting via
-  // post-login. This skips the form entirely for prospect tire-kickers,
-  // which is the most common use case on this page.
+  // post-login. Wayfinding is by label + icon, not hue — the three
+  // cards are visually identical neutrals.
   const demoRoles = [
-    {
-      href: "/demo/admin",
-      label: tDemo("switchAdmin"),
-      icon: UserCog,
-      tone: "from-sky-400 to-sky-600",
-      ring: "ring-sky-300/50 hover:ring-sky-300",
-    },
-    {
-      href: "/demo/teacher",
-      label: tDemo("switchTeacher"),
-      icon: GraduationCap,
-      tone: "from-violet-400 to-violet-600",
-      ring: "ring-violet-300/50 hover:ring-violet-300",
-    },
-    {
-      href: "/demo/parent",
-      label: tDemo("switchParent"),
-      icon: Heart,
-      tone: "from-rose-400 to-rose-600",
-      ring: "ring-rose-300/50 hover:ring-rose-300",
-    },
+    { href: "/demo/admin", label: tDemo("switchAdmin"), icon: UserCog },
+    { href: "/demo/teacher", label: tDemo("switchTeacher"), icon: GraduationCap },
+    { href: "/demo/parent", label: tDemo("switchParent"), icon: Heart },
   ] as const;
 
   return (
     <div className="space-y-5">
       {/* Demo quick-pick chips — for prospects who want to skip the
-          form and just see the app. Animated entrance: each chip
-          delays in 60ms apart so the row reads as one fluid sweep. */}
-      <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500">
-        <p className="text-amber-700 mb-2 inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest">
-          <span className="relative inline-flex size-1.5">
-            <span className="bg-amber-500 absolute inset-0 rounded-full motion-safe:animate-ping motion-safe:opacity-75" />
-            <span className="bg-amber-500 relative inline-block size-1.5 rounded-full" />
-          </span>
+          form and just see the app. Neutral cards, single accent on
+          hover. */}
+      <div>
+        <p className="text-muted-foreground mb-2 text-[10px] font-semibold uppercase tracking-widest">
           {tDemo("banner")}
         </p>
         <div className="grid grid-cols-3 gap-2">
-          {demoRoles.map((r, i) => {
+          {demoRoles.map((r) => {
             const Icon = r.icon;
             return (
               <Link
                 key={r.href}
                 href={r.href}
-                style={{ animationDelay: `${i * 60}ms` }}
-                className={`group bg-gradient-to-br text-white ${r.tone} ring-2 ${r.ring} motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards relative flex flex-col items-center gap-1.5 overflow-hidden rounded-xl px-2 py-2.5 shadow-md transition-all hover:-translate-y-0.5 hover:scale-[1.04] hover:shadow-lg`}
+                className="group bg-card hover:border-primary/40 hover:text-primary flex flex-col items-center gap-1.5 rounded-lg border px-2 py-2.5 text-center shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md"
               >
-                <Icon className="size-4 transition-transform group-hover:scale-110 group-hover:rotate-6" />
-                <span className="text-[10px] font-bold leading-tight">{r.label}</span>
+                <Icon className="text-muted-foreground group-hover:text-primary size-4 transition-colors" />
+                <span className="text-foreground group-hover:text-primary text-[10px] font-semibold leading-tight transition-colors">
+                  {r.label}
+                </span>
               </Link>
             );
           })}
         </div>
       </div>
 
-      {/* OR divider — visual separator between demo and real login.
-          Subtle but it makes the two paths visually distinct. */}
-      <div
-        className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:delay-200 motion-safe:fill-mode-backwards relative flex items-center gap-3"
-      >
+      {/* OR divider — visual separator between demo and real login. */}
+      <div className="relative flex items-center gap-3">
         <div className="bg-border h-px flex-1" />
-        <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest">
+        <span className="text-muted-foreground text-[10px] font-semibold uppercase tracking-widest">
           {t("orSignIn")}
         </span>
         <div className="bg-border h-px flex-1" />
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 motion-safe:delay-300 motion-safe:fill-mode-backwards space-y-4"
-      >
-        {/* Identifier field with icon prefix + focus-within glow ring.
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Identifier field with icon prefix + focus-within ring.
             We render a native input so we control the chrome fully —
             the Input primitive defaults to h-8 which is too small for
             a focal sign-in moment. */}
         <div className="space-y-1.5">
-          <Label htmlFor="identifier" className="text-foreground text-sm font-bold">
+          <Label htmlFor="identifier" className="text-foreground text-sm font-semibold">
             {tco("emailOrPhoneLabel")}
           </Label>
-          <div className="group/field focus-within:ring-primary/20 focus-within:border-primary/40 focus-within:shadow-md focus-within:shadow-primary/10 relative flex items-center gap-2 rounded-xl border bg-background px-3.5 py-2.5 transition-all focus-within:ring-4">
+          <div className="group/field focus-within:ring-primary/20 focus-within:border-primary relative flex items-center gap-2 rounded-lg border bg-background px-3.5 py-2.5 transition-all duration-150 focus-within:ring-4">
             <AtSign className="text-muted-foreground group-focus-within/field:text-primary size-4 shrink-0 transition-colors" />
             <input
               id="identifier"
@@ -162,22 +135,20 @@ export function LoginForm() {
           </div>
         </div>
 
-        {/* Password field — same focus-within treatment. KeyRound icon
-            for visual distinction from the identifier above. Show/hide
-            eye button stays anchored right. */}
+        {/* Password field — same focus-within treatment. */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-foreground text-sm font-bold">
+            <Label htmlFor="password" className="text-foreground text-sm font-semibold">
               {t("password")}
             </Label>
             <Link
               href="/forgot-password"
-              className="text-muted-foreground hover:text-primary text-xs font-medium transition"
+              className="text-muted-foreground hover:text-primary text-xs font-medium transition-colors"
             >
               {t("forgot")}
             </Link>
           </div>
-          <div className="group/field focus-within:ring-primary/20 focus-within:border-primary/40 focus-within:shadow-md focus-within:shadow-primary/10 relative flex items-center gap-2 rounded-xl border bg-background px-3.5 py-2.5 transition-all focus-within:ring-4">
+          <div className="group/field focus-within:ring-primary/20 focus-within:border-primary relative flex items-center gap-2 rounded-lg border bg-background px-3.5 py-2.5 transition-all duration-150 focus-within:ring-4">
             <KeyRound className="text-muted-foreground group-focus-within/field:text-primary size-4 shrink-0 transition-colors" />
             <input
               id="password"
@@ -194,7 +165,7 @@ export function LoginForm() {
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? t("hidePassword") : t("showPassword")}
-              className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-7 shrink-0 items-center justify-center rounded-md transition"
+              className="text-muted-foreground hover:text-foreground hover:bg-muted inline-flex size-7 shrink-0 items-center justify-center rounded-md transition-colors"
             >
               {showPassword ? (
                 <EyeOff className="size-4" />
@@ -219,15 +190,14 @@ export function LoginForm() {
           {t("rememberMe")}
         </label>
 
-        {/* Inline error — rose alert card with shake animation to draw
-            the eye without being aggressive. */}
+        {/* Inline error — destructive alert card. */}
         {error ? (
           <div
-            className="border-rose-200/60 bg-rose-50/60 text-rose-800 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-1 motion-safe:duration-300 flex items-start gap-2.5 rounded-lg border p-3 text-sm"
+            className="border-destructive/30 bg-destructive/5 text-destructive flex items-start gap-2.5 rounded-lg border p-3 text-sm"
             role="alert"
           >
             <svg
-              className="text-rose-500 mt-0.5 size-4 shrink-0"
+              className="mt-0.5 size-4 shrink-0"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -244,21 +214,18 @@ export function LoginForm() {
         ) : null}
 
         {/* Submit button — morphs across three states:
-            idle → "Sign in" with a key icon
+            idle → "Sign in" with a lock icon
             pending → "Signing in…" with spinning loader
-            success → "Welcome back!" with a check + emerald color
-            The morph + color shift makes the form feel responsive. */}
+            success → "Welcome back!" with a check (positive status). */}
         <Button
           type="submit"
-          className={`relative h-12 w-full overflow-hidden text-base font-bold shadow-md transition-all hover:scale-[1.01] hover:shadow-lg ${
-            success
-              ? "bg-emerald-500 hover:bg-emerald-500 shadow-emerald-500/30 ring-1 ring-emerald-400"
-              : "shadow-primary/20 ring-1 ring-primary/30 hover:shadow-primary/25"
+          className={`h-12 w-full text-base font-semibold transition-colors duration-150 ${
+            success ? "bg-emerald-600 hover:bg-emerald-600" : ""
           }`}
           disabled={pending || success}
         >
           {success ? (
-            <span className="inline-flex items-center gap-2 motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-75 motion-safe:duration-300">
+            <span className="inline-flex items-center gap-2">
               <CheckCircle2 className="size-5" />
               {t("welcomeBack")}
             </span>

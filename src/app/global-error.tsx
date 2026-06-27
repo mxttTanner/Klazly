@@ -143,9 +143,10 @@ export default function GlobalCatastrophicError({
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                background: "#059669",
-                color: "white",
+                background: "white",
+                color: "#0f172a",
                 textDecoration: "none",
+                border: "1px solid #e2e8f0",
                 borderRadius: "6px",
                 padding: "0.5rem 1rem",
                 fontSize: "0.875rem",

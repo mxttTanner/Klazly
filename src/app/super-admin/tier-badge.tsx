@@ -37,7 +37,7 @@ export function TierBadge({
     return (
       <span
         className={
-          "ring-amber-300 inline-flex shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-50 to-amber-100 px-2 text-amber-800 ring-1 " +
+          "ring-amber-200 inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-50 px-2 text-amber-800 ring-1 " +
           (compact
             ? "py-0.5 text-[10px] font-semibold uppercase tracking-wide"
             : "py-1 text-xs font-semibold")
@@ -52,7 +52,7 @@ export function TierBadge({
   return (
     <span
       className={
-        "ring-violet-300 inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-50 px-2 text-violet-800 ring-1 " +
+        "ring-violet-200 inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-50 px-2 text-violet-800 ring-1 " +
         (compact
           ? "py-0.5 text-[10px] font-semibold uppercase tracking-wide"
           : "py-1 text-xs font-semibold")

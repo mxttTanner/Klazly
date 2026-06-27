@@ -284,7 +284,7 @@ export default async function CenterDetailPage({
           ? "text-rose-600"
           : trialDays <= 7
             ? "text-amber-700"
-            : "text-sky-700";
+            : "text-primary";
 
   // Pin formatters to Asia/Ho_Chi_Minh so subscription dates render in
   // Vietnam time even if the Vercel runtime is UTC. Belt-and-suspenders
@@ -425,7 +425,7 @@ export default async function CenterDetailPage({
                     </span>
                   </p>
                 </div>
-                <span className="bg-sky-50 text-sky-700 ring-sky-200 inline-flex size-10 items-center justify-center rounded-full ring-1">
+                <span className="bg-muted text-muted-foreground ring-border inline-flex size-10 items-center justify-center rounded-full ring-1">
                   <CalendarClock className="size-5" />
                 </span>
               </div>
@@ -445,7 +445,7 @@ export default async function CenterDetailPage({
                       ? "bg-rose-500"
                       : trialDays !== null && trialDays <= 7
                         ? "bg-amber-500"
-                        : "bg-sky-500"
+                        : "bg-primary"
                   }`}
                 />
               </div>
@@ -513,7 +513,7 @@ export default async function CenterDetailPage({
                   </p>
                   {mrrFormatted ? (
                     <p className="mt-1.5 flex items-baseline gap-2">
-                      <span className="text-3xl font-semibold tabular-nums text-emerald-700">
+                      <span className="text-3xl font-semibold tabular-nums text-foreground">
                         {mrrFormatted}
                       </span>
                       <span className="text-muted-foreground text-xs">
@@ -522,7 +522,7 @@ export default async function CenterDetailPage({
                     </p>
                   ) : null}
                 </div>
-                <span className="bg-emerald-50 text-emerald-700 ring-emerald-200 inline-flex size-10 items-center justify-center rounded-full ring-1">
+                <span className="bg-muted text-muted-foreground ring-border inline-flex size-10 items-center justify-center rounded-full ring-1">
                   <CircleDollarSign className="size-5" />
                 </span>
               </div>
@@ -562,7 +562,7 @@ export default async function CenterDetailPage({
                   href={`mailto:${center.contact_email}`}
                   className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm hover:bg-muted"
                 >
-                  <Mail className="size-4 text-emerald-600" />
+                  <Mail className="text-muted-foreground size-4" />
                   {center.contact_email}
                 </a>
               ) : null}
@@ -571,7 +571,7 @@ export default async function CenterDetailPage({
                   href={`tel:${center.contact_phone}`}
                   className="inline-flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm hover:bg-muted"
                 >
-                  <Phone className="size-4 text-emerald-600" />
+                  <Phone className="text-muted-foreground size-4" />
                   {center.contact_phone}
                 </a>
               ) : null}
@@ -580,7 +580,7 @@ export default async function CenterDetailPage({
                   href={zaloUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold shadow-sm transition-colors"
                 >
                   <MessageCircle className="size-4" />
                   {t("messageOnZalo")}
@@ -659,7 +659,7 @@ export default async function CenterDetailPage({
                 {auditRows.map((row) => (
                   <li
                     key={row.id}
-                    className="border-l-2 border-slate-200 pl-3 text-sm"
+                    className="border-l-2 border-border pl-3 text-sm"
                   >
                     <p className="font-medium">
                       {renderAuditAction(row.action, row.metadata, t)}

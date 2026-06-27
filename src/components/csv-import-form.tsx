@@ -53,7 +53,7 @@ export function CsvImportForm({ variant }: { variant: Variant }) {
 
       {state.result ? (
         <div className="space-y-2 rounded-md border p-4 text-sm">
-          <div className="flex items-center gap-2 text-emerald-700">
+          <div className="flex items-center gap-2 text-success">
             <CheckCircle2 className="size-4" />
             <p>{t("imported", { n: state.result.imported })}</p>
           </div>
@@ -86,17 +86,17 @@ export function CsvImportForm({ variant }: { variant: Variant }) {
           ) : null}
 
           {state.result.generated && state.result.generated.length > 0 ? (
-            <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3">
-              <div className="text-amber-900 flex items-center gap-2 text-sm font-medium">
+            <div className="space-y-2 rounded-md border border-warning/40 bg-warning/10 p-3">
+              <div className="text-foreground flex items-center gap-2 text-sm font-medium">
                 <KeyRound className="size-4" />
                 {t("generatedHeader", { n: state.result.generated.length })}
               </div>
-              <p className="text-amber-800 text-xs">
+              <p className="text-muted-foreground text-xs">
                 {t("generatedHelp")}
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="text-amber-900">
+                  <thead className="text-foreground">
                     <tr>
                       <th className="text-left py-1 pr-2">
                         {t("generatedColName")}
@@ -111,7 +111,7 @@ export function CsvImportForm({ variant }: { variant: Variant }) {
                   </thead>
                   <tbody>
                     {state.result.generated.map((g, i) => (
-                      <tr key={i} className="border-t border-amber-200">
+                      <tr key={i} className="border-t border-border">
                         <td className="py-1 pr-2">{g.full_name}</td>
                         <td className="py-1 pr-2 font-mono">{g.email}</td>
                         <td className="py-1 font-mono select-all">

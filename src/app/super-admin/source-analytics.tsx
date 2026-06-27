@@ -54,7 +54,7 @@ export function SourceAnalytics({
               </div>
               <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
                 <div
-                  className="bg-sky-500 h-full rounded-full"
+                  className="bg-primary h-full rounded-full"
                   style={{ width: `${pct}%` }}
                 />
               </div>

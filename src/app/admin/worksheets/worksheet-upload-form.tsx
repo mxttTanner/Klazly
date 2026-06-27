@@ -52,7 +52,7 @@ export function WorksheetUploadForm() {
         </p>
       ) : null}
       {state.success ? (
-        <p className="text-sm text-emerald-600">{state.success}</p>
+        <p className="text-sm text-success">{state.success}</p>
       ) : null}
     </form>
   );

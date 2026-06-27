@@ -39,7 +39,7 @@ export function MessageComposer({
     length >= MAX_BODY
       ? "text-destructive"
       : length >= MAX_BODY * 0.9
-        ? "text-amber-600"
+        ? "text-warning-foreground"
         : "text-muted-foreground";
 
   return (

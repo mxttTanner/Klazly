@@ -22,9 +22,9 @@ export function LevelSelect({
   }
 
   const tones: Record<string, string> = {
-    good: "border-emerald-300 bg-emerald-50 text-emerald-900",
-    okay: "border-amber-300 bg-amber-50 text-amber-900",
-    needs_attention: "border-rose-300 bg-rose-50 text-rose-900",
+    good: "border-success/40 bg-success/10 text-foreground",
+    okay: "border-warning/40 bg-warning/10 text-foreground",
+    needs_attention: "border-destructive/40 bg-destructive/10 text-foreground",
   };
   const tone = currentLevel ? tones[currentLevel] : "";
 

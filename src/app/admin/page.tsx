@@ -230,42 +230,32 @@ export default async function AdminHomePage({
     }
   }
 
+  // Neutral white cards differentiated by icon + label, not color — a
+  // single primary accent on every icon chip.
   const cards = [
     {
       label: t("teachers"),
       href: "/admin/teachers",
       count: teacherCount ?? 0,
       icon: UserSquare2,
-      tone: "text-sky-600",
-      iconBg: "bg-sky-50",
-      accent: "bg-sky-500",
     },
     {
       label: t("parents"),
       href: "/admin/parents",
       count: parentCount ?? 0,
       icon: Heart,
-      tone: "text-rose-600",
-      iconBg: "bg-rose-50",
-      accent: "bg-rose-500",
     },
     {
       label: t("classes"),
       href: "/admin/classes",
       count: classCount ?? 0,
       icon: BookOpen,
-      tone: "text-violet-600",
-      iconBg: "bg-violet-50",
-      accent: "bg-violet-500",
     },
     {
       label: t("students"),
       href: "/admin/students",
       count: studentCount ?? 0,
       icon: GraduationCap,
-      tone: "text-amber-600",
-      iconBg: "bg-amber-50",
-      accent: "bg-amber-500",
     },
   ];
 
@@ -303,15 +293,10 @@ export default async function AdminHomePage({
           mini form so the admin sees the business at a glance the
           second they land. Hidden on mobile (the full KPI grid
           below is the source of truth there). */}
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-sky-50/80 via-card to-card p-5 shadow-sm sm:p-8 lg:p-10">
-        <div className="bg-sky-500 absolute inset-x-0 top-0 h-1" />
-        <div
-          aria-hidden="true"
-          className="bg-sky-200/40 pointer-events-none absolute -top-12 -right-12 size-64 rounded-full blur-3xl"
-        />
+      <div className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-8 lg:p-10">
         <div className="relative grid items-center gap-6 lg:grid-cols-[1.3fr_1fr] lg:gap-10">
           <div className="space-y-3">
-            <p className="text-sky-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+            <p className="text-primary inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
               <UserSquare2 className="size-3.5" />
               {t("title")}
             </p>
@@ -330,20 +315,18 @@ export default async function AdminHomePage({
               </span>
             </p>
           </div>
-          {/* Right-side mini-KPI summary — sky-themed compact stat
-              chips. Same four numbers as the cards below, but here
-              they sit inside the greeting so the page has presence
-              at first paint. Hidden <lg so mobile users see the full
-              KPI grid first. */}
+          {/* Right-side mini-KPI summary — neutral compact stat chips.
+              Same four numbers as the cards below, but here they sit
+              inside the greeting so the page has presence at first
+              paint. Hidden <lg so mobile users see the full KPI grid
+              first. */}
           <div className="hidden grid-cols-2 gap-3 lg:grid">
             {cards.map((c) => (
               <div
                 key={c.href}
-                className="bg-background/80 ring-sky-200/60 flex items-center gap-3 rounded-xl p-3 ring-1 backdrop-blur-sm"
+                className="flex items-center gap-3 rounded-xl border bg-background p-3"
               >
-                <span
-                  className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${c.iconBg} ${c.tone}`}
-                >
+                <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
                   <c.icon className="size-4" />
                 </span>
                 <div className="min-w-0">
@@ -405,7 +388,7 @@ export default async function AdminHomePage({
                   <div
                     className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                       step.done
-                        ? "bg-emerald-100 text-emerald-700"
+                        ? "bg-success/15 text-success"
                         : "bg-primary/10 text-primary"
                     }`}
                   >
@@ -444,12 +427,9 @@ export default async function AdminHomePage({
               style={{ animationDelay: `${i * 80}ms` }}
               className="group bg-card relative h-full overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
             >
-              <div className={`absolute inset-x-0 top-0 h-1 ${c.accent}`} />
               <div className="flex h-full flex-col gap-4 p-5">
                 <div className="flex items-start justify-between gap-3">
-                  <span
-                    className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${c.iconBg} ${c.tone}`}
-                  >
+                  <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-lg">
                     <Icon className="size-5" />
                   </span>
                   <ChevronRight className="text-muted-foreground/40 group-hover:text-primary mt-1 size-4 shrink-0 transition-all group-hover:translate-x-0.5" />
@@ -550,8 +530,8 @@ export default async function AdminHomePage({
 
         {/* Teachers tab — top 5 by lessons-this-week, falling back to total.
             'See all teachers' if there are more. The week column is the
-            primary signal: 0 lessons this week shows rose so the admin
-            sees compliance gaps immediately. */}
+            primary signal: 0 lessons this week shows the destructive
+            color so the admin sees compliance gaps immediately. */}
         {activeActivity === "teachers" ? (
           (() => {
             const sortedTeachers = [...(teachers ?? [])].sort((a, b) => {
@@ -603,7 +583,7 @@ export default async function AdminHomePage({
                                   className={
                                     "tabular-nums " +
                                     (weekVal === 0
-                                      ? "text-rose-600 font-medium"
+                                      ? "text-destructive font-medium"
                                       : "text-foreground")
                                   }
                                 >
@@ -979,10 +959,9 @@ function ClassCard({
       href={`/teacher/classes/${c.id}`}
       className="group bg-card relative overflow-hidden rounded-xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
-      <div className="from-primary/10 absolute inset-x-0 top-0 h-1 bg-gradient-to-r to-violet-500/40" />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="text-violet-600 inline-flex size-9 items-center justify-center rounded-lg bg-violet-50">
+          <div className="text-primary inline-flex size-9 items-center justify-center rounded-lg bg-primary/10">
             <BookOpen className="size-5" />
           </div>
           <h3 className="mt-3 truncate text-lg font-semibold">{c.name}</h3>

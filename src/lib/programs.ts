@@ -3,8 +3,8 @@
  * (`center_programs` table) — each center manages its own list. This module
  * just provides:
  *   - default seed labels for new centers
- *   - a deterministic colour-tone picker so each program tile gets a stable
- *     accent without storing it in the DB
+ *   - a single on-system tone for program chips (premium-minimal: one accent,
+ *     colour is never decoration)
  */
 
 export type ProgramRow = {
@@ -27,30 +27,12 @@ export const SUGGESTED_PROGRAMS: string[] = [
   "Young Learners",
 ];
 
-const TONE_PALETTE: string[] = [
-  "bg-sky-50 text-sky-700",
-  "bg-violet-50 text-violet-700",
-  "bg-indigo-50 text-indigo-700",
-  "bg-rose-50 text-rose-700",
-  "bg-emerald-50 text-emerald-700",
-  "bg-amber-50 text-amber-700",
-  "bg-pink-50 text-pink-700",
-  "bg-teal-50 text-teal-700",
-  "bg-orange-50 text-orange-700",
-  "bg-slate-100 text-slate-700",
-];
-
 /**
- * Pick a stable tone for a program label. Hashes the label so the same
- * program always gets the same colour, even after the admin renames it.
+ * Tone for a program chip. The old rainbow-per-program palette is retired:
+ * the design system is single-accent, so every program now shares one quiet
+ * primary tint. Signature is unchanged so callers don't need to change.
  */
 export function toneForProgram(label: string | null | undefined): string {
   if (!label) return "bg-muted text-muted-foreground";
-  let hash = 0;
-  for (let i = 0; i < label.length; i++) {
-    hash = (hash << 5) - hash + label.charCodeAt(i);
-    hash |= 0;
-  }
-  const idx = Math.abs(hash) % TONE_PALETTE.length;
-  return TONE_PALETTE[idx];
+  return "bg-primary/10 text-primary";
 }

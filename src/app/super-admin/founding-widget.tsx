@@ -54,14 +54,14 @@ export function FoundingCenterWidget({
   const full = filled >= cap;
 
   return (
-    <section className="ring-amber-200 rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/70 to-white p-5 shadow-sm ring-1">
+    <section className="bg-card rounded-xl border p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
-          <span className="bg-amber-100 text-amber-700 ring-amber-200 inline-flex size-9 items-center justify-center rounded-full ring-1">
+          <span className="bg-primary/10 text-primary inline-flex size-9 items-center justify-center rounded-full">
             <Sparkles className="size-4" />
           </span>
           <div>
-            <p className="text-amber-900 text-sm font-semibold">
+            <p className="text-foreground text-sm font-semibold">
               Founding Center Program
             </p>
             <p className="text-muted-foreground text-xs">
@@ -88,7 +88,7 @@ export function FoundingCenterWidget({
                 type="button"
                 onClick={save}
                 disabled={pending}
-                className="bg-amber-600 text-white hover:bg-amber-500 inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-semibold disabled:opacity-60"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-xs font-semibold transition-colors disabled:opacity-60"
                 aria-label="Save cap"
               >
                 <Check className="size-3.5" />
@@ -109,7 +109,7 @@ export function FoundingCenterWidget({
 
       <div className="mt-4">
         <p className="flex items-baseline gap-2">
-          <span className="text-3xl font-semibold tabular-nums text-amber-900">
+          <span className="text-3xl font-semibold tabular-nums text-foreground">
             {filled}
           </span>
           <span className="text-muted-foreground text-sm">
@@ -124,7 +124,7 @@ export function FoundingCenterWidget({
           aria-valuemax={100}
         >
           <div
-            className="bg-amber-500 h-full rounded-full transition-all"
+            className="bg-primary h-full rounded-full transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>

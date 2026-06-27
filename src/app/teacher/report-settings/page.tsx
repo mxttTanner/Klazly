@@ -51,8 +51,8 @@ export default async function TeacherReportSettingsPage() {
 
       {/* Read-only note: teachers see the current settings but only the
           center admin can change them. */}
-      <div className="bg-sky-50 text-sky-900 flex items-start gap-2 rounded-lg border border-sky-200 p-3 text-sm">
-        <Info className="mt-0.5 size-4 shrink-0" />
+      <div className="bg-muted/50 text-muted-foreground flex items-start gap-2 rounded-lg border border-border p-3 text-sm">
+        <Info className="text-primary mt-0.5 size-4 shrink-0" />
         <p>{t("teacherReadOnlyNote")}</p>
       </div>
 

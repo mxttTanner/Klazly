@@ -69,7 +69,7 @@ export function ImportForm({ variant }: { variant: Variant }) {
 
       {state.result ? (
         <div className="space-y-2 rounded-md border p-4 text-sm">
-          <div className="flex items-center gap-2 text-emerald-700">
+          <div className="flex items-center gap-2 text-success">
             <CheckCircle2 className="size-4" />
             <p>{t("imported", { n: state.result.imported })}</p>
           </div>
@@ -104,21 +104,21 @@ export function ImportForm({ variant }: { variant: Variant }) {
       ) : null}
 
       {state.result?.generated && state.result.generated.length > 0 ? (
-        <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm">
-          <div className="flex items-start gap-2 text-amber-900">
-            <KeyRound className="mt-0.5 size-4 shrink-0" />
+        <div className="border-warning/40 bg-warning/10 space-y-3 rounded-md border p-4 text-sm">
+          <div className="text-foreground flex items-start gap-2">
+            <KeyRound className="text-warning mt-0.5 size-4 shrink-0" />
             <div className="flex-1 space-y-1">
               <p className="font-semibold">
                 {t("generatedHeader", { n: state.result.generated.length })}
               </p>
-              <p className="text-amber-900/80">{t("generatedHelp")}</p>
+              <p className="text-muted-foreground">{t("generatedHelp")}</p>
             </div>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={copyGenerated}
-              className="shrink-0 border-amber-300 bg-white hover:bg-amber-100"
+              className="shrink-0"
             >
               {copied ? (
                 <>
@@ -133,9 +133,9 @@ export function ImportForm({ variant }: { variant: Variant }) {
               )}
             </Button>
           </div>
-          <div className="overflow-x-auto rounded-md border border-amber-200 bg-white">
+          <div className="bg-card overflow-x-auto rounded-md border border-border">
             <table className="w-full text-xs">
-              <thead className="bg-amber-100/50 text-amber-900">
+              <thead className="bg-muted text-foreground">
                 <tr>
                   <th className="px-3 py-2 text-left font-medium">
                     {t("generatedColName")}
@@ -148,7 +148,7 @@ export function ImportForm({ variant }: { variant: Variant }) {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-amber-100">
+              <tbody className="divide-y divide-border">
                 {state.result.generated.map((g, i) => (
                   <tr key={i}>
                     <td className="px-3 py-1.5">{g.full_name}</td>

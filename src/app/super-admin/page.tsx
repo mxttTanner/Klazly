@@ -11,9 +11,8 @@ import {
 } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
-// Card primitives removed — KPI tiles now rendered inline with
-// colored top accent + icon chip treatment matching the admin
-// dashboard for cross-segment parity.
+// Card primitives removed — KPI tiles rendered inline with a neutral
+// icon chip; color is reserved for the trial-ending-soon warning only.
 import {
   deriveStatus,
   expireOverdueTrials,
@@ -428,25 +427,23 @@ export default async function SuperAdminHomePage({
       label: t("statsCenters"),
       value: String(withDerived.length),
       icon: Building2,
-      tone: "text-sky-700",
-      iconBg: "bg-sky-50",
-      accent: "bg-sky-500",
+      warn: false,
+      sub: null as string | null,
     },
     {
       label: t("statsActive"),
       value: String(activeCount),
       icon: Sparkles,
-      tone: "text-emerald-700",
-      iconBg: "bg-emerald-50",
-      accent: "bg-emerald-500",
+      warn: false,
+      sub: null as string | null,
     },
     {
       label: t("statsTrial"),
       value: String(trialCount),
       icon: AlarmClock,
-      tone: trialsExpiringSoon > 0 ? "text-amber-700" : "text-slate-600",
-      iconBg: trialsExpiringSoon > 0 ? "bg-amber-50" : "bg-muted",
-      accent: trialsExpiringSoon > 0 ? "bg-amber-500" : "bg-muted-foreground/40",
+      // Real warning state: trials lapsing within the ending-soon
+      // window earn a restrained amber chip + hint. Otherwise neutral.
+      warn: trialsExpiringSoon > 0,
       sub:
         trialsExpiringSoon > 0
           ? t("statsTrialEndingSoonHint", { n: trialsExpiringSoon })
@@ -456,9 +453,8 @@ export default async function SuperAdminHomePage({
       label: t("statsMrr"),
       value: mrrFormatted,
       icon: CircleDollarSign,
-      tone: "text-emerald-700",
-      iconBg: "bg-emerald-50",
-      accent: "bg-amber-500",
+      warn: false,
+      sub: null as string | null,
     },
   ];
 
@@ -653,15 +649,12 @@ export default async function SuperAdminHomePage({
 
   return (
     <div className="space-y-8">
-      {/* Greeting card — amber-tinted (platform-owner identity,
-          distinct from tenant sky/violet/rose). Same shape as the
-          admin/teacher/parent greeting cards for cross-segment
-          parity. */}
-      <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-amber-50/70 via-card to-card p-5 sm:p-8">
-        <div className="bg-amber-500 absolute inset-x-0 top-0 h-1" />
+      {/* Greeting card — neutral surface; the single primary accent
+          carries the platform-owner identity. */}
+      <div className="rounded-2xl border bg-card p-5 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1.5">
-            <p className="text-amber-700 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
+            <p className="text-primary inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest">
               <Sparkles className="size-3.5" />
               Platform owner
             </p>
@@ -685,10 +678,10 @@ export default async function SuperAdminHomePage({
       {hasActionRequired ? (
         <section
           aria-label={t("actionRequiredTitle")}
-          className="space-y-4 rounded-xl border border-amber-200 bg-amber-50/40 p-5 shadow-sm"
+          className="space-y-4 rounded-xl border bg-card p-5 shadow-sm"
         >
           <div className="flex items-start gap-3">
-            <span className="bg-amber-100 text-amber-700 ring-amber-200 mt-0.5 inline-flex size-9 items-center justify-center rounded-full ring-1">
+            <span className="bg-amber-50 text-amber-700 ring-amber-200 mt-0.5 inline-flex size-9 items-center justify-center rounded-full ring-1">
               <AlertTriangle className="size-5" />
             </span>
             <div>
@@ -760,10 +753,10 @@ export default async function SuperAdminHomePage({
         </div>
       ) : null}
 
-      {/* Stats — premium KPI tiles matching the admin dashboard
-          treatment: colored top accent, icon chip, big 4xl numerals,
-          hover lift. Staggered entrance via animation-delay so the
-          row reads as one fluid sweep on first paint. */}
+      {/* Stats — KPI tiles: neutral icon chip, big numerals, hover
+          lift. Color is held back for the trial-ending warning only.
+          Staggered entrance via animation-delay so the row reads as
+          one fluid sweep on first paint. */}
       <div className="space-y-3">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s, i) => {
@@ -774,11 +767,15 @@ export default async function SuperAdminHomePage({
                 style={{ animationDelay: `${i * 80}ms` }}
                 className="bg-card group/kpi relative h-full overflow-hidden rounded-xl border shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-500 motion-safe:fill-mode-backwards"
               >
-                <div className={`absolute inset-x-0 top-0 h-1 ${s.accent}`} />
                 <div className="flex h-full flex-col gap-4 p-5">
                   <div className="flex items-start justify-between gap-3">
                     <span
-                      className={`flex size-10 shrink-0 items-center justify-center rounded-lg ${s.iconBg} ${s.tone}`}
+                      className={
+                        "flex size-10 shrink-0 items-center justify-center rounded-lg " +
+                        (s.warn
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-muted text-muted-foreground")
+                      }
                     >
                       <Icon className="size-5" />
                     </span>
@@ -876,41 +873,31 @@ function ActionGroup({
   t: ActionGroupTranslator;
   kind: "left" | "ago";
 }) {
+  // Surfaces stay neutral; urgency is encoded by the icon, header and
+  // days-left color only (semantic: rose=urgent, amber=warning,
+  // muted=expired). The Zalo CTA uses the single primary accent.
   const toneClasses =
     tone === "urgent"
       ? {
-          card: "border-rose-300 bg-white",
           header: "text-rose-800",
-          icon: "bg-rose-100 text-rose-700 ring-rose-200",
+          icon: "bg-rose-50 text-rose-700 ring-rose-200",
           days: "text-rose-700 font-semibold",
-          button:
-            "bg-rose-600 text-white hover:bg-rose-500 ring-rose-700/20",
         }
       : tone === "warning"
         ? {
-            card: "border-amber-300 bg-white",
             header: "text-amber-900",
-            icon: "bg-amber-100 text-amber-700 ring-amber-200",
+            icon: "bg-amber-50 text-amber-700 ring-amber-200",
             days: "text-amber-800 font-medium",
-            button:
-              "bg-amber-600 text-white hover:bg-amber-500 ring-amber-700/20",
           }
         : {
-            card: "border-slate-300 bg-white",
-            header: "text-slate-800",
-            icon: "bg-slate-100 text-slate-600 ring-slate-200",
-            days: "text-slate-700",
-            button:
-              "bg-slate-700 text-white hover:bg-slate-600 ring-slate-800/20",
+            header: "text-foreground",
+            icon: "bg-muted text-muted-foreground ring-border",
+            days: "text-muted-foreground",
           };
   const Icon =
     tone === "urgent" ? AlertTriangle : tone === "warning" ? Clock : AlarmClock;
   return (
-    <div
-      className={
-        "flex flex-col rounded-lg border p-4 shadow-sm " + toneClasses.card
-      }
-    >
+    <div className="bg-card flex flex-col rounded-lg border p-4 shadow-sm">
       <div className="flex items-center gap-2.5">
         <span
           className={
@@ -933,7 +920,7 @@ function ActionGroup({
         {centers.map((c) => (
           <li
             key={c.id}
-            className="flex items-center justify-between gap-3 rounded-md border border-slate-200/80 bg-slate-50/60 px-3 py-2"
+            className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
@@ -959,10 +946,7 @@ function ActionGroup({
                 href={c.zaloUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={
-                  "ring-offset-background focus-visible:ring-ring inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold shadow-sm ring-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 " +
-                  toneClasses.button
-                }
+                className="bg-primary text-primary-foreground hover:bg-primary/90 ring-offset-background focus-visible:ring-ring inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
               >
                 <MessageCircle className="size-3.5" />
                 {t("messageOnZalo")}
