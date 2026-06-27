@@ -465,7 +465,7 @@ export default async function StudentProgressPage({
     : t("noClass");
 
   return (
-    <div className="space-y-6">
+    <div className="app-dark-screen -mx-4 -my-6 min-h-[calc(100dvh-7rem)] space-y-6 bg-navy px-4 py-6 text-white print:m-0 print:min-h-0 print:space-y-0 print:bg-white print:p-0 print:text-black sm:-mx-6 sm:px-6 sm:py-8">
       <div className="flex items-start justify-between gap-3 print:hidden">
         <Link
           href="/parent"
@@ -505,7 +505,7 @@ export default async function StudentProgressPage({
           ) : null}
 
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <div className="bg-primary/10 text-primary ring-primary/20 flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-semibold ring-1 sm:size-16 sm:text-2xl">
+            <div className="bg-emerald/15 text-emerald-light ring-emerald/30 flex size-14 shrink-0 items-center justify-center rounded-full text-xl font-bold ring-1 sm:size-16 sm:text-2xl">
               {student.full_name.trim().split(/\s+/).slice(-1)[0]?.charAt(0).toUpperCase() ?? "?"}
             </div>
             <div className="flex-1 min-w-[10rem] space-y-1">
@@ -563,10 +563,10 @@ export default async function StudentProgressPage({
                 monthAttendancePct === null
                   ? ""
                   : monthAttendancePct >= 90
-                    ? "text-emerald-700"
+                    ? "text-emerald-light"
                     : monthAttendancePct >= 75
-                      ? "text-amber-700"
-                      : "text-red-700"
+                      ? "text-amber-light"
+                      : "text-red-400"
               }`}
             >
               {monthAttendancePct === null ? "—" : `${monthAttendancePct}%`}
@@ -582,10 +582,10 @@ export default async function StudentProgressPage({
                 monthHomeworkPct === null
                   ? ""
                   : monthHomeworkPct >= 80
-                    ? "text-emerald-700"
+                    ? "text-emerald-light"
                     : monthHomeworkPct >= 60
-                      ? "text-amber-700"
-                      : "text-red-700"
+                      ? "text-amber-light"
+                      : "text-red-400"
               }`}
             >
               {monthHomeworkPct === null ? "—" : `${monthHomeworkPct}%`}

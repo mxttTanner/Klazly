@@ -203,6 +203,30 @@
     color: var(--brand-mut);
   }
 
+  /* Scoped dark-screen skin for the parent "today" view. Recolors the
+     shared light card/border/muted utilities to navy on screen. Safe
+     for the printed PDF: the print template uses its own report-*
+     classes, and the on-screen lesson cards carry print:bg-transparent
+     / print:border-black (!important) which win inside @media print. */
+  .app-dark-screen .bg-card {
+    background-color: var(--navy-2);
+  }
+  .app-dark-screen .border,
+  .app-dark-screen .border-t,
+  .app-dark-screen .border-b {
+    border-color: var(--brand-line-dark);
+  }
+  .app-dark-screen .text-muted-foreground {
+    color: var(--brand-mut);
+  }
+  .app-dark-screen .text-foreground {
+    color: #ffffff;
+  }
+  .app-dark-screen .shadow-sm,
+  .app-dark-screen .shadow-md {
+    box-shadow: none;
+  }
+
   /* iOS Safari auto-zooms when a focused form control has font-size
      under 16px. Force 16px on mobile across all native form controls
      regardless of any Tailwind text-xs / text-sm utility applied
@@ -331,7 +355,13 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 1.2rem;
-    padding-bottom: 0.7rem;
+    padding: 14pt 16pt;
+    margin-bottom: 14pt;
+    border-radius: 12pt;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+    color: #ffffff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .report-brand-row {
     display: flex;
@@ -347,38 +377,38 @@
     width: 56px;
     height: 56px;
     border-radius: 12px;
-    background: var(--brand-color, #2563eb);
-    color: #ffffff;
+    background: var(--brand-color, #10b981);
+    color: #06281f;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 18pt;
     letter-spacing: 0.04em;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .report-brand-text .report-center-name {
     font-size: 16pt;
     font-weight: 700;
     line-height: 1.1;
-    color: #0f172a;
+    color: #ffffff;
   }
   .report-brand-text .report-contact {
     margin-top: 2pt;
     font-size: 9pt;
-    color: #475569;
+    color: #b6c2d4;
     line-height: 1.4;
   }
   .report-printed-on {
     font-size: 8.5pt;
-    color: #64748b;
+    color: #cbd5e1;
     align-self: flex-start;
     padding-top: 4pt;
+    text-align: right;
   }
   .report-accent-bar {
-    height: 3pt;
-    background: var(--brand-color, #2563eb);
-    border-radius: 2pt;
-    margin-bottom: 1rem;
+    display: none;
   }
 
   /* --- Headline --- */
@@ -405,9 +435,16 @@
     color: #334155;
   }
   .report-period {
-    margin-top: 2pt;
-    font-size: 9.5pt;
-    color: #64748b;
+    margin-top: 6pt;
+    display: inline-block;
+    font-size: 9pt;
+    font-weight: 600;
+    color: #047857;
+    background: #d1fae5;
+    border-radius: 20pt;
+    padding: 3pt 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .report-intro {
     margin-top: 0.5rem;
@@ -482,8 +519,13 @@
     page-break-inside: avoid;
   }
   .report-callout-highlights {
-    background: #ecfdf5;
-    border: 1pt solid #a7f3d0;
+    background: #fffbeb;
+    border: 1pt solid #fcd34d;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .report-callout-highlights .report-callout-heading {
+    color: #b45309;
   }
   .report-callout-suggestions {
     background: #fffbeb;
