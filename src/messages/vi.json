@@ -758,6 +758,7 @@
   },
   "teacher": {
     "navTitle": "Trang giáo viên",
+    "roleLabel": "Giáo viên",
     "home": {
       "title": "Lớp của tôi",
       "subtitle": "Chọn lớp để xem học sinh và ghi nhận bài học mới.",

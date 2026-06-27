@@ -758,6 +758,7 @@
   },
   "teacher": {
     "navTitle": "Teacher portal",
+    "roleLabel": "Teacher",
     "home": {
       "title": "My classes",
       "subtitle": "Pick a class to see students and record a new lesson.",
