@@ -144,9 +144,11 @@ async function writeAuditLog(
  * via PLAN_TYPE_DECOMPOSITION below.
  */
 const PLAN_TYPE_VALUES = [
-  // Default: vanilla 30-day standard trial. The common case for a new
+  // Default: vanilla 15-day standard trial. The common case for a new
   // center that hasn't been pitched the Founding deal yet. Listed
   // first so the dropdown defaults to the safest non-committal option.
+  // (Founding centers get 30 days — double the standard window — which
+  // is the perk the sales pitch promises.)
   "trial_standard",
   "trial_founding",
   "active_monthly",
@@ -169,7 +171,7 @@ const PLAN_TYPE_DECOMPOSITION: Record<
     trialDays: number | null;
   }
 > = {
-  trial_standard: { status: "trial", plan: null, tier: "standard", trialDays: 30 },
+  trial_standard: { status: "trial", plan: null, tier: "standard", trialDays: 15 },
   trial_founding: { status: "trial", plan: null, tier: "founding", trialDays: 30 },
   active_monthly: { status: "active", plan: "monthly", tier: "standard", trialDays: null },
   active_six_months: { status: "active", plan: "six_months", tier: "standard", trialDays: null },

@@ -11,6 +11,7 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/print-button";
+import { ShareReportButton } from "@/components/share-report-button";
 import { parseDateOnly } from "@/lib/utils";
 import { MessageThread } from "@/components/message-thread";
 import { markThreadRead } from "@/app/messages-actions";
@@ -324,18 +325,19 @@ export default async function StudentProgressPage({
     year: "numeric",
   });
 
-  // Date range for the report period (oldest → newest among rendered lessons).
-  const fmtDate = (d: string) =>
-    parseDateOnly(d)?.toLocaleDateString(dateLocale, {
+  // Report period = the rolling 30-day window the summary stats cover
+  // (thirtyDaysAgo → today). Anchoring to the window — rather than the
+  // oldest/newest lesson on file — keeps the header range consistent
+  // with the "30 ngày gần nhất" figures below, instead of spanning the
+  // student's entire lesson history.
+  const fmtDateObj = (d: Date) =>
+    d.toLocaleDateString(dateLocale, {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
-    }) ?? "";
-  const periodFrom =
-    lessons.length > 0
-      ? fmtDate(lessons[lessons.length - 1].lesson_date)
-      : null;
-  const periodTo = lessons.length > 0 ? fmtDate(lessons[0].lesson_date) : null;
+    });
+  const periodFrom = lessons.length > 0 ? fmtDateObj(thirtyDaysAgo) : null;
+  const periodTo = lessons.length > 0 ? fmtDateObj(new Date()) : null;
 
   // ---------------- PDF-only derived content -----------------
   // Everything below is consumed by the print-only blocks lower in
@@ -472,7 +474,14 @@ export default async function StudentProgressPage({
           <ArrowLeft className="size-3.5" />
           {t("back")}
         </Link>
-        <PrintButton label={t("print")} />
+        <div className="flex items-center gap-2">
+          <ShareReportButton
+            label={t("share")}
+            copiedLabel={t("shareCopied")}
+            shareTitle={t("shareTitle", { name: student.full_name })}
+          />
+          <PrintButton label={t("print")} />
+        </div>
       </div>
 
       {/* On-screen hero card — calm white surface, single-accent
@@ -1028,12 +1037,36 @@ export default async function StudentProgressPage({
                   </div>
                 </div>
 
-                {/* Print-only vocab/grammar enrichment. Hidden on the
-                    parent's screen view (they don't need raw vocab
-                    lists scrolling on their phone), but rendered on
-                    the PDF so the report shows what was actually
-                    taught. Chips are kept compact so even a long
-                    vocab list fits on one printed page. */}
+                {/* On-screen vocabulary chips — the pitch shows parents
+                    "today's vocabulary", so the words the class learned
+                    are surfaced on the phone, not only on the PDF. The
+                    printed report renders its own compact vocab/grammar
+                    block below (this one is print:hidden to avoid a
+                    duplicate). */}
+                {(() => {
+                  const vocabChips = vocabChipsFromLesson(l.vocabulary);
+                  if (vocabChips.length === 0) return null;
+                  return (
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5 print:hidden">
+                      <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-wide">
+                        {t("printVocabLabel")}
+                      </span>
+                      {vocabChips.map((v) => (
+                        <span
+                          key={v}
+                          className="bg-primary/10 text-primary inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
+                        >
+                          {v}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
+
+                {/* Print-only vocab/grammar enrichment. Rendered on the
+                    PDF so the report shows what was actually taught.
+                    Chips are kept compact so even a long vocab list fits
+                    on one printed page. */}
                 {(() => {
                   const vocabChips = vocabChipsFromLesson(l.vocabulary);
                   const grammar = (l.grammar_point ?? "").trim();

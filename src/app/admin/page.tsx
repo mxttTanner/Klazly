@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
+  AlertTriangle,
   ArrowRight,
   BookMarked,
   BookOpen,
@@ -12,6 +13,7 @@ import {
   GraduationCap,
   Heart,
   ListChecks,
+  MessageCircle,
   Rocket,
   Users,
   UserSquare2,
@@ -19,6 +21,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { parseDateOnly } from "@/lib/utils";
 import { toneForProgram } from "@/lib/programs";
+import { buildZaloUrl } from "@/lib/zalo";
 import {
   Table,
   TableBody,
@@ -152,7 +155,7 @@ export default async function AdminHomePage({
       supabase.from("students").select("id", { count: "exact", head: true }),
       supabase
         .from("users")
-        .select("id, full_name")
+        .select("id, full_name, phone")
         .eq("role", "teacher")
         .order("full_name", { ascending: true }),
       supabase.from("classes").select("teacher_id"),
@@ -164,7 +167,7 @@ export default async function AdminHomePage({
       supabase
         .from("lessons")
         .select(
-          "id, lesson_date, class:classes(name), teacher:users!lessons_teacher_id_fkey(full_name)",
+          "id, lesson_date, unit, lesson_number, topic, class:classes(name), teacher:users!lessons_teacher_id_fkey(full_name)",
         )
         .order("lesson_date", { ascending: false })
         .limit(5),
@@ -229,6 +232,15 @@ export default async function AdminHomePage({
       );
     }
   }
+
+  // "Who hasn't logged" accountability list — teachers with zero
+  // lessons in the current week window. Surfaced as a red alert at the
+  // top of the activity panel so non-loggers can't slip below the
+  // top-5 teacher table (which sorts by most-logged first). Each row
+  // links to a Zalo nudge when the teacher has a phone on file.
+  const nonLoggingTeachers = (
+    (teachers ?? []) as { id: string; full_name: string; phone: string | null }[]
+  ).filter((tr) => (lessonsByTeacherWeek.get(tr.id) ?? 0) === 0);
 
   // Neutral white cards differentiated by icon + label, not color — a
   // single primary accent on every icon chip.
@@ -488,6 +500,51 @@ export default async function AdminHomePage({
           </h2>
         </div>
 
+        {/* "Who hasn't logged" red alert — the pitch's accountability
+            promise. Computes the count of teachers with no lesson this
+            week and lists each with a one-tap Zalo nudge. */}
+        {nonLoggingTeachers.length > 0 ? (
+          <div className="border-destructive/30 bg-destructive/5 rounded-lg border p-4">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="text-destructive mt-0.5 size-5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-destructive text-sm font-semibold">
+                  {t("notLoggedAlert", { n: nonLoggingTeachers.length })}
+                </p>
+                <p className="text-muted-foreground mt-0.5 text-sm">
+                  {t("notLoggedAlertHint")}
+                </p>
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {nonLoggingTeachers.map((tr) => {
+                    const zalo = buildZaloUrl(tr.phone);
+                    return (
+                      <li key={tr.id}>
+                        {zalo ? (
+                          <a
+                            href={zalo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="border-destructive/30 bg-card text-foreground hover:border-destructive/60 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition"
+                          >
+                            <UserSquare2 className="size-3.5" />
+                            {tr.full_name}
+                            <MessageCircle className="text-destructive size-3.5" />
+                          </a>
+                        ) : (
+                          <span className="border-border bg-card text-muted-foreground inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium">
+                            <UserSquare2 className="size-3.5" />
+                            {tr.full_name}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         <nav className="border-b">
           <div className="-mb-px flex gap-1 overflow-x-auto">
             {(
@@ -661,7 +718,19 @@ export default async function AdminHomePage({
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <ClipboardList className="text-muted-foreground size-4" />
-                            {cls?.name ?? "—"}
+                            <div className="min-w-0">
+                              <div className="truncate">{cls?.name ?? "—"}</div>
+                              {(() => {
+                                const title = [l.unit, l.lesson_number, l.topic]
+                                  .filter(Boolean)
+                                  .join(" — ");
+                                return title ? (
+                                  <div className="text-muted-foreground truncate text-xs">
+                                    {title}
+                                  </div>
+                                ) : null;
+                              })()}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground">
