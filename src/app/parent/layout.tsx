@@ -22,7 +22,7 @@ export default async function ParentLayout({
   const t = await getTranslations("parent");
 
   return (
-    <div className="min-h-dvh bg-background print:bg-white">
+    <div className="theme-emerald min-h-dvh bg-background print:bg-white">
       <DemoBanner email={user.email} />
       <header className="sticky top-0 z-20 border-b border-brand-line-dark bg-navy/95 backdrop-blur-md supports-[backdrop-filter]:bg-navy/85 print:hidden">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-6">

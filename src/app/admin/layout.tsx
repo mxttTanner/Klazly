@@ -36,7 +36,7 @@ export default async function AdminLayout({
   const centerName = center?.name ?? t("navTitle");
 
   return (
-    <div className="min-h-dvh bg-background">
+    <div className="theme-emerald min-h-dvh bg-background">
       <DemoBanner email={user.email} />
       <SubscriptionBanner centerId={user.center_id} userEmail={user.email} />
 

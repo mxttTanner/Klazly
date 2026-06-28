@@ -227,6 +227,17 @@
     box-shadow: none;
   }
 
+  /* Brand-accent theme: scope --primary to emerald so the shared
+     shadcn buttons/links/badges across the logged-in app and the
+     marketing pages match the navy/emerald system instead of the
+     legacy blue. emerald-dark stays readable on light surfaces and
+     reads fine as a fill with white text. */
+  .theme-emerald {
+    --primary: oklch(0.54 0.12 162);
+    --primary-foreground: oklch(0.99 0 0);
+    --ring: oklch(0.54 0.12 162);
+  }
+
   /* iOS Safari auto-zooms when a focused form control has font-size
      under 16px. Force 16px on mobile across all native form controls
      regardless of any Tailwind text-xs / text-sm utility applied

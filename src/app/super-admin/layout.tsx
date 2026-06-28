@@ -49,7 +49,7 @@ export default async function SuperAdminLayout({
             </div>
             <div className="bg-border hidden h-5 w-px sm:block" />
             <LanguageToggle />
-            <LogoutButton />
+            <LogoutButton tone="light" />
           </div>
         </div>
       </header>
