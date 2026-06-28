@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   BookOpen,
   Check,
+  ChevronRight,
   GraduationCap,
   Rocket,
   User,
@@ -113,7 +114,7 @@ export default async function AdminHomePage() {
       .order("created_at", { ascending: false })
       .limit(6),
     supabase.from("center_programs").select("id, label").order("sort_order", { ascending: true }),
-    supabase.from("students").select("class_id"),
+    supabase.from("students").select("id, full_name, class_id"),
     classesPromise,
   ]);
 
@@ -176,27 +177,40 @@ export default async function AdminHomePage() {
   // Classes grouped by program (Cambridge / IELTS / English Communication
   // …) for the overview. Classes with no program — or a program not in
   // the catalog — fall into the "unassigned" group.
+  const studentRows = (studentsByClass ?? []) as {
+    id: string;
+    full_name: string;
+    class_id: string | null;
+  }[];
   const studentsPerClass = new Map<string, number>();
-  for (const s of (studentsByClass ?? []) as { class_id: string | null }[]) {
-    if (s.class_id)
-      studentsPerClass.set(s.class_id, (studentsPerClass.get(s.class_id) ?? 0) + 1);
+  const studentsByClassList = new Map<string, { id: string; full_name: string }[]>();
+  for (const s of studentRows) {
+    if (!s.class_id) continue;
+    studentsPerClass.set(s.class_id, (studentsPerClass.get(s.class_id) ?? 0) + 1);
+    const arr = studentsByClassList.get(s.class_id) ?? [];
+    arr.push({ id: s.id, full_name: s.full_name });
+    studentsByClassList.set(s.class_id, arr);
   }
   const programCatalog = (programsData ?? []) as { id: string; label: string }[];
   const catalogLabels = new Set(programCatalog.map((p) => p.label));
   const teacherNameOf = (c: ClassRow) =>
     (Array.isArray(c.teacher) ? c.teacher[0] : c.teacher)?.full_name ?? null;
+  const studentsInClasses = (cls: ClassRow[]) =>
+    cls.reduce((sum, c) => sum + (studentsPerClass.get(c.id) ?? 0), 0);
+  const unassignedClasses = classRows.filter(
+    (c) => !c.program || !catalogLabels.has(c.program),
+  );
+  // Every program from settings is shown, even with zero classes. The
+  // "unassigned" bucket only appears if some class lacks a known program.
   const programGroups = [
     ...programCatalog.map((p) => ({
       label: p.label,
       classes: classRows.filter((c) => c.program === p.label),
     })),
-    {
-      label: t("unsetProgramTileTitle"),
-      classes: classRows.filter(
-        (c) => !c.program || !catalogLabels.has(c.program),
-      ),
-    },
-  ].filter((g) => g.classes.length > 0);
+    ...(unassignedClasses.length > 0
+      ? [{ label: t("unsetProgramTileTitle"), classes: unassignedClasses }]
+      : []),
+  ];
 
   return (
     // Full-bleed dark canvas: break out of the layout's centered
@@ -274,15 +288,9 @@ export default async function AdminHomePage() {
         <div className="grid gap-4 lg:grid-cols-2">
           {/* Recent activity */}
           <section className="rounded-2xl border border-brand-line-dark bg-navy-2 p-5 sm:p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-brand-mut">
-                {t("activityHeader")}
-              </h2>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald/15 px-2.5 py-1 text-[11px] font-bold text-emerald-light">
-                <span className="size-1.5 rounded-full bg-emerald-light" />
-                {t("live")}
-              </span>
-            </div>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-brand-mut">
+              {t("activityHeader")}
+            </h2>
             {recent.length > 0 ? (
               <ul className="mt-4 divide-y divide-brand-line-dark/60">
                 {recent.map((l) => {
@@ -365,36 +373,75 @@ export default async function AdminHomePage() {
           </section>
         </div>
 
-        {/* Classes by program */}
-        {classRows.length > 0 ? (
+        {/* Programs → classes → students drill-down. Every program from
+            settings shows (even with zero classes); expand to reveal its
+            classes, expand a class to reveal its students. */}
+        {programGroups.length > 0 ? (
           <section className="rounded-2xl border border-brand-line-dark bg-navy-2 p-5 sm:p-6">
             <h2 className="text-xs font-bold uppercase tracking-wider text-brand-mut">
               {t("programsHeader")}
             </h2>
-            <div className="mt-4 space-y-5">
+            <div className="mt-4 space-y-2.5">
               {programGroups.map((g) => (
-                <div key={g.label}>
-                  <p className="text-sm font-semibold text-emerald-light">
-                    {g.label}
-                  </p>
-                  <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {g.classes.map((c) => (
-                      <Link
-                        key={c.id}
-                        href="/admin/classes"
-                        className="rounded-xl border border-brand-line-dark bg-white/[0.03] p-3 transition hover:border-emerald/40"
-                      >
-                        <p className="truncate font-semibold text-white">
-                          {c.name}
-                        </p>
-                        <p className="truncate text-xs text-brand-mut">
-                          {teacherNameOf(c) ?? t("classCardNoTeacher")} ·{" "}
-                          {studentsPerClass.get(c.id) ?? 0} {t("classCardStudents")}
-                        </p>
-                      </Link>
-                    ))}
+                <details
+                  key={g.label}
+                  className="group/prog overflow-hidden rounded-xl border border-brand-line-dark bg-white/[0.02] open:bg-white/[0.04]"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                    <span className="flex items-center gap-2 font-semibold text-white">
+                      <ChevronRight className="size-4 shrink-0 text-brand-mut transition group-open/prog:rotate-90" />
+                      {g.label}
+                    </span>
+                    <span className="shrink-0 text-xs text-brand-mut">
+                      {t("programClasses", { n: g.classes.length })} ·{" "}
+                      {t("programStudents", { n: studentsInClasses(g.classes) })}
+                    </span>
+                  </summary>
+                  <div className="space-y-2 px-4 pb-3 pl-10">
+                    {g.classes.length === 0 ? (
+                      <p className="text-xs text-brand-mut">
+                        {t("programNoClasses")}
+                      </p>
+                    ) : (
+                      g.classes.map((c) => {
+                        const roster = studentsByClassList.get(c.id) ?? [];
+                        return (
+                          <details
+                            key={c.id}
+                            className="group/cls rounded-lg border border-brand-line-dark bg-white/[0.02]"
+                          >
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 [&::-webkit-details-marker]:hidden">
+                              <span className="flex items-center gap-2 text-sm font-medium text-white">
+                                <ChevronRight className="size-3.5 shrink-0 text-brand-mut transition group-open/cls:rotate-90" />
+                                {c.name}
+                              </span>
+                              <span className="shrink-0 text-xs text-brand-mut">
+                                {teacherNameOf(c) ?? t("classCardNoTeacher")} ·{" "}
+                                {t("programStudents", { n: roster.length })}
+                              </span>
+                            </summary>
+                            <ul className="space-y-1 px-3 pb-2 pl-9">
+                              {roster.length === 0 ? (
+                                <li className="text-xs text-brand-mut">
+                                  {t("programNoStudents")}
+                                </li>
+                              ) : (
+                                roster.map((st) => (
+                                  <li
+                                    key={st.id}
+                                    className="text-sm text-brand-mut-2"
+                                  >
+                                    {st.full_name}
+                                  </li>
+                                ))
+                              )}
+                            </ul>
+                          </details>
+                        );
+                      })
+                    )}
                   </div>
-                </div>
+                </details>
               ))}
             </div>
           </section>

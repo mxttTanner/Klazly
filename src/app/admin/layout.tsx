@@ -50,10 +50,6 @@ export default async function AdminLayout({
             <span className="hidden text-sm text-brand-mut lg:inline">
               klazly.com/admin
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald/15 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-light">
-              <span className="size-1.5 rounded-full bg-emerald-light" />
-              {t("live")}
-            </span>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <span className="hidden max-w-[20rem] truncate text-sm font-bold text-white sm:inline lg:max-w-[28rem]">
