@@ -44,7 +44,7 @@ export async function SiteNav({ active }: { active?: NavKey }) {
           ))}
         </div>
         <div className="ml-auto flex items-center gap-3">
-          <LanguageToggle />
+          <LanguageToggle tone="dark" />
           <Link
             href="/login"
             className="hidden text-sm text-brand-mut-2 transition hover:text-white sm:inline"

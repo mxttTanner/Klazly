@@ -65,9 +65,9 @@ export default async function AdminLayout({
               className="inline-flex min-h-11 items-center gap-2 rounded-md px-1.5 py-1 transition hover:bg-white/5"
               aria-label={user.full_name}
             >
-              <Avatar name={user.full_name} seed={user.id} size="sm" />
+              <Avatar name={user.full_name} seed={user.id} size="sm" tone="dark" />
             </Link>
-            <LanguageToggle />
+            <LanguageToggle tone="dark" />
             <LogoutButton />
           </div>
         </div>

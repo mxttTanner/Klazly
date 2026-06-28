@@ -41,9 +41,9 @@ export default async function ParentLayout({
                   {user.full_name}
                 </p>
               </div>
-              <Avatar name={user.full_name} seed={user.id} size="sm" />
+              <Avatar name={user.full_name} seed={user.id} size="sm" tone="dark" />
             </Link>
-            <LanguageToggle />
+            <LanguageToggle tone="dark" />
             <LogoutButton />
           </div>
         </div>

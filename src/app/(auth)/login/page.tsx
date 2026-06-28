@@ -43,9 +43,7 @@ export default async function LoginPage() {
               >
                 <BrandWordmark className="text-[22px]" />
               </Link>
-              <div className="[&_button]:bg-white/5 [&_button]:text-white [&_button]:border-white/15 [&_button:hover]:bg-white/10">
-                <LanguageToggle />
-              </div>
+              <LanguageToggle tone="dark" />
             </div>
             <p className="text-slate-400 mt-5 text-xs font-semibold uppercase tracking-widest">
               {t("welcomeBack")}

@@ -97,12 +97,13 @@ export function LessonForm({
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
-  // Bulk-toggle the per-student homework checkboxes. The Checkbox primitive
-  // renders a button with a data-checked attribute when checked, so we click
-  // only the ones whose state doesn't already match.
+  // Bulk-toggle the per-student homework checkboxes. The base-ui Checkbox
+  // renders a <span role="checkbox" id="homework_…"> (NOT a <button>) and
+  // carries data-checked when checked, so target the role and click only
+  // the ones whose state doesn't already match.
   function setAllHomework(done: boolean) {
     document
-      .querySelectorAll<HTMLButtonElement>('button[id^="homework_"]')
+      .querySelectorAll<HTMLElement>('[role="checkbox"][id^="homework_"]')
       .forEach((btn) => {
         const isChecked = btn.hasAttribute("data-checked");
         if (isChecked !== done) btn.click();
@@ -370,6 +371,7 @@ export function LessonForm({
                 size="sm"
                 variant="outline"
                 onClick={() => setAllAttendance("present")}
+                className="border-white/15 bg-transparent text-brand-mut-2 hover:bg-white/5 hover:text-white"
               >
                 {t("bulkAllPresent")}
               </Button>
@@ -408,6 +410,7 @@ export function LessonForm({
                 size="sm"
                 variant="outline"
                 onClick={() => setAllHomework(true)}
+                className="border-white/15 bg-transparent text-brand-mut-2 hover:bg-white/5 hover:text-white"
               >
                 {t("bulkAllHomeworkDone")}
               </Button>
@@ -416,6 +419,7 @@ export function LessonForm({
                 size="sm"
                 variant="outline"
                 onClick={() => setAllHomework(false)}
+                className="border-white/15 bg-transparent text-brand-mut-2 hover:bg-white/5 hover:text-white"
               >
                 {t("bulkAllHomeworkUndone")}
               </Button>

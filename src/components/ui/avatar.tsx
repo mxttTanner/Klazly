@@ -1,9 +1,11 @@
 import { cn } from "@/lib/utils";
 
-// Single on-system tone. The design system is single-accent, so avatars no
-// longer pick a per-person hue — every initial circle shares one quiet
-// primary tint. Wayfinding/identity comes from the name label, not colour.
-const AVATAR_TONE = "bg-primary/10 text-primary ring-primary/15";
+// Single-accent tones. `light` for light surfaces (default); `dark` for
+// the navy app bars, where the light tint is nearly invisible.
+const AVATAR_TONES = {
+  light: "bg-primary/10 text-primary ring-primary/15",
+  dark: "bg-white/10 text-emerald-light ring-white/20",
+} as const;
 
 function initial(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -28,6 +30,7 @@ export function Avatar({
   name,
   seed,
   size = "sm",
+  tone = "light",
   className,
 }: {
   name: string;
@@ -35,6 +38,7 @@ export function Avatar({
    *  use a single tone. Safe to keep passing the user id. */
   seed?: string;
   size?: keyof typeof SIZE_CLASSES;
+  tone?: keyof typeof AVATAR_TONES;
   className?: string;
 }) {
   void seed;
@@ -43,7 +47,7 @@ export function Avatar({
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-full font-semibold ring-1",
         SIZE_CLASSES[size],
-        AVATAR_TONE,
+        AVATAR_TONES[tone],
         className,
       )}
       aria-hidden="true"

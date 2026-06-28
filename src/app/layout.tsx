@@ -153,7 +153,7 @@ export default async function RootLayout({
     // nothing.
     <html lang={locale} translate="no" suppressHydrationWarning>
       <body
-        className={`${inter.variable} antialiased notranslate`}
+        className={`${inter.variable} theme-emerald antialiased notranslate`}
         suppressHydrationWarning
       >
         <NextIntlClientProvider messages={messages} locale={locale}>
