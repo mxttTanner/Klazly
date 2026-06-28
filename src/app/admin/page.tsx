@@ -44,6 +44,12 @@ function gradientFor(seed: string): string {
 
 type TeacherRow = { id: string; full_name: string };
 type LessonLite = { teacher_id: string | null; lesson_date: string };
+type ClassRow = {
+  id: string;
+  name: string;
+  program: string | null;
+  teacher: { full_name: string } | { full_name: string }[] | null;
+};
 type RecentLesson = {
   id: string;
   created_at: string | null;
@@ -59,6 +65,24 @@ export default async function AdminHomePage() {
   const t = await getTranslations("admin.dashboard");
   const weekStart = weekAgoIsoDate();
 
+  // Classes with their program label; falls back to a program-less
+  // select on older schemas so the overview still renders.
+  const classesPromise = (async () => {
+    const full = await supabase
+      .from("classes")
+      .select("id, name, program, teacher:users!classes_teacher_id_fkey(full_name)")
+      .order("name", { ascending: true });
+    if (!full.error) return (full.data ?? []) as ClassRow[];
+    const basic = await supabase
+      .from("classes")
+      .select("id, name, teacher:users!classes_teacher_id_fkey(full_name)")
+      .order("name", { ascending: true });
+    return ((basic.data ?? []) as Array<Omit<ClassRow, "program">>).map((c) => ({
+      ...c,
+      program: null,
+    }));
+  })();
+
   const [
     { count: teacherCount },
     { count: parentCount },
@@ -67,6 +91,9 @@ export default async function AdminHomePage() {
     { data: teachers },
     { data: lessons },
     { data: recentLessons },
+    { data: programsData },
+    { data: studentsByClass },
+    classRows,
   ] = await Promise.all([
     supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "teacher"),
     supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "parent"),
@@ -85,6 +112,9 @@ export default async function AdminHomePage() {
       )
       .order("created_at", { ascending: false })
       .limit(6),
+    supabase.from("center_programs").select("id, label").order("sort_order", { ascending: true }),
+    supabase.from("students").select("class_id"),
+    classesPromise,
   ]);
 
   const allLessons = (lessons ?? []) as LessonLite[];
@@ -138,6 +168,31 @@ export default async function AdminHomePage() {
   }
 
   const recent = (recentLessons ?? []) as RecentLesson[];
+
+  // Classes grouped by program (Cambridge / IELTS / English Communication
+  // …) for the overview. Classes with no program — or a program not in
+  // the catalog — fall into the "unassigned" group.
+  const studentsPerClass = new Map<string, number>();
+  for (const s of (studentsByClass ?? []) as { class_id: string | null }[]) {
+    if (s.class_id)
+      studentsPerClass.set(s.class_id, (studentsPerClass.get(s.class_id) ?? 0) + 1);
+  }
+  const programCatalog = (programsData ?? []) as { id: string; label: string }[];
+  const catalogLabels = new Set(programCatalog.map((p) => p.label));
+  const teacherNameOf = (c: ClassRow) =>
+    (Array.isArray(c.teacher) ? c.teacher[0] : c.teacher)?.full_name ?? null;
+  const programGroups = [
+    ...programCatalog.map((p) => ({
+      label: p.label,
+      classes: classRows.filter((c) => c.program === p.label),
+    })),
+    {
+      label: t("unsetProgramTileTitle"),
+      classes: classRows.filter(
+        (c) => !c.program || !catalogLabels.has(c.program),
+      ),
+    },
+  ].filter((g) => g.classes.length > 0);
 
   return (
     // Full-bleed dark canvas: break out of the layout's centered
@@ -305,6 +360,41 @@ export default async function AdminHomePage() {
             ) : null}
           </section>
         </div>
+
+        {/* Classes by program */}
+        {classRows.length > 0 ? (
+          <section className="rounded-2xl border border-brand-line-dark bg-navy-2 p-5 sm:p-6">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-brand-mut">
+              {t("programsHeader")}
+            </h2>
+            <div className="mt-4 space-y-5">
+              {programGroups.map((g) => (
+                <div key={g.label}>
+                  <p className="text-sm font-semibold text-emerald-light">
+                    {g.label}
+                  </p>
+                  <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {g.classes.map((c) => (
+                      <Link
+                        key={c.id}
+                        href="/admin/classes"
+                        className="rounded-xl border border-brand-line-dark bg-white/[0.03] p-3 transition hover:border-emerald/40"
+                      >
+                        <p className="truncate font-semibold text-white">
+                          {c.name}
+                        </p>
+                        <p className="truncate text-xs text-brand-mut">
+                          {teacherNameOf(c) ?? t("classCardNoTeacher")} ·{" "}
+                          {studentsPerClass.get(c.id) ?? 0} {t("classCardStudents")}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );
