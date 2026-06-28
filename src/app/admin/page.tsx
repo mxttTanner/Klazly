@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import {
   AlertTriangle,
+  BookMarked,
   BookOpen,
   Check,
   ChevronRight,
@@ -61,7 +62,11 @@ type RecentLesson = {
   teacher: { full_name: string } | { full_name: string }[] | null;
 };
 
-export default async function AdminHomePage() {
+export default async function AdminHomePage({
+  searchParams,
+}: {
+  searchParams: { program?: string; class?: string };
+}) {
   const supabase = createClient();
   const t = await getTranslations("admin.dashboard");
   const weekStart = weekAgoIsoDate();
@@ -211,6 +216,16 @@ export default async function AdminHomePage() {
       ? [{ label: t("unsetProgramTileTitle"), classes: unassignedClasses }]
       : []),
   ];
+  // Drill-down state from the URL: ?program=<label>&class=<id>.
+  const currentProgram = searchParams.program?.trim() || null;
+  const currentClass = searchParams.class?.trim() || null;
+  const activeGroup = currentProgram
+    ? programGroups.find((g) => g.label === currentProgram) ?? null
+    : null;
+  const activeClass =
+    activeGroup && currentClass
+      ? activeGroup.classes.find((c) => c.id === currentClass) ?? null
+      : null;
 
   return (
     // Full-bleed dark canvas: break out of the layout's centered
@@ -373,77 +388,122 @@ export default async function AdminHomePage() {
           </section>
         </div>
 
-        {/* Programs → classes → students drill-down. Every program from
-            settings shows (even with zero classes); expand to reveal its
-            classes, expand a class to reveal its students. */}
+        {/* Programs drill-down — a grid of program tiles; click a program
+            to see its classes, click a class to see its students. Every
+            program from settings shows, even with zero classes. */}
         {programGroups.length > 0 ? (
           <section className="rounded-2xl border border-brand-line-dark bg-navy-2 p-5 sm:p-6">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-brand-mut">
-              {t("programsHeader")}
-            </h2>
-            <div className="mt-4 space-y-2.5">
-              {programGroups.map((g) => (
-                <details
-                  key={g.label}
-                  className="group/prog overflow-hidden rounded-xl border border-brand-line-dark bg-white/[0.02] open:bg-white/[0.04]"
-                >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-                    <span className="flex items-center gap-2 font-semibold text-white">
-                      <ChevronRight className="size-4 shrink-0 text-brand-mut transition group-open/prog:rotate-90" />
-                      {g.label}
-                    </span>
-                    <span className="shrink-0 text-xs text-brand-mut">
-                      {t("programClasses", { n: g.classes.length })} ·{" "}
-                      {t("programStudents", { n: studentsInClasses(g.classes) })}
-                    </span>
-                  </summary>
-                  <div className="space-y-2 px-4 pb-3 pl-10">
-                    {g.classes.length === 0 ? (
-                      <p className="text-xs text-brand-mut">
-                        {t("programNoClasses")}
-                      </p>
-                    ) : (
-                      g.classes.map((c) => {
-                        const roster = studentsByClassList.get(c.id) ?? [];
-                        return (
-                          <details
-                            key={c.id}
-                            className="group/cls rounded-lg border border-brand-line-dark bg-white/[0.02]"
-                          >
-                            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 [&::-webkit-details-marker]:hidden">
-                              <span className="flex items-center gap-2 text-sm font-medium text-white">
-                                <ChevronRight className="size-3.5 shrink-0 text-brand-mut transition group-open/cls:rotate-90" />
-                                {c.name}
-                              </span>
-                              <span className="shrink-0 text-xs text-brand-mut">
-                                {teacherNameOf(c) ?? t("classCardNoTeacher")} ·{" "}
-                                {t("programStudents", { n: roster.length })}
-                              </span>
-                            </summary>
-                            <ul className="space-y-1 px-3 pb-2 pl-9">
-                              {roster.length === 0 ? (
-                                <li className="text-xs text-brand-mut">
-                                  {t("programNoStudents")}
-                                </li>
-                              ) : (
-                                roster.map((st) => (
-                                  <li
-                                    key={st.id}
-                                    className="text-sm text-brand-mut-2"
-                                  >
-                                    {st.full_name}
-                                  </li>
-                                ))
-                              )}
-                            </ul>
-                          </details>
-                        );
-                      })
-                    )}
+            {activeClass ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <Link
+                    href={`/admin?program=${encodeURIComponent(currentProgram ?? "")}`}
+                    className="inline-flex items-center gap-1 text-brand-mut transition hover:text-white"
+                  >
+                    <ChevronRight className="size-3.5 rotate-180" />
+                    {currentProgram}
+                  </Link>
+                  <span className="text-brand-mut">/</span>
+                  <h2 className="font-semibold text-white">{activeClass.name}</h2>
+                </div>
+                <p className="mt-1 text-xs text-brand-mut">
+                  {teacherNameOf(activeClass) ?? t("classCardNoTeacher")} ·{" "}
+                  {t("programStudents", {
+                    n: (studentsByClassList.get(activeClass.id) ?? []).length,
+                  })}
+                </p>
+                <ul className="mt-4 divide-y divide-brand-line-dark/60">
+                  {(studentsByClassList.get(activeClass.id) ?? []).length === 0 ? (
+                    <li className="py-3 text-sm text-brand-mut">
+                      {t("programNoStudents")}
+                    </li>
+                  ) : (
+                    (studentsByClassList.get(activeClass.id) ?? []).map((st) => (
+                      <li key={st.id} className="flex items-center gap-3 py-2.5">
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-emerald/15 text-xs font-bold text-emerald-light">
+                          {initialOf(st.full_name)}
+                        </span>
+                        <span className="text-sm text-white">{st.full_name}</span>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </>
+            ) : activeGroup ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <Link
+                    href="/admin"
+                    className="inline-flex items-center gap-1 text-brand-mut transition hover:text-white"
+                  >
+                    <ChevronRight className="size-3.5 rotate-180" />
+                    {t("programsHeader")}
+                  </Link>
+                  <span className="text-brand-mut">/</span>
+                  <h2 className="font-semibold text-white">{activeGroup.label}</h2>
+                </div>
+                {activeGroup.classes.length === 0 ? (
+                  <p className="mt-4 text-sm text-brand-mut">
+                    {t("programNoClasses")}
+                  </p>
+                ) : (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {activeGroup.classes.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/admin?program=${encodeURIComponent(activeGroup.label)}&class=${c.id}`}
+                        className="group rounded-xl border border-brand-line-dark bg-white/[0.03] p-4 transition hover:-translate-y-0.5 hover:border-emerald/40"
+                      >
+                        <div className="flex items-start justify-between">
+                          <span className="inline-flex size-9 items-center justify-center rounded-lg bg-emerald/15 text-emerald-light">
+                            <BookOpen className="size-4" />
+                          </span>
+                          <ChevronRight className="size-4 text-brand-mut transition group-hover:text-emerald-light" />
+                        </div>
+                        <h3 className="mt-3 truncate font-semibold text-white">
+                          {c.name}
+                        </h3>
+                        <p className="mt-0.5 truncate text-xs text-brand-mut">
+                          {teacherNameOf(c) ?? t("classCardNoTeacher")} ·{" "}
+                          {t("programStudents", {
+                            n: studentsPerClass.get(c.id) ?? 0,
+                          })}
+                        </p>
+                      </Link>
+                    ))}
                   </div>
-                </details>
-              ))}
-            </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-brand-mut">
+                  {t("programsHeader")}
+                </h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {programGroups.map((g) => (
+                    <Link
+                      key={g.label}
+                      href={`/admin?program=${encodeURIComponent(g.label)}`}
+                      className="group rounded-xl border border-brand-line-dark bg-white/[0.03] p-5 transition hover:-translate-y-0.5 hover:border-emerald/40"
+                    >
+                      <div className="flex items-start justify-between">
+                        <span className="inline-flex size-10 items-center justify-center rounded-lg bg-emerald/15 text-emerald-light">
+                          <BookMarked className="size-5" />
+                        </span>
+                        <ChevronRight className="size-4 text-brand-mut transition group-hover:text-emerald-light" />
+                      </div>
+                      <h3 className="mt-3 font-semibold text-white">{g.label}</h3>
+                      <p className="mt-0.5 text-sm text-brand-mut">
+                        {t("programClasses", { n: g.classes.length })} ·{" "}
+                        {t("programStudents", {
+                          n: studentsInClasses(g.classes),
+                        })}
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
           </section>
         ) : null}
       </div>
