@@ -72,38 +72,48 @@ function isoDaysAgo(n: number, hour = 9): string {
 }
 
 async function nuke() {
-  console.log("Wiping existing data...");
-  await supabase.from("audit_log").delete().not("id", "is", null);
-  await supabase.from("centers").delete().not("id", "is", null);
-
-  const all: { id: string; email?: string }[] = [];
-  let page = 1;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const { data, error } = await supabase.auth.admin.listUsers({
-      page,
-      perPage: 1000,
-    });
-    if (error) throw error;
-    all.push(...data.users);
-    if (data.users.length < 1000) break;
-    page++;
-  }
-
-  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  const toDelete = all.filter(
-    (u) => !u.email || !superAdminEmail.includes(u.email.toLowerCase()),
-  );
-  for (const u of toDelete) {
-    await supabase.auth.admin.deleteUser(u.id, false);
-  }
+  // SAFETY: only the DEMO center is removed — never real centers. The
+  // demo is identified by its marker (signup_source='demo' or the seed's
+  // contact email). We delete only that center and the users that belong
+  // to it (looked up by center_id). Any real center, and any user tied to
+  // one, is left completely untouched. (A previous version deleted ALL
+  // centers/users, which once wiped a real center — never again.)
   console.log(
-    `  Deleted ${toDelete.length} auth user(s); preserved ${
-      all.length - toDelete.length
-    } super-admin account(s).`,
+    "Removing the existing demo center + its users (real centers untouched)...",
+  );
+
+  const { data: demoCenters, error: dcErr } = await supabase
+    .from("centers")
+    .select("id")
+    .or("signup_source.eq.demo,contact_email.eq.lienhe@hoamai.test");
+  if (dcErr) throw dcErr;
+  const demoCenterIds = (demoCenters ?? []).map((c) => c.id);
+
+  if (demoCenterIds.length === 0) {
+    console.log("  No existing demo center found — nothing to remove.");
+    return;
+  }
+
+  const { data: demoUsers } = await supabase
+    .from("users")
+    .select("id")
+    .in("center_id", demoCenterIds);
+  const demoUserIds = (demoUsers ?? []).map((u) => u.id);
+
+  // audit_log references user_id (no center_id), so scope its cleanup to
+  // the demo users only.
+  if (demoUserIds.length > 0) {
+    await supabase.from("audit_log").delete().in("user_id", demoUserIds);
+  }
+  for (const id of demoUserIds) {
+    await supabase.auth.admin.deleteUser(id, false);
+  }
+  // Remove the demo center(s); FK cascade clears its classes / students /
+  // lessons / messages / worksheets.
+  await supabase.from("centers").delete().in("id", demoCenterIds);
+
+  console.log(
+    `  Removed ${demoCenterIds.length} demo center(s) and ${demoUserIds.length} demo user(s). Real centers untouched.`,
   );
 }
 
