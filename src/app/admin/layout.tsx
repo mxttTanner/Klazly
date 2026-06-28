@@ -56,7 +56,7 @@ export default async function AdminLayout({
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <span className="hidden max-w-[12rem] truncate text-sm font-bold text-white sm:inline">
+            <span className="hidden max-w-[20rem] truncate text-sm font-bold text-white sm:inline lg:max-w-[28rem]">
               {centerName}
             </span>
             <span className="hidden h-5 w-px bg-brand-line-dark sm:block" />

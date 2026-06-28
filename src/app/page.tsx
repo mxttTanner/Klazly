@@ -176,7 +176,8 @@ export default async function HomePage() {
             <img
               src="/shots/admin.png"
               alt={t("imgWellAlt")}
-              loading="lazy"
+              loading="eager"
+              fetchPriority="high"
               className="w-full rounded-2xl border border-[#243a57] shadow-[0_30px_70px_rgba(0,0,0,.55)]"
             />
             <div className="absolute -bottom-2 -right-2 w-[120px] sm:w-[140px] lg:-bottom-8 lg:-right-6">
@@ -184,7 +185,7 @@ export default async function HomePage() {
               <img
                 src="/shots/parent.png"
                 alt={t("imgWellAlt")}
-                loading="lazy"
+                loading="eager"
                 className="w-full rounded-[22px] shadow-[0_24px_50px_rgba(0,0,0,.6)]"
               />
             </div>
@@ -239,7 +240,7 @@ export default async function HomePage() {
                       src={r.shot}
                       alt={r.title}
                       loading="lazy"
-                      className="size-full object-cover object-top"
+                      className="size-full object-contain"
                     />
                   </div>
                 </div>

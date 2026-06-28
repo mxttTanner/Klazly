@@ -455,13 +455,16 @@ export default async function StudentProgressPage({
     (center as { show_pdf_credit?: boolean | null } | null)
       ?.show_pdf_credit !== false;
 
+  // Strip a leading "Lớp " the class name may already carry so the
+  // "Lớp {className}" template can't double up ("Lớp Lớp Senior B").
+  const cleanClassName = (cls?.name ?? "").replace(/^\s*Lớp\s+/i, "").trim();
   const classLineText = cls
     ? teacher
       ? t("classWithTeacher", {
-          className: cls.name,
+          className: cleanClassName,
           teacher: teacher.full_name,
         })
-      : t("classLine", { className: cls.name })
+      : t("classLine", { className: cleanClassName })
     : t("noClass");
 
   return (
@@ -480,7 +483,7 @@ export default async function StudentProgressPage({
             copiedLabel={t("shareCopied")}
             shareTitle={t("shareTitle", { name: student.full_name })}
           />
-          <PrintButton label={t("print")} />
+          <PrintButton label={t("print")} generatingLabel={t("printing")} />
         </div>
       </div>
 

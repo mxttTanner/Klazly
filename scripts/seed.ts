@@ -469,7 +469,7 @@ async function main() {
     .insert([
       {
         center_id: centerId,
-        name: "Lớp Junior A",
+        name: "Junior A",
         teacher_id: huong,
         schedule_text: "Thứ 2-4-6, 17:30-19:00",
         program: "Young Learners",
@@ -477,7 +477,7 @@ async function main() {
       },
       {
         center_id: centerId,
-        name: "Lớp Senior B",
+        name: "Senior B",
         teacher_id: huong,
         schedule_text: "Thứ 3-5-7, 18:00-19:30",
         program: "Cambridge KET (A2)",
@@ -563,24 +563,26 @@ async function main() {
   // browser so a center owner clicking a worksheet sees the image (a
   // labeled placeholder), not a 404. Storage bucket is bypassed for the
   // demo since we don't need real PDFs.
-  const ws = (name: string, label: string, ext: string = "png") => ({
+  // Bundled local thumbnail (public/worksheet-thumb.svg) instead of a
+  // third-party placeholder — no external requests on production.
+  const ws = (name: string, ext: string = "png") => ({
     center_id: centerId,
     uploaded_by: huong,
     name,
     storage_path: `demo/${centerId}/${name.replace(/\s+/g, "_")}.${ext}`,
-    public_url: `https://placehold.co/600x800/EEF2FF/4338CA.png?text=${encodeURIComponent(label)}`,
-    file_type: ext === "pdf" ? "application/pdf" : "image/png",
+    public_url: "/worksheet-thumb.svg",
+    file_type: ext === "pdf" ? "application/pdf" : "image/svg+xml",
     size_bytes: 245_000,
   });
   const { data: worksheets, error: wErr } = await supabase
     .from("worksheets")
     .insert([
-      ws("Family Tree Worksheet", "Family\\nTree"),
-      ws("Daily Routines Cut-out", "Daily\\nRoutines"),
-      ws("Food Vocabulary Bingo", "Food\\nBingo"),
-      ws("KET Practice — Reading", "KET\\nReading"),
-      ws("Environment Crossword", "Environment\\nCrossword"),
-      ws("Job Interview Role Cards", "Job\\nInterview"),
+      ws("Family Tree Worksheet"),
+      ws("Daily Routines Cut-out"),
+      ws("Food Vocabulary Bingo"),
+      ws("KET Practice — Reading"),
+      ws("Environment Crossword"),
+      ws("Job Interview Role Cards"),
     ])
     .select();
   if (wErr) throw wErr;
@@ -615,8 +617,12 @@ async function main() {
   // Senior B: 8 lessons on Tue/Thu/Sat schedule going back ~6 weeks.
   // Stagger so the recent-lessons table on /admin shows alternating
   // classes rather than 8 in a row from one class.
-  const juniorDayOffsets = [40, 37, 33, 30, 26, 23, 19, 16]; // Mon/Wed/Fri-ish
-  const seniorDayOffsets = [39, 36, 32, 29, 25, 22, 18, 15]; // Tue/Thu/Sat-ish
+  // Recent + active: 8 lessons per class over the last ~3 weeks, the
+  // newest a day ago, with 3 inside the last 7 days so the dashboard's
+  // "this week" counts look healthy (no "haven't logged" warning) and
+  // the parent's latest session is recent.
+  const juniorDayOffsets = [22, 19, 15, 12, 8, 5, 2, 1]; // Mon/Wed/Fri-ish
+  const seniorDayOffsets = [23, 20, 16, 13, 9, 6, 3, 1]; // Tue/Thu/Sat-ish
 
   const ratings = ["great", "good", "okay", "needs_attention"] as const;
   const attendanceRoll = ["present", "present", "present", "present", "present", "present", "present", "late", "absent"];

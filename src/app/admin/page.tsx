@@ -140,7 +140,11 @@ export default async function AdminHomePage() {
     })
     .sort((a, b) => b.week - a.week || b.total - a.total || a.name.localeCompare(b.name));
   const loggedThisWeek = analytics.filter((a) => a.week > 0).length;
-  const nonLoggingCount = teacherList.length - loggedThisWeek;
+  // Only flag teachers who actually have lesson history but went quiet
+  // this week — a bench teacher with no classes (0 total) isn't "behind".
+  const nonLoggingCount = analytics.filter(
+    (a) => a.total > 0 && a.week === 0,
+  ).length;
 
   const cards = [
     { label: t("teachers"), href: "/admin/teachers", count: teacherCount ?? 0, Icon: User },
@@ -340,7 +344,7 @@ export default async function AdminHomePage() {
                         />
                       </div>
                       <span className="w-12 shrink-0 text-right text-sm tabular-nums text-brand-mut">
-                        {a.week}/{a.total}
+                        {a.total === 0 ? "—" : `${a.week}/${a.total}`}
                       </span>
                     </li>
                   );

@@ -52,7 +52,7 @@
     "after3": "Analytics show exactly who's behind and who's on track",
     "after4": "Auto-generated PDF reports — you just preview and send",
     "after5": "Parents see value every week → easier to retain and raise prices",
-    "founderQuote": "“I built Klazly after watching the English centers around me wrestle with the same problem: messy Zalo groups, parents constantly asking ‘what did my child learn today?’ I'm looking for 5 centers to build it with — Founding Centers — with 30 days free, 1-on-1 setup help, and a price locked forever.”",
+    "founderQuote": "“I built Klazly after watching the English centers around me wrestle with the same problem: messy Zalo groups, parents constantly asking ‘what did my child learn today?’. I'm looking for 5 centers to build it with — Founding Centers: 30 days free, 1-on-1 setup help, and a price locked forever.”",
     "founderName": "Matthew Stadler",
     "founderRole": "Founder of Klazly · Hải Phòng, Vietnam",
     "pricingKicker": "Pricing",
@@ -282,7 +282,7 @@
   },
   "pricingCta": {
     "buttons": {
-      "micro": "Message me on Zalo",
+      "micro": "Get started",
       "monthly": "Get started",
       "annual": "Get started"
     },
@@ -885,7 +885,7 @@
       "lessonsSubtitle": "What your child did in class. Newest first.",
       "teacherNoteLabel": "Teacher's note about your child",
       "classLine": "Class {className}",
-      "classWithTeacher": "Class {className} • Teacher {teacher}",
+      "classWithTeacher": "{className} · {teacher}",
       "noClass": "Not enrolled in a class.",
       "vocabulary": "Vocabulary",
       "grammar": "Grammar",
@@ -897,6 +897,7 @@
       "homeworkNotDone": "Homework not done",
       "noLessons": "No lessons have been recorded for your child yet.",
       "print": "Download monthly report (PDF)",
+      "printing": "Generating report…",
       "share": "Share via Zalo",
       "shareCopied": "Link copied",
       "shareTitle": "Progress report for {name}",

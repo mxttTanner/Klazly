@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Check, Share2 } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
 
 /**
  * "Share via Zalo" action on the parent report.
@@ -54,12 +53,12 @@ export function ShareReportButton({
     <button
       type="button"
       onClick={onShare}
-      className={buttonVariants({ variant: "outline", size: "sm" })}
+      className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/10"
     >
       {copied ? (
-        <Check className="size-3.5" />
+        <Check className="size-4" />
       ) : (
-        <Share2 className="size-3.5" />
+        <Share2 className="size-4" />
       )}
       {copied ? copiedLabel : label}
     </button>

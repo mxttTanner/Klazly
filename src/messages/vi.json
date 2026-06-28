@@ -52,7 +52,7 @@
     "after3": "Bảng phân tích chỉ rõ ai đang trễ, ai đang đều",
     "after4": "Báo cáo PDF tự sinh — bạn chỉ xem trước và gửi",
     "after5": "Phụ huynh thấy giá trị mỗi tuần → giữ chân, tăng giá dễ hơn",
-    "founderQuote": "“Em xây Klazly sau khi thấy các trung tâm tiếng Anh quanh em vật lộn với cùng một vấn đề: Zalo group lộn xộn, phụ huynh hỏi ‘hôm nay con học gì?’ liên tục. Em đang tìm 5 trung tâm để cùng xây — Founding Centers — với 30 ngày miễn phí, hỗ trợ setup 1-1, và giá khóa mãi mãi.”",
+    "founderQuote": "“Em xây Klazly sau khi thấy các trung tâm tiếng Anh quanh em vật lộn với cùng một vấn đề: nhóm Zalo lộn xộn, phụ huynh liên tục hỏi ‘hôm nay con học gì?’. Em đang tìm 5 trung tâm cùng xây — gọi là Founding Centers: 30 ngày miễn phí, hỗ trợ setup 1-1, giá khóa mãi mãi.”",
     "founderName": "Matthew Stadler",
     "founderRole": "Người sáng lập Klazly · Hải Phòng, Việt Nam",
     "pricingKicker": "Bảng giá",
@@ -282,7 +282,7 @@
   },
   "pricingCta": {
     "buttons": {
-      "micro": "Inbox em qua Zalo",
+      "micro": "Bắt đầu ngay",
       "monthly": "Bắt đầu ngay",
       "annual": "Bắt đầu ngay"
     },
@@ -885,7 +885,7 @@
       "lessonsSubtitle": "Con bạn đã học những gì trên lớp. Mới nhất ở trên.",
       "teacherNoteLabel": "Lời nhắn của giáo viên về con",
       "classLine": "Lớp {className}",
-      "classWithTeacher": "Lớp {className} • Giáo viên {teacher}",
+      "classWithTeacher": "Lớp {className} · {teacher}",
       "noClass": "Chưa được xếp lớp.",
       "vocabulary": "Từ vựng",
       "grammar": "Ngữ pháp",
@@ -897,6 +897,7 @@
       "homeworkNotDone": "Chưa làm bài tập",
       "noLessons": "Chưa có bài học nào được ghi nhận cho con bạn.",
       "print": "Tải báo cáo tháng (PDF)",
+      "printing": "Đang tạo báo cáo…",
       "share": "Chia sẻ qua Zalo",
       "shareCopied": "Đã sao chép đường dẫn",
       "shareTitle": "Báo cáo tiến trình học tập của {name}",

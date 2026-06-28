@@ -184,6 +184,16 @@
     @apply bg-background text-foreground;
   }
 
+  /* Offset anchor scrolling so section tops (e.g. the "FLAGSHIP
+     FEATURE" pill) clear the sticky nav instead of being clipped.
+     overflow-x: clip kills the tiny horizontal scrollbar from the
+     full-bleed (w-screen) dark canvases without creating a scroll
+     container — so position: sticky keeps working. */
+  html {
+    scroll-padding-top: 5rem;
+    overflow-x: clip;
+  }
+
   /* Scoped dark-form skin. Wrap a form in `.app-dark-form` to recolor
      the shared shadcn inputs/labels for a navy canvas (teacher lesson
      log) without overriding every control individually. Higher
