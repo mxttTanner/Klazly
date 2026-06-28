@@ -97,17 +97,11 @@ export function LessonForm({
     router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
-  // Bulk-toggle the per-student homework checkboxes. The base-ui Checkbox
-  // renders a <span role="checkbox" id="homework_…"> (NOT a <button>) and
-  // carries data-checked when checked, so target the role and click only
-  // the ones whose state doesn't already match.
+  // Bulk-set every student's homework checkbox. The checkboxes are
+  // controlled (see homeworkDone state below), so this just flips state —
+  // reliable, unlike clicking the base-ui checkbox node via the DOM.
   function setAllHomework(done: boolean) {
-    document
-      .querySelectorAll<HTMLElement>('[role="checkbox"][id^="homework_"]')
-      .forEach((btn) => {
-        const isChecked = btn.hasAttribute("data-checked");
-        if (isChecked !== done) btn.click();
-      });
+    setHomeworkDone(Object.fromEntries(students.map((s) => [s.id, done])));
   }
 
   function setAllAttendance(value: "present" | "absent" | "late") {
@@ -144,6 +138,17 @@ export function LessonForm({
   const [speakingValue, setSpeakingValue] = useState(speakingDefault);
   const [homeworkValue, setHomeworkValue] = useState(homeworkDefault);
   const [generalValue, setGeneralValue] = useState(generalDefault);
+  // Per-student homework completion, controlled so the bulk buttons can
+  // flip every checkbox reliably.
+  const initialHomework = () =>
+    Object.fromEntries(
+      students.map((s) => [
+        s.id,
+        defaults?.studentUpdates[s.id]?.homework_completed ?? false,
+      ]),
+    );
+  const [homeworkDone, setHomeworkDone] =
+    useState<Record<string, boolean>>(initialHomework);
 
   const formKey = `${mode}-${selectedTemplate?.id ?? lessonId ?? "blank"}`;
   const isEdit = mode === "edit";
@@ -156,6 +161,7 @@ export function LessonForm({
     setSpeakingValue(speakingDefault);
     setHomeworkValue(homeworkDefault);
     setGeneralValue(generalDefault);
+    setHomeworkDone(initialHomework());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formKey]);
 
@@ -491,7 +497,13 @@ export function LessonForm({
                     <Checkbox
                       id={`homework_${s.id}`}
                       name={`homework_${s.id}`}
-                      defaultChecked={su?.homework_completed ?? false}
+                      checked={homeworkDone[s.id] ?? false}
+                      onCheckedChange={(v) =>
+                        setHomeworkDone((prev) => ({
+                          ...prev,
+                          [s.id]: v === true,
+                        }))
+                      }
                     />
                     <Label
                       htmlFor={`homework_${s.id}`}
