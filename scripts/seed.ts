@@ -395,6 +395,7 @@ async function main() {
       contact_email: "lienhe@hoamai.test",
       contact_phone: "+84 28 1234 5678",
       subscription_status: "active",
+      signup_source: "demo",
       report_intro_text:
         "Kính gửi quý phụ huynh, báo cáo này tổng hợp tiến trình học tập gần đây của con tại Trung Tâm Anh Ngữ Hoa Mai. Mong quý phụ huynh dành thời gian xem và cùng con ôn lại nội dung đã học.",
       report_footer_text:
@@ -428,9 +429,9 @@ async function main() {
     "teacher",
     centerId,
   );
-  // Tú is a second teacher (no class assigned) — shows the admin can manage
-  // multiple teachers, and the bench. Useful for the "assign teacher" UX.
-  void (await createUser("tu@hoamai.test", "Trần Văn Tú", "teacher", centerId));
+  // Tú is the second teacher — teaches PET B1 + Giao tiếp Cơ bản (added
+  // below) so the dashboard shows two active teachers logging lessons.
+  const tu = await createUser("tu@hoamai.test", "Trần Văn Tú", "teacher", centerId);
 
   const binh = await createUser(
     "binh@parent.test",
@@ -632,6 +633,7 @@ async function main() {
 
   async function seedClassLessons(
     classId: string,
+    teacherId: string,
     plans: LessonPlan[],
     offsets: number[],
     worksheetBySeq: Record<number, string | null>,
@@ -644,7 +646,7 @@ async function main() {
         .from("lessons")
         .insert({
           class_id: classId,
-          teacher_id: huong,
+          teacher_id: teacherId,
           lesson_date: daysAgo(offsets[li]),
           unit: plan.unit,
           lesson_number: plan.lesson_number,
@@ -683,8 +685,75 @@ async function main() {
     }
   }
 
-  await seedClassLessons(juniorA, JUNIOR_PLANS, juniorDayOffsets, juniorWorksheetBySeq, juniorStudents);
-  await seedClassLessons(seniorB, SENIOR_PLANS, seniorDayOffsets, seniorWorksheetBySeq, seniorStudents);
+  await seedClassLessons(juniorA, huong, JUNIOR_PLANS, juniorDayOffsets, juniorWorksheetBySeq, juniorStudents);
+  await seedClassLessons(seniorB, huong, SENIOR_PLANS, seniorDayOffsets, seniorWorksheetBySeq, seniorStudents);
+
+  // ---- More programs populated so the overview looks like a real,
+  // busy center (PET / IELTS / English Communication), with the second
+  // teacher (Tú) now teaching too. Lighter — 6 recent lessons each. ----
+  console.log("Creating additional classes (PET / IELTS / Communication)...");
+  const tien = await createUser("tien@parent.test", "Vũ Văn Tiến", "parent", centerId);
+  const oanh = await createUser("oanh@parent.test", "Bùi Thị Oanh", "parent", centerId);
+  const phuc = await createUser("phuc@parent.test", "Hồ Văn Phúc", "parent", centerId);
+
+  const { data: moreClasses, error: mcErr } = await supabase
+    .from("classes")
+    .insert([
+      {
+        center_id: centerId,
+        name: "PET B1",
+        teacher_id: tu,
+        schedule_text: "Thứ 2-4, 19:15-20:45",
+        program: "Cambridge PET (B1)",
+        book: "Complete PET",
+      },
+      {
+        center_id: centerId,
+        name: "IELTS 6.0",
+        teacher_id: huong,
+        schedule_text: "Thứ 3-5, 19:15-20:45",
+        program: "IELTS",
+        book: "Mindset for IELTS 2",
+      },
+      {
+        center_id: centerId,
+        name: "Giao tiếp Cơ bản",
+        teacher_id: tu,
+        schedule_text: "Thứ 7 & CN, 9:00-10:30",
+        program: "English Communication",
+        book: "Speak Now 1",
+      },
+    ])
+    .select();
+  if (mcErr) throw mcErr;
+  const petClass = moreClasses![0].id;
+  const ieltsClass = moreClasses![1].id;
+  const commClass = moreClasses![2].id;
+
+  const { data: moreStudents, error: msErr } = await supabase
+    .from("students")
+    .insert([
+      { center_id: centerId, class_id: petClass, full_name: "Vũ Gia Hân", age: 13, parent_user_id: tien, overall_level: "good" },
+      { center_id: centerId, class_id: petClass, full_name: "Bùi Đăng Khoa", age: 13, parent_user_id: oanh, overall_level: "good" },
+      { center_id: centerId, class_id: petClass, full_name: "Hồ Bảo Trâm", age: 14, parent_user_id: phuc, overall_level: "okay" },
+      { center_id: centerId, class_id: ieltsClass, full_name: "Vũ Minh Châu", age: 16, parent_user_id: tien, overall_level: "good" },
+      { center_id: centerId, class_id: ieltsClass, full_name: "Bùi Thanh Tùng", age: 16, parent_user_id: oanh, overall_level: "good" },
+      { center_id: centerId, class_id: commClass, full_name: "Hồ Khánh Vy", age: 11, parent_user_id: phuc, overall_level: "okay" },
+      { center_id: centerId, class_id: commClass, full_name: "Vũ Quốc Bảo", age: 10, parent_user_id: tien, overall_level: "good" },
+      { center_id: centerId, class_id: commClass, full_name: "Bùi Ngọc Diệp", age: 11, parent_user_id: oanh, overall_level: "good" },
+    ])
+    .select();
+  if (msErr) throw msErr;
+  const petStudents = moreStudents!.slice(0, 3);
+  const ieltsStudents = moreStudents!.slice(3, 5);
+  const commStudents = moreStudents!.slice(5, 8);
+
+  const noWs: Record<number, string | null> = {
+    1: null, 2: null, 3: null, 4: null, 5: null, 6: null,
+  };
+  await seedClassLessons(petClass, tu, SENIOR_PLANS.slice(0, 6), [20, 17, 13, 10, 6, 2], noWs, petStudents);
+  await seedClassLessons(ieltsClass, huong, SENIOR_PLANS.slice(2, 8), [19, 16, 12, 9, 5, 1], noWs, ieltsStudents);
+  await seedClassLessons(commClass, tu, JUNIOR_PLANS.slice(0, 6), [18, 15, 11, 8, 4, 1], noWs, commStudents);
 
   // --------------------------------------------------------------------
   // Messages — 4 active threads, varied tone. One unread per parent so
@@ -832,7 +901,7 @@ async function main() {
   console.log("Password for ALL accounts: " + SHARED_PASSWORD + "\n");
   console.log("  Admin:    admin@hoamai.test     (Cô Trang)");
   console.log("  Teacher:  huong@hoamai.test      (Cô Linh — teaches both classes)");
-  console.log("  Teacher:  tu@hoamai.test         (Trần Văn Tú — bench, no class assigned)");
+  console.log("  Teacher:  tu@hoamai.test         (Trần Văn Tú — PET B1 + Giao tiếp Cơ bản)");
   console.log("  Parent:   binh@parent.test       (Phạm Văn Bình → An)");
   console.log("  Parent:   hoa@parent.test        (Nguyễn Thị Hoa → Ngọc)");
   console.log("  Parent:   long@parent.test       (Lê Văn Long → Linh, Huy)");

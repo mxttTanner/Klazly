@@ -237,6 +237,17 @@ export default async function SuperAdminHomePage({
           ),
       ]);
     centers = centersResolved;
+    // Hide the built-in demo center (it powers /demo) from the
+    // operational console — the super-admin should only see real
+    // centers. The demo data stays in the DB so /demo keeps working;
+    // it just isn't listed here, so it can't be accidentally deleted.
+    if (centers) {
+      centers = centers.filter(
+        (c) =>
+          c.signup_source !== "demo" &&
+          c.contact_email !== "lienhe@hoamai.test",
+      );
+    }
     studentCount = studentRes.count ?? 0;
     lessonCount = lessonRes.count ?? 0;
     foundingSettingOk = settingRes.ok;
