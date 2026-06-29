@@ -48,15 +48,17 @@ Hầu hết các trung tâm tiếng Anh tại Việt Nam vẫn quản lý liên 
 - Lưu mẫu (template) bài học để dùng lại tuần sau
 - Đính kèm tài liệu PDF cho từng buổi học — phụ huynh tải về được
 - Sửa hoặc xoá bài học khi cần — không sợ sai
+- Đánh giá thái độ từng buổi theo 4 mức (Xuất sắc / Tốt / Khá / Cần lưu ý)
 - Cập nhật **đánh giá chung** cho từng học sinh (Tốt / Khá / Cần lưu ý)
 
 ### 👨‍👩‍👧 Cho phụ huynh
-- Đăng nhập từ điện thoại, thấy ngay tất cả buổi học của con
+- Đăng nhập bằng số điện thoại (không cần email), thấy ngay tất cả buổi học của con
 - Mỗi buổi hiển thị: **Bài / Phần / Chủ đề** (VD: "Unit 2 — Lesson 3 — My Home"), thái độ, nhận xét riêng cho con, tình trạng bài tập, tài liệu lớp
 - Bảng tổng hợp **30 ngày gần nhất**: số buổi, % hoàn thành BTVN, phân bố thái độ
 - Đánh giá thái độ con bằng nhãn màu (Xuất sắc / Tốt / Khá / Cần lưu ý)
 - Đánh giá chung của con (Tốt / Khá / Cần lưu ý) hiển thị ngay đầu trang
-- Một nút **In báo cáo** → xuất PDF có logo trung tâm, lời mở đầu, chữ ký giáo viên/phụ huynh — tuỳ chỉnh theo trung tâm
+- Một nút **Tải báo cáo tháng (PDF)** → xuất PDF có logo trung tâm, lời mở đầu, chữ ký giáo viên/phụ huynh — tuỳ chỉnh theo trung tâm
+- Nút **Chia sẻ qua Zalo** ngay trên báo cáo để gửi cho người thân
 
 ---
 
@@ -85,12 +87,13 @@ Hầu hết các trung tâm tiếng Anh tại Việt Nam vẫn quản lý liên 
 
 > 🚀 **Giá ra mắt — có thời hạn.** Đây là mức giá khi sản phẩm còn mới. Khi chúng tôi bổ sung tính năng (thông báo email, phân tích chuyên sâu, tích hợp Zalo), giá sẽ tăng. **Các trung tâm tham gia trong giai đoạn ra mắt sẽ giữ nguyên mức giá hiện tại suốt thời gian còn duy trì thuê bao** — kể cả sau khi giá tăng cho khách hàng mới.
 
-Trung tâm cần thời gian để nhập học sinh, đào tạo giáo viên, làm quen với hệ thống. Vì vậy chúng tôi chỉ cung cấp **gói 6 tháng và 12 tháng**.
+Trung tâm có thể chọn trả theo tháng, hoặc trả trước 6 tháng / 1 năm để tiết kiệm hơn.
 
 | Gói | Giá | Tương đương | Tiết kiệm |
 |---|---|---|---|
-| **6 tháng** | **5.400.000 VNĐ** trả trước | 900.000 VNĐ/tháng | 10% |
-| **1 năm** ⭐ Phổ biến | **9.600.000 VNĐ** trả trước | 800.000 VNĐ/tháng | 20% |
+| **Theo tháng** | **1.200.000 VNĐ** / tháng | 1.200.000 VNĐ/tháng | — |
+| **6 tháng** | **5.400.000 VNĐ** trả trước | ≈ 900.000 VNĐ/tháng | 25% (tiết kiệm 1.800.000 VNĐ) |
+| **1 năm** ⭐ Phổ biến | **9.900.000 VNĐ** trả trước | ≈ 825.000 VNĐ/tháng | 31% (tiết kiệm 4.500.000 VNĐ) |
 
 **Mọi gói đều bao gồm:**
 - Không giới hạn lớp học, học sinh, phụ huynh, giáo viên
@@ -99,9 +102,18 @@ Trung tâm cần thời gian để nhập học sinh, đào tạo giáo viên, l
 - Hỗ trợ qua Zalo / email
 - Cập nhật tính năng miễn phí
 
-**Founding Center program đang mở** — inbox em qua Zalo để bàn về gói phù hợp.
+### 🚀 Chương trình Founding Center
 
-**Thanh toán:** Chuyển khoản trực tiếp qua mã QR ngân hàng. Hoá đơn có thể yêu cầu.
+Em đang tìm **5 trung tâm** tại Việt Nam để cùng xây sản phẩm. Đổi lại, Founding Centers nhận:
+
+- **30 ngày miễn phí** (gấp đôi so với tiêu chuẩn)
+- **Giá Founding khoá mãi mãi** (khoảng 50% off) — giữ nguyên kể cả khi giá tăng cho khách mới
+- Em hỗ trợ setup + hướng dẫn giáo viên trực tiếp qua Zalo
+- Trực tiếp ảnh hưởng đến tính năng em xây tiếp theo
+
+Còn suất — inbox em qua Zalo để bàn về gói phù hợp.
+
+**Thanh toán:** Chuyển khoản trực tiếp qua mã QR ngân hàng. Hoá đơn có thể yêu cầu. (Thanh toán là thủ công qua Zalo — không có cổng thẻ tự động.)
 
 ---
 

@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { FolderOpen, Upload } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { signWorksheetUrls } from "@/lib/worksheets";
 import { WorksheetUploadForm } from "./worksheet-upload-form";
 import { WorksheetsLibraryGrid } from "./library-grid";
 
@@ -21,7 +22,7 @@ export default async function WorksheetsPage() {
     supabase
       .from("worksheets")
       .select(
-        "id, name, file_type, size_bytes, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
+        "id, name, file_type, size_bytes, storage_path, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -40,14 +41,19 @@ export default async function WorksheetsPage() {
     );
   }
 
-  const worksheets = (worksheetsRes.data ?? []).map((w) => {
+  // The bucket is private — mint a short-lived signed URL per file for this
+  // render instead of relying on a world-readable public URL.
+  const rows = worksheetsRes.data ?? [];
+  const signedUrls = await signWorksheetUrls(rows.map((w) => w.storage_path));
+
+  const worksheets = rows.map((w) => {
     const uploader = Array.isArray(w.uploader) ? w.uploader[0] : w.uploader;
     return {
       id: w.id,
       name: w.name,
       file_type: w.file_type,
       size_bytes: w.size_bytes,
-      public_url: w.public_url,
+      file_url: signedUrls.get(w.storage_path) ?? null,
       created_at: w.created_at,
       uploader_name: uploader?.full_name ?? null,
       usage_count: usageByWorksheet.get(w.id) ?? 0,

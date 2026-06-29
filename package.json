@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "check:no-localhost": "node scripts/check-no-localhost-fallback.mjs",
     "check:no-card-language": "node scripts/check-no-card-language.mjs",
     "check:no-ai-words": "node scripts/check-no-ai-marketing-words.mjs",
@@ -46,6 +49,7 @@
     "eslint-config-next": "14.2.35",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.9"
   }
 }
