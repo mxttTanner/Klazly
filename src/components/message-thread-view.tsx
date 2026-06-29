@@ -45,9 +45,14 @@ type Labels = {
   dayYesterday: string;
   fetchFailedHint: string;
   enterHint: string;
+  emailNotDelivered: string;
 };
 
-const initialState: { error?: string; success?: boolean } = {};
+const initialState: {
+  error?: string;
+  success?: boolean;
+  emailWarning?: boolean;
+} = {};
 
 export function MessageThreadView({
   studentId,
@@ -196,6 +201,7 @@ export function MessageThreadView({
           formRef={formRef}
           labels={labels}
           errorText={state.error ?? ""}
+          warningText={state.emailWarning ? labels.emailNotDelivered : ""}
         />
       </form>
     </div>
@@ -207,12 +213,14 @@ function ComposerBody({
   formRef,
   labels,
   errorText,
+  warningText,
 }: {
   studentId: string;
   textRef: React.RefObject<HTMLTextAreaElement>;
   formRef: React.RefObject<HTMLFormElement>;
   labels: Labels;
   errorText: string;
+  warningText: string;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -234,6 +242,11 @@ function ComposerBody({
           }
         }}
       />
+      {warningText ? (
+        <p className="text-warning-foreground text-xs" role="status">
+          {warningText}
+        </p>
+      ) : null}
       <div className="flex items-center justify-between gap-2">
         <p className="text-destructive text-xs" role="alert">
           {errorText}

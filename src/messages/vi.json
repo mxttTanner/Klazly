@@ -974,6 +974,7 @@
     "validationBody": "Vui lòng nhập nội dung (1–2000 ký tự).",
     "notAllowed": "Bạn không có quyền nhắn về học sinh này.",
     "sendError": "Không thể gửi: {message}",
+    "emailNotDelivered": "Đã lưu tin nhắn, nhưng chưa gửi được thông báo email cho người nhận.",
     "teacherTag": "Giáo viên",
     "adminTag": "Quản trị",
     "classHeading": "Tin nhắn",

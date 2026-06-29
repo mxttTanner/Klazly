@@ -86,6 +86,7 @@ export async function MessageThread({
         dayYesterday: t("dayYesterday"),
         fetchFailedHint: t("fetchFailedHint"),
         enterHint: t("enterHint"),
+        emailNotDelivered: t("emailNotDelivered"),
       }}
     />
   );

@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { sendParentTeacherMessage } from "@/app/messages-actions";
 
-const initial: { error?: string; success?: boolean } = {};
+const initial: { error?: string; success?: boolean; emailWarning?: boolean } =
+  {};
 const MAX_BODY = 2000;
 
 export function MessageComposer({
