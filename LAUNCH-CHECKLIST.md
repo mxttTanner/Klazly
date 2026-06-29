@@ -27,7 +27,7 @@ test / external deck) · 💬 decision needed
 | 6 | **CI pipeline** (lint + typecheck + test + build on every PR) | 🔧 | ☑ | Added `.github/workflows/ci.yml`. Build runs the existing prebuild guards. |
 | 7 | **Automated tests** (unit + cross-center RLS) | 🔧 | ☑ | Added vitest: 25 unit tests for the subscription state machine + phone normalization, plus a self-skipping RLS isolation suite. `npm test`. |
 | 8 | **Stale SALES.md** contradicted live pricing/copy | 🔧 | ☑ | Reconciled to live pricing (1.2M/mo · 5.4M/6mo · 9.9M/yr), Founding-5 + 30-day double trial, phone login, 4-level rating, report buttons, manual payment. |
-| 9 | **Phone-only parents can't reset passwords** (no SMS OTP) | 💬 | ☐ | Today admins reset manually. Decide: wire an SMS/OTP provider, or document the manual-reset policy and ensure the pitch doesn't imply self-serve reset. `src/app/forgot-password/forgot-password-form.tsx`. |
+| 9 | **Phone-only parents can't reset passwords** (no SMS OTP) | 🔧 | ☑ | Fixed: the center admin can now reset any parent/teacher password from the list (generates a one-time temp password to relay over Zalo). Self-serve SMS/OTP reset remains a future nice-to-have. `src/components/reset-password-button.tsx`, `admin/parents/actions.ts`, `admin/teachers/actions.ts`. |
 | 10 | **Email delivery fails silently** without `RESEND_API_KEY` | 🔧 | ☑ | Fixed: `sendNewMessageEmail` returns a result, failures go to Sentry, and the message composer shows a non-blocking warning when a recipient couldn't be notified. `src/lib/email.ts`, `src/app/messages-actions.ts`. |
 | 11 | **Deployment docs** | 🔧 | ☐ | README covers local dev only. Add Vercel env-var setup + "run `db/schema.sql`, `db/storage.sql`, `db/worksheets.sql`" ordering. |
 | 12 | **Payment methods claimed vs accepted** | 👤 | ☐ | FAQ lists bank transfer / Momo / ZaloPay / VNPay. Confirm you can actually receive each, or trim the FAQ. |
@@ -92,6 +92,9 @@ environment. Shipping it blind is the wrong trade.
 - **Email-send failures surfaced** — `sendNewMessageEmail` returns a result;
   delivery failures go to Sentry; the composer shows a non-blocking warning
   when a recipient's notification couldn't be sent (Tier 2 #10).
+- **Admin password reset** — center admins can reset a parent/teacher password
+  from the list and relay a one-time temp password, closing the phone-only
+  lockout gap (Tier 2 #9).
 
 ## How to verify locally
 
