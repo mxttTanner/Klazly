@@ -45,10 +45,21 @@ export type NewMessageEmail = {
   threadPath: string;
 };
 
-export async function sendNewMessageEmail(m: NewMessageEmail): Promise<void> {
+/**
+ * Outcome of an email send. Callers use this to surface a non-blocking
+ * warning to the sender instead of failing silently when a notification
+ * couldn't be delivered.
+ */
+export type EmailResult =
+  | { ok: true }
+  | { ok: false; reason: "not_configured" | "send_failed"; error?: string };
+
+export async function sendNewMessageEmail(
+  m: NewMessageEmail,
+): Promise<EmailResult> {
   if (!resend) {
     console.log("[email] RESEND_API_KEY not set, skipping notification");
-    return;
+    return { ok: false, reason: "not_configured" };
   }
 
   const trimmed =
@@ -100,8 +111,19 @@ export async function sendNewMessageEmail(m: NewMessageEmail): Promise<void> {
     });
     if (res.error) {
       console.error("[email] resend returned error:", res.error);
+      return {
+        ok: false,
+        reason: "send_failed",
+        error: res.error.message ?? String(res.error),
+      };
     }
+    return { ok: true };
   } catch (err) {
     console.error("[email] send threw:", err);
+    return {
+      ok: false,
+      reason: "send_failed",
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }

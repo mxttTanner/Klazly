@@ -8,6 +8,7 @@ import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
+import { generateTempPassword } from "@/lib/temp-password";
 
 // Phone is now the primary identifier (Vietnam — Zalo is phone-keyed,
 // most parents don't have / don't share email). Email is truly optional
@@ -156,4 +157,44 @@ export async function removeParent(formData: FormData) {
   if (error) throw new Error(`removeParent failed: ${error.message}`);
   revalidatePath("/admin/parents");
   revalidatePath("/admin/students");
+}
+
+/**
+ * Admin-initiated password reset for a parent. Most parents are phone-only
+ * (no email), so they can't use the email reset link. This sets a fresh
+ * temporary password and returns it ONCE for the admin to relay (e.g. over
+ * Zalo); the parent can change it later from their profile.
+ */
+export async function resetParentPassword(_prev: unknown, formData: FormData) {
+  const admin = await requireRole("admin");
+  const t = await getTranslations("admin.parents");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: t("resetError", { message: "missing id" }) };
+
+  const supabase = createAdminClient();
+
+  // Verify the target is a parent in THIS admin's center before touching auth.
+  const { data: target } = await supabase
+    .from("users")
+    .select("id, center_id, role, full_name")
+    .eq("id", id)
+    .single();
+  if (
+    !target ||
+    target.center_id !== admin.center_id ||
+    target.role !== "parent"
+  ) {
+    return { error: t("resetError", { message: "not found" }) };
+  }
+
+  const tempPassword = generateTempPassword();
+  const { error } = await supabase.auth.admin.updateUserById(id, {
+    password: tempPassword,
+  });
+  if (error) return { error: t("resetError", { message: error.message }) };
+
+  return { tempPassword, name: target.full_name };
 }

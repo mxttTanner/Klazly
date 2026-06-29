@@ -185,6 +185,9 @@
     "cancel": "Cancel",
     "delete": "Delete",
     "actions": "Actions",
+    "copy": "Copy",
+    "copied": "Copied",
+    "close": "Close",
     "name": "Full name",
     "email": "Email",
     "back": "Back",
@@ -705,6 +708,10 @@
       "saveProfileError": "Could not save teacher profile: {message}",
       "addedHint": "Added teacher {name}. Please pass the password to the teacher through a private channel.",
       "deleteConfirm": "Remove teacher {name}? Their classes will become unassigned.",
+      "resetPassword": "Reset password",
+      "resetConfirm": "Reset the password for {name}? Their current password will stop working.",
+      "resetIntro": "New temporary password for {name}. Send it to the teacher; they can change it later from their profile.",
+      "resetError": "Could not reset password: {message}",
       "empty": "No teachers yet."
     },
     "parents": {
@@ -715,6 +722,10 @@
       "saveProfileError": "Could not save parent profile: {message}",
       "addedHint": "Added parent {name}. Please pass the password to the parent through a private channel.",
       "deleteConfirm": "Remove parent {name}? Their children will be unlinked.",
+      "resetPassword": "Reset password",
+      "resetConfirm": "Reset the password for {name}? Their current password will stop working.",
+      "resetIntro": "New temporary password for {name}. Send it to the parent; they can change it later from their profile.",
+      "resetError": "Could not reset password: {message}",
       "empty": "No parents yet."
     },
     "classes": {
@@ -974,6 +985,7 @@
     "validationBody": "Please write a message (1–2000 characters).",
     "notAllowed": "You don't have permission to message about this student.",
     "sendError": "Could not send: {message}",
+    "emailNotDelivered": "Message saved, but we couldn't send an email notification to the recipient.",
     "teacherTag": "Teacher",
     "adminTag": "Admin",
     "classHeading": "Messages",

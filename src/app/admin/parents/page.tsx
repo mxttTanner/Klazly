@@ -9,9 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ParentForm } from "./parent-form";
-import { removeParent } from "./actions";
+import { removeParent, resetParentPassword } from "./actions";
 import { SearchInput } from "@/components/search-input";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ResetPasswordButton } from "@/components/reset-password-button";
 import { InlineImportSection } from "@/components/inline-import-section";
 
 export const dynamic = "force-dynamic";
@@ -119,16 +120,30 @@ Lê Văn Long,+84987654321,,`}
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <form action={removeParent}>
-                      <input type="hidden" name="id" value={p.id} />
-                      <ConfirmSubmitButton
-                        confirmMessage={t("deleteConfirm", {
-                          name: p.full_name,
-                        })}
-                      >
-                        {tc("delete")}
-                      </ConfirmSubmitButton>
-                    </form>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <ResetPasswordButton
+                        userId={p.id}
+                        action={resetParentPassword}
+                        labels={{
+                          reset: t("resetPassword"),
+                          confirm: t("resetConfirm", { name: p.full_name }),
+                          intro: t("resetIntro", { name: p.full_name }),
+                          copy: tc("copy"),
+                          copied: tc("copied"),
+                          close: tc("close"),
+                        }}
+                      />
+                      <form action={removeParent}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <ConfirmSubmitButton
+                          confirmMessage={t("deleteConfirm", {
+                            name: p.full_name,
+                          })}
+                        >
+                          {tc("delete")}
+                        </ConfirmSubmitButton>
+                      </form>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { signWorksheetUrls } from "@/lib/worksheets";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/print-button";
 import { ShareReportButton } from "@/components/share-report-button";
@@ -47,8 +48,8 @@ type LessonRow = {
   grammar_point: string | null;
   general_note: string | null;
   worksheet:
-    | { id: string; name: string; public_url: string }
-    | { id: string; name: string; public_url: string }[]
+    | { id: string; name: string; storage_path: string }
+    | { id: string; name: string; storage_path: string }[]
     | null;
 };
 
@@ -199,7 +200,7 @@ export default async function StudentProgressPage({
     const withTopic = await supabase
       .from("lessons")
       .select(
-        "id, lesson_date, unit, lesson_number, topic, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, public_url)",
+        "id, lesson_date, unit, lesson_number, topic, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, storage_path)",
       )
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
@@ -212,7 +213,7 @@ export default async function StudentProgressPage({
       const fallback = await supabase
         .from("lessons")
         .select(
-          "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, public_url)",
+          "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, storage_path)",
         )
         .eq("class_id", cls.id)
         .order("lesson_date", { ascending: false })
@@ -231,6 +232,16 @@ export default async function StudentProgressPage({
       lessons = (withTopic.data ?? []) as LessonRow[];
     }
   }
+
+  // Worksheets live in a private bucket — mint short-lived signed URLs for the
+  // attachments on this page (keyed by storage_path) instead of exposing
+  // world-readable links.
+  const worksheetUrls = await signWorksheetUrls(
+    lessons.map((l) => {
+      const ws = Array.isArray(l.worksheet) ? l.worksheet[0] : l.worksheet;
+      return ws?.storage_path;
+    }),
+  );
 
   // Try with attendance column; fall back if migration not run.
   const updatesWithAttendance = await supabase
@@ -993,6 +1004,7 @@ export default async function StudentProgressPage({
             const ws = Array.isArray(l.worksheet)
               ? l.worksheet[0]
               : l.worksheet;
+            const wsUrl = ws ? worksheetUrls.get(ws.storage_path) : undefined;
             const dateText =
               parseDateOnly(l.lesson_date)?.toLocaleDateString(dateLocale, {
                 weekday: "short",
@@ -1131,9 +1143,9 @@ export default async function StudentProgressPage({
                           ? t("homeworkDone")
                           : t("homeworkNotDone")}
                       </Badge>
-                      {ws ? (
+                      {ws && wsUrl ? (
                         <a
-                          href={ws.public_url}
+                          href={wsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-primary inline-flex min-h-9 items-center gap-1.5 rounded-md border bg-background px-2.5 py-1 text-xs font-medium hover:bg-muted/40 print:hidden"

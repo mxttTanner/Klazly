@@ -8,6 +8,7 @@ import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
+import { generateTempPassword } from "@/lib/temp-password";
 
 const inviteSchema = z.object({
   email: z.string().optional(),
@@ -137,4 +138,43 @@ export async function removeTeacher(formData: FormData) {
   if (error) throw new Error(`removeTeacher failed: ${error.message}`);
   revalidatePath("/admin/teachers");
   revalidatePath("/admin");
+}
+
+/**
+ * Admin-initiated password reset for a teacher. Mirrors the parent flow:
+ * sets a fresh temporary password and returns it once for the admin to
+ * relay. Useful for phone-only teachers (no email reset link) or any
+ * teacher who is locked out.
+ */
+export async function resetTeacherPassword(_prev: unknown, formData: FormData) {
+  const admin = await requireRole("admin");
+  const t = await getTranslations("admin.teachers");
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: t("resetError", { message: "missing id" }) };
+
+  const supabase = createAdminClient();
+
+  const { data: target } = await supabase
+    .from("users")
+    .select("id, center_id, role, full_name")
+    .eq("id", id)
+    .single();
+  if (
+    !target ||
+    target.center_id !== admin.center_id ||
+    target.role !== "teacher"
+  ) {
+    return { error: t("resetError", { message: "not found" }) };
+  }
+
+  const tempPassword = generateTempPassword();
+  const { error } = await supabase.auth.admin.updateUserById(id, {
+    password: tempPassword,
+  });
+  if (error) return { error: t("resetError", { message: error.message }) };
+
+  return { tempPassword, name: target.full_name };
 }
