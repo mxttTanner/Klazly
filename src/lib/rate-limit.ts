@@ -22,8 +22,13 @@ import "server-only";
 
 type RateLimitResult = { allowed: boolean; retryAfterSeconds?: number };
 
-const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
-const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+// The Vercel Marketplace "Upstash for Redis" (upstash-kv) product injects
+// KV_REST_API_URL/KV_REST_API_TOKEN rather than the UPSTASH_REDIS_REST_*
+// names Upstash's own console uses — accept both (installed 2026-07-03).
+const UPSTASH_URL =
+  process.env.UPSTASH_REDIS_REST_URL ?? process.env.KV_REST_API_URL;
+const UPSTASH_TOKEN =
+  process.env.UPSTASH_REDIS_REST_TOKEN ?? process.env.KV_REST_API_TOKEN;
 const hasUpstash = Boolean(UPSTASH_URL && UPSTASH_TOKEN);
 
 // ---- In-memory fixed-window store (fallback) ----
