@@ -62,6 +62,11 @@ const admin = createClient(url, serviceKey, {
 const PW = "password123!Aa";
 const RUN = Date.now(); // unique suffix so reruns don't collide on email
 
+// Track EVERY id we create, globally, so teardown can clean up even if
+// provisioning throws halfway (important when running against prod).
+const createdCenterIds: string[] = [];
+const createdUserIds: string[] = [];
+
 // ---------------------------------------------------------------------------
 // Result tracking
 // ---------------------------------------------------------------------------
@@ -147,6 +152,7 @@ async function createUser(
   });
   if (error) throw new Error(`createUser ${email}: ${error.message}`);
   const id = data.user!.id;
+  createdUserIds.push(id);
   const { error: pErr } = await admin
     .from("users")
     .insert({ id, email, full_name: fullName, role, center_id: centerId });
@@ -162,11 +168,15 @@ async function provision(key: "A" | "B"): Promise<Tenant> {
       name: `Isolation Test ${key} ${RUN}`,
       contact_email: `${tag}@example.test`,
       subscription_status: "active",
+      // Tag as demo so it's excluded from super-admin KPIs / center list
+      // while the test is briefly live on prod.
+      signup_source: "demo",
     })
     .select("id")
     .single();
   if (center.error) throw new Error(`center ${key}: ${center.error.message}`);
   const centerId = center.data.id as string;
+  createdCenterIds.push(centerId);
 
   const adminId = await createUser(`${tag}-admin@example.test`, `Admin ${key}`, "admin", centerId);
   const teacherId = await createUser(`${tag}-teacher@example.test`, `Teacher ${key}`, "teacher", centerId);
@@ -234,11 +244,16 @@ async function signIn(email: string): Promise<SupabaseClient> {
   return c;
 }
 
-async function teardown(tenants: Tenant[]) {
-  for (const t of tenants) {
-    await admin.from("audit_log").delete().in("user_id", t.userIds);
-    for (const id of t.userIds) await admin.auth.admin.deleteUser(id, false);
-    await admin.from("centers").delete().eq("id", t.centerId); // cascades children
+async function teardown() {
+  // Uses the global id lists, so it cleans up even a partially-provisioned
+  // run. Order: audit_log (references user_id) → auth users → centers
+  // (cascades classes/students/lessons/slu/messages/worksheets).
+  if (createdUserIds.length > 0) {
+    await admin.from("audit_log").delete().in("user_id", createdUserIds);
+    for (const id of createdUserIds) await admin.auth.admin.deleteUser(id, false);
+  }
+  if (createdCenterIds.length > 0) {
+    await admin.from("centers").delete().in("id", createdCenterIds);
   }
 }
 
@@ -328,10 +343,11 @@ async function main() {
   } finally {
     console.log("\nTearing down test tenants…");
     try {
-      await teardown([A, B].filter(Boolean) as Tenant[]);
-      console.log("  Cleaned up.");
+      await teardown();
+      console.log(`  Cleaned up ${createdCenterIds.length} center(s), ${createdUserIds.length} user(s).`);
     } catch (e) {
       console.log(`  ⚠ teardown issue: ${(e as Error).message}`);
+      console.log(`  Manual cleanup ids — centers: ${createdCenterIds.join(", ")} | users: ${createdUserIds.join(", ")}`);
     }
   }
 
