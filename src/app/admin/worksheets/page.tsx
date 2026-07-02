@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { FolderOpen, Upload } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { signWorksheetUrls } from "@/lib/worksheet-url";
 import { WorksheetUploadForm } from "./worksheet-upload-form";
 import { WorksheetsLibraryGrid } from "./library-grid";
 
@@ -21,7 +22,7 @@ export default async function WorksheetsPage() {
     supabase
       .from("worksheets")
       .select(
-        "id, name, file_type, size_bytes, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
+        "id, name, file_type, size_bytes, storage_path, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -40,6 +41,18 @@ export default async function WorksheetsPage() {
     );
   }
 
+  // Sign every worksheet's URL server-side (falls back to public_url per row
+  // if signing fails). Keeps the field name `public_url` in the props so the
+  // client grid needs no change, while letting us flip the bucket to private
+  // later without breaking the links.
+  const signed = await signWorksheetUrls(
+    (worksheetsRes.data ?? []) as {
+      id: string;
+      storage_path: string | null;
+      public_url: string | null;
+    }[],
+  );
+
   const worksheets = (worksheetsRes.data ?? []).map((w) => {
     const uploader = Array.isArray(w.uploader) ? w.uploader[0] : w.uploader;
     return {
@@ -47,7 +60,7 @@ export default async function WorksheetsPage() {
       name: w.name,
       file_type: w.file_type,
       size_bytes: w.size_bytes,
-      public_url: w.public_url,
+      public_url: signed.get(w.id) ?? w.public_url,
       created_at: w.created_at,
       uploader_name: uploader?.full_name ?? null,
       usage_count: usageByWorksheet.get(w.id) ?? 0,

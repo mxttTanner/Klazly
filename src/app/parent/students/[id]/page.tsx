@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { signWorksheetUrls } from "@/lib/worksheet-url";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/print-button";
 import { ShareReportButton } from "@/components/share-report-button";
@@ -47,8 +48,8 @@ type LessonRow = {
   grammar_point: string | null;
   general_note: string | null;
   worksheet:
-    | { id: string; name: string; public_url: string }
-    | { id: string; name: string; public_url: string }[]
+    | { id: string; name: string; storage_path: string | null; public_url: string }
+    | { id: string; name: string; storage_path: string | null; public_url: string }[]
     | null;
 };
 
@@ -203,7 +204,7 @@ export default async function StudentProgressPage({
     const withTopic = await supabase
       .from("lessons")
       .select(
-        "id, lesson_date, unit, lesson_number, topic, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, public_url)",
+        "id, lesson_date, unit, lesson_number, topic, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, storage_path, public_url)",
       )
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
@@ -216,7 +217,7 @@ export default async function StudentProgressPage({
       const fallback = await supabase
         .from("lessons")
         .select(
-          "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, public_url)",
+          "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note, worksheet:worksheets(id, name, storage_path, public_url)",
         )
         .eq("class_id", cls.id)
         .order("lesson_date", { ascending: false })
@@ -233,6 +234,21 @@ export default async function StudentProgressPage({
       }));
     } else {
       lessons = (withTopic.data ?? []) as LessonRow[];
+    }
+  }
+
+  // Swap each lesson's worksheet.public_url for a short-lived signed URL.
+  // We flatten the (possibly array-wrapped) embedded worksheet rows across
+  // all lessons, sign them in ONE batch, then write the signed URL back onto
+  // each row under the same `public_url` field so the render below is
+  // unchanged. Signing fails soft — rows keep their public_url fallback.
+  const worksheetRows = lessons
+    .map((l) => (Array.isArray(l.worksheet) ? l.worksheet[0] : l.worksheet))
+    .filter((w): w is NonNullable<typeof w> => !!w);
+  if (worksheetRows.length > 0) {
+    const signed = await signWorksheetUrls(worksheetRows);
+    for (const w of worksheetRows) {
+      w.public_url = signed.get(w.id) ?? w.public_url;
     }
   }
 
