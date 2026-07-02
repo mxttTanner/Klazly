@@ -71,11 +71,13 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: name,
     authors: [{ name: "Matthew Stadler" }],
     icons: {
-      // favicon.ico + the PNG/SVG set are regenerated from icon.svg by
-      // scripts/generate-icons.mjs — rerun it if the brand mark changes.
+      // Wordmark icon set ("Klazly"/"K." on navy, emerald accent) —
+      // regenerate with scripts/icon-factory.mjs (renders on canvas with
+      // Inter 900 so it matches BrandWordmark exactly), then re-run the
+      // placement step. Small sizes use the "K." monogram for legibility.
       icon: [
         { url: "/favicon.ico", sizes: "48x48" },
-        { url: "/icon.svg", type: "image/svg+xml" },
+        { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
       ],
       apple: "/apple-icon.png",
     },
