@@ -209,6 +209,11 @@ export function WorksheetsLibraryGrid({
                         day: "2-digit",
                         month: "2-digit",
                         year: "numeric",
+                        // Pin to VN time: this is a client component that
+                        // hydrates, so an unpinned date can differ between the
+                        // server (TZ=Asia/Ho_Chi_Minh) and a viewer in another
+                        // zone → React 19 hydration error (#418).
+                        timeZone: "Asia/Ho_Chi_Minh",
                       })}
                     </span>
                     <span>{formatBytes(w.size_bytes)}</span>

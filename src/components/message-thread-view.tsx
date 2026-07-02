@@ -50,6 +50,25 @@ type Labels = {
 
 const initialState: { error?: string; success?: boolean } = {};
 
+// All date/time rendering here is pinned to VN time. This component is
+// server-rendered then hydrated on the client, so any locale/timezone-
+// dependent text MUST resolve identically on both sides or React 19 aborts
+// hydration with error #418. VN is a fixed UTC+7 (no DST), matching the
+// server's process.env.TZ, so this is stable everywhere.
+const MESSAGE_TZ = "Asia/Ho_Chi_Minh";
+
+// "YYYY-MM-DD" in VN time — used as a stable day-grouping key. Deterministic
+// across server and client (unlike Date.getFullYear()/getMonth()/getDate(),
+// which read the runtime timezone).
+function vnDayKey(d: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: MESSAGE_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
 export function MessageThreadView({
   studentId,
   currentUserId,
@@ -116,7 +135,15 @@ export function MessageThreadView({
                   const mine = m.sender_user_id === currentUserId;
                   const when = new Date(m.created_at).toLocaleTimeString(
                     dateLocale,
-                    { hour: "2-digit", minute: "2-digit" },
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      // Pin to VN time so the server (TZ=Asia/Ho_Chi_Minh on
+                      // Vercel) and the client (browser's own TZ) render the
+                      // SAME string. Without this, React 19 throws a
+                      // hydration mismatch (#418) for any viewer not in +07.
+                      timeZone: MESSAGE_TZ,
+                    },
                   );
                   return (
                     <li
@@ -255,24 +282,25 @@ function groupByDay(
   dateLocale: string,
   labels: Pick<Labels, "dayToday" | "dayYesterday">,
 ): { label: string; items: ChatMessage[] }[] {
-  const today = startOfDay(new Date());
-  const yesterday = startOfDay(new Date(today.getTime() - 24 * 60 * 60 * 1000));
-  const buckets = new Map<number, { label: string; items: ChatMessage[] }>();
+  const todayKey = vnDayKey(new Date());
+  const yesterdayKey = vnDayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const buckets = new Map<string, { label: string; items: ChatMessage[] }>();
 
   for (const m of messages) {
-    const d = startOfDay(new Date(m.created_at));
-    const key = d.getTime();
+    const created = new Date(m.created_at);
+    const key = vnDayKey(created); // "YYYY-MM-DD" in VN time
     let bucket = buckets.get(key);
     if (!bucket) {
       let label: string;
-      if (key === today.getTime()) label = labels.dayToday;
-      else if (key === yesterday.getTime()) label = labels.dayYesterday;
+      if (key === todayKey) label = labels.dayToday;
+      else if (key === yesterdayKey) label = labels.dayYesterday;
       else
-        label = d.toLocaleDateString(dateLocale, {
+        label = created.toLocaleDateString(dateLocale, {
           weekday: "short",
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
+          timeZone: MESSAGE_TZ,
         });
       bucket = { label, items: [] };
       buckets.set(key, bucket);
@@ -280,11 +308,8 @@ function groupByDay(
     bucket.items.push(m);
   }
 
+  // Keys are "YYYY-MM-DD" strings, so lexical sort == chronological.
   return Array.from(buckets.entries())
-    .sort(([a], [b]) => a - b)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([, v]) => v);
-}
-
-function startOfDay(d: Date): Date {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
