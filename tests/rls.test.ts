@@ -33,12 +33,14 @@ type Tenant = {
   adminEmail: string;
   classId: string;
   studentId: string;
+  lessonId: string;
+  updateId: string;
 };
 
 let admin: SupabaseClient;
 const tenants: Record<"A" | "B", Tenant> = {
-  A: { centerId: "", adminEmail: "", classId: "", studentId: "" },
-  B: { centerId: "", adminEmail: "", classId: "", studentId: "" },
+  A: { centerId: "", adminEmail: "", classId: "", studentId: "", lessonId: "", updateId: "" },
+  B: { centerId: "", adminEmail: "", classId: "", studentId: "", lessonId: "", updateId: "" },
 };
 
 async function createTenant(label: "A" | "B"): Promise<Tenant> {
@@ -86,11 +88,37 @@ async function createTenant(label: "A" | "B"): Promise<Tenant> {
     .select("id")
     .single();
 
+  // A lesson + a per-student update — these have no center_id column of
+  // their own (they inherit it through the class), so they exercise the
+  // subquery-based policies that once leaked across centers.
+  const { data: lesson } = await admin
+    .from("lessons")
+    .insert({
+      class_id: cls!.id,
+      lesson_date: "2026-01-01",
+      vocabulary: `secret-vocab-${label}`,
+    })
+    .select("id")
+    .single();
+
+  const { data: update } = await admin
+    .from("student_lesson_updates")
+    .insert({
+      lesson_id: lesson!.id,
+      student_id: student!.id,
+      individual_note: `private-note-${label}`,
+      homework_completed: true,
+    })
+    .select("id")
+    .single();
+
   return {
     centerId: center.id,
     adminEmail,
     classId: cls!.id,
     studentId: student!.id,
+    lessonId: lesson!.id,
+    updateId: update!.id,
   };
 }
 
@@ -164,5 +192,64 @@ describe.skipIf(!hasEnv)("multi-tenant RLS isolation", () => {
     expect((students ?? []).every((s) => s.center_id === tenants.B.centerId)).toBe(true);
     const { data: classes } = await b.from("classes").select("id, center_id");
     expect((classes ?? []).every((c) => c.center_id === tenants.B.centerId)).toBe(true);
+  });
+
+  // Regression: lessons and student_lesson_updates have no center_id column
+  // of their own, so their policies scope through the class. A rewrite of the
+  // admin branch once dropped that scoping, letting any admin read/modify
+  // every center's lessons and per-student notes. These lock that shut.
+  it("admin A cannot read center B's lessons (no center_id column — scoped via class)", async () => {
+    const a = await signInAs(tenants.A.adminEmail);
+    const { data: byId } = await a
+      .from("lessons")
+      .select("id, vocabulary")
+      .eq("id", tenants.B.lessonId);
+    expect(byId ?? []).toHaveLength(0);
+    // and a broad read must not surface B's lesson either
+    const { data: all } = await a.from("lessons").select("id");
+    expect((all ?? []).map((l) => l.id)).not.toContain(tenants.B.lessonId);
+  });
+
+  it("admin A cannot read center B's student_lesson_updates (private notes)", async () => {
+    const a = await signInAs(tenants.A.adminEmail);
+    const { data: byId } = await a
+      .from("student_lesson_updates")
+      .select("id, individual_note")
+      .eq("id", tenants.B.updateId);
+    expect(byId ?? []).toHaveLength(0);
+    const { data: all } = await a
+      .from("student_lesson_updates")
+      .select("id");
+    expect((all ?? []).map((u) => u.id)).not.toContain(tenants.B.updateId);
+  });
+
+  it("admin A cannot modify or delete center B's lesson (write policy)", async () => {
+    const a = await signInAs(tenants.A.adminEmail);
+    await a
+      .from("lessons")
+      .update({ vocabulary: "tampered-by-A" })
+      .eq("id", tenants.B.lessonId);
+    await a.from("lessons").delete().eq("id", tenants.B.lessonId);
+    // Verify with the service-role client that B's lesson is untouched.
+    const { data } = await admin
+      .from("lessons")
+      .select("vocabulary")
+      .eq("id", tenants.B.lessonId)
+      .single();
+    expect(data?.vocabulary).toBe("secret-vocab-B");
+  });
+
+  it("admin A CAN still read its own lessons + updates (fix didn't over-restrict)", async () => {
+    const a = await signInAs(tenants.A.adminEmail);
+    const { data: lessons } = await a
+      .from("lessons")
+      .select("id")
+      .eq("id", tenants.A.lessonId);
+    expect((lessons ?? []).map((l) => l.id)).toContain(tenants.A.lessonId);
+    const { data: updates } = await a
+      .from("student_lesson_updates")
+      .select("id")
+      .eq("id", tenants.A.updateId);
+    expect((updates ?? []).map((u) => u.id)).toContain(tenants.A.updateId);
   });
 });
