@@ -64,6 +64,22 @@ export async function sendParentTeacherMessage(
     return { error: t("notAllowed") };
   }
 
+  // Guard against a rapid double-submit / retry inserting the same message
+  // twice (and firing a duplicate email): if an identical message from this
+  // sender for this student landed in the last ~10s, treat it as already
+  // sent and skip the insert.
+  const tenSecondsAgo = new Date(Date.now() - 10_000).toISOString();
+  const { data: recentDup } = await supabase
+    .from("parent_teacher_messages")
+    .select("id")
+    .eq("student_id", parsed.data.student_id)
+    .eq("sender_user_id", user.id)
+    .eq("body", parsed.data.body)
+    .gte("created_at", tenSecondsAgo)
+    .limit(1)
+    .maybeSingle();
+  if (recentDup) return { success: true };
+
   const { error: insertErr } = await supabase
     .from("parent_teacher_messages")
     .insert({
@@ -174,7 +190,10 @@ async function notifyRecipientByEmail(opts: {
  * Mark all visible messages in a student's thread as read (sets read_at on
  * messages that are not from the current user and are not already read).
  */
-export async function markThreadRead(formData: FormData) {
+export async function markThreadRead(
+  formData: FormData,
+  opts: { revalidate?: boolean } = {},
+) {
   const user = await requireRole(["parent", "teacher", "admin"]);
   const studentId = String(formData.get("student_id") ?? "");
   if (!studentId) return;
@@ -184,13 +203,21 @@ export async function markThreadRead(formData: FormData) {
   // Best-effort: this runs every time someone opens a thread. A transient
   // failure shouldn't error-boundary the user. Capture for ops visibility
   // and let the next thread visit retry.
-  const { error } = await supabase
-    .from("parent_teacher_messages")
-    .update({ read_at: new Date().toISOString() })
-    .eq("student_id", studentId)
-    .neq("sender_user_id", user.id)
-    .is("read_at", null);
+  //
+  // Marking goes through the mark_messages_read SECURITY DEFINER function
+  // (db/2026-07-02-audit-fixes.sql): the old direct UPDATE lost its RLS
+  // policy and would now silently no-op. The RPC only sets read_at on
+  // messages the caller may see and did NOT send. Runs on the RLS-scoped
+  // server client so auth.uid()/role resolve to the current user.
+  const { error } = await supabase.rpc("mark_messages_read", {
+    p_student_id: studentId,
+  });
   if (error) Sentry.captureException(error);
+
+  // Callers that invoke this during an RSC render pass { revalidate: false }
+  // — revalidatePath throws mid-render. read_at is already committed by the
+  // RPC; the force-dynamic thread pages recompute unread state on next load.
+  if (opts.revalidate === false) return;
 
   revalidatePath(`/parent/students/${studentId}`);
   revalidatePath("/teacher/classes/[id]/messages/[studentId]", "page");

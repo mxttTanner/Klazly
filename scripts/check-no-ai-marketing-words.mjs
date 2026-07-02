@@ -17,8 +17,9 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("..", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 
 const TARGETS = ["src/messages/en.json", "src/messages/vi.json"];
 

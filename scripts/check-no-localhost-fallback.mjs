@@ -10,8 +10,9 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("../src", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+const ROOT = fileURLToPath(new URL("../src", import.meta.url));
 const offenders = [];
 
 function walk(dir) {

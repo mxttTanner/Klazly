@@ -3,11 +3,11 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { CheckCircle2, AlertCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { isEmailLike } from "@/lib/phone";
+import { requestPasswordReset } from "./actions";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("forgotPassword");
@@ -34,18 +34,17 @@ export function ForgotPasswordForm() {
     }
 
     startTransition(async () => {
-      const supabase = createClient();
-      const redirectTo = `${window.location.origin}/reset-password`;
-      const { error: resetError } =
-        await supabase.auth.resetPasswordForEmail(
-          identifier.trim().toLowerCase(),
-          { redirectTo },
-        );
-      // Even if Supabase says no such email, we show the same "check your
-      // inbox" message so attackers can't enumerate registered emails.
-      if (resetError) {
-        console.warn("[forgot-password] supabase error", resetError.message);
+      const result = await requestPasswordReset(identifier);
+      if ("error" in result) {
+        if (result.error === "rateLimited") {
+          setError(t("rateLimited"));
+          return;
+        }
+        // notEmail — shouldn't happen (guarded above), treat as phone-only.
+        setPhoneOnlyMode(true);
+        return;
       }
+      // Same "check your inbox" state regardless of account existence.
       setSent(true);
     });
   }

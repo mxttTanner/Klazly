@@ -583,6 +583,7 @@
     "submit": "Đăng nhập",
     "submitting": "Đang đăng nhập...",
     "invalidCredentials": "Email/số điện thoại hoặc mật khẩu không đúng.",
+    "rateLimited": "Quá nhiều lần thử. Vui lòng đợi một lát rồi thử lại.",
     "forgot": "Quên mật khẩu?",
     "rememberMe": "Ghi nhớ đăng nhập",
     "showPassword": "Hiện mật khẩu",
@@ -602,7 +603,8 @@
     "submit": "Gửi đường dẫn đặt lại",
     "submitting": "Đang gửi...",
     "sentTitle": "Kiểm tra email của bạn",
-    "sentBody": "Nếu email của bạn đã đăng ký, chúng tôi vừa gửi đường dẫn đặt mật khẩu mới. Đường dẫn hết hạn sau 1 giờ."
+    "sentBody": "Nếu email của bạn đã đăng ký, chúng tôi vừa gửi đường dẫn đặt mật khẩu mới. Đường dẫn hết hạn sau 1 giờ.",
+    "rateLimited": "Quá nhiều yêu cầu. Vui lòng đợi vài phút rồi thử lại."
   },
   "resetPassword": {
     "title": "Đặt mật khẩu mới",
@@ -1030,6 +1032,8 @@
     "rowMissingPhone": "Mỗi dòng cần số điện thoại. Email là tùy chọn.",
     "rowInvalidPhone": "Số điện thoại không hợp lệ.",
     "duplicateInFile": "Email hoặc số điện thoại đã xuất hiện ở dòng {row}.",
+    "duplicateStudentInFile": "Học sinh này (cùng tên và lớp) đã xuất hiện ở dòng {row}.",
+    "tooManyRows": "Quá nhiều dòng. Tối đa {max} dòng mỗi lần — hãy chia tệp thành nhiều lượt nhập và tải lại.",
     "classNotFound": "Không tìm thấy lớp '{name}'.",
     "parentNotFound": "Không tìm thấy phụ huynh '{email}'.",
     "imported": "Đã nhập {n} mục thành công.",

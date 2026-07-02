@@ -53,9 +53,26 @@ export async function requireUser(): Promise<AppUser> {
   //
   // Lock rules:
   //   expired                         → always locked
+  //   paused                          → always locked (operator suspended
+  //                                     access; the whole point of pausing)
   //   canceled + ends_at <= now       → locked (grace expired)
   //   canceled + ends_at > now / null → still allowed (within grace)
+  //   trial  + trial_ends_at <= now   → locked IF standard tier. Founding
+  //                                     trials auto-convert to 'active' (see
+  //                                     expireOverdueTrials), so we never
+  //                                     lock them here even before the lazy
+  //                                     converter has flipped the row.
+  //   past_due / pending_renewal      → still allowed. These are the
+  //                                     "collect payment out of band" grace
+  //                                     states; Klazly bills by bank transfer,
+  //                                     so cutting a paying center mid-renewal
+  //                                     would be wrong. The operator sees the
+  //                                     amber nudge and renews manually.
   //   anything else                   → allowed
+  //
+  // Enforcing trial expiry here (not only on the super-admin dashboard's
+  // lazy pass) closes the gap where a center kept full access for days
+  // until the operator happened to open /super-admin.
   //
   // We swallow errors quietly — better to let a transient DB blip pass
   // through and render the dashboard than block legitimate users on
@@ -65,19 +82,30 @@ export async function requireUser(): Promise<AppUser> {
   let shouldRedirect = false;
   try {
     const supabase = createAdminClient();
-    // Try the full select first; fall back if subscription_ends_at
-    // hasn't been migrated yet so older DBs still load.
+    // Try the full select first; fall back if the lifecycle columns
+    // haven't been migrated yet so older DBs still load.
     const full = await supabase
       .from("centers")
-      .select("subscription_status, subscription_ends_at")
+      .select(
+        "subscription_status, subscription_ends_at, trial_ends_at, plan_tier",
+      )
       .eq("id", user.center_id)
       .single();
     let status: string | null = null;
     let endsAt: string | null = null;
+    let trialEndsAt: string | null = null;
+    let planTier: string | null = null;
     if (!full.error && full.data) {
-      status = (full.data as { subscription_status: string }).subscription_status;
-      endsAt = (full.data as { subscription_ends_at: string | null })
-        .subscription_ends_at;
+      const d = full.data as {
+        subscription_status: string;
+        subscription_ends_at: string | null;
+        trial_ends_at: string | null;
+        plan_tier: string | null;
+      };
+      status = d.subscription_status;
+      endsAt = d.subscription_ends_at;
+      trialEndsAt = d.trial_ends_at;
+      planTier = d.plan_tier;
     } else {
       const fb = await supabase
         .from("centers")
@@ -88,11 +116,22 @@ export async function requireUser(): Promise<AppUser> {
         status = (fb.data as { subscription_status: string }).subscription_status;
       }
     }
-    if (status === "expired") {
+    if (status === "expired" || status === "paused") {
       shouldRedirect = true;
     } else if (status === "canceled") {
       // Past grace if no end date set, or end date already passed.
       if (!endsAt || new Date(endsAt).getTime() <= Date.now()) {
+        shouldRedirect = true;
+      }
+    } else if (status === "trial") {
+      // Standard trial that has run past its end date but hasn't been
+      // flipped to 'expired' yet. Founding trials are excluded — they
+      // convert to a paid 'active' state instead of expiring.
+      if (
+        trialEndsAt &&
+        new Date(trialEndsAt).getTime() <= Date.now() &&
+        planTier !== "founding"
+      ) {
         shouldRedirect = true;
       }
     }

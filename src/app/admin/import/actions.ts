@@ -56,6 +56,14 @@ const studentRowSchema = z.object({
   ),
 });
 
+// Cap the data rows processed per import. Each parent row runs a sequential
+// auth.admin.createUser + profile insert, so a few hundred rows can blow past
+// Vercel's function timeout mid-loop — stranding half-created parents whose
+// one-time passwords are returned to nobody, and which a re-upload then skips
+// as "existing". Reject oversized files up front (before creating anything)
+// rather than time out partway through. Same cap applies to student imports.
+const MAX_IMPORT_ROWS = 200;
+
 export type ImportResult = {
   imported: number;
   skipped: number;
@@ -83,6 +91,10 @@ export async function importParentsCsv(
   const text = await file.text();
   const { rows } = csvToRecords(text);
   if (rows.length === 0) return { error: t("emptyCsv") };
+  // Reject before creating any users so an oversized file can't time out
+  // mid-loop and strand parents (see MAX_IMPORT_ROWS).
+  if (rows.length > MAX_IMPORT_ROWS)
+    return { error: t("tooManyRows", { max: MAX_IMPORT_ROWS }) };
 
   const supabase = createAdminClient();
   const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
@@ -193,14 +205,25 @@ export async function importParentsCsv(
       continue;
     }
 
-    const { error: profileErr } = await supabase.from("users").insert({
+    const profileBase = {
       id: created.user.id,
       email: rawEmail,
       phone,
       full_name: parsed.data.full_name,
       role: "parent",
       center_id: admin.center_id,
+    };
+    // Force a password change on first login when WE generated the temp
+    // password (it may have travelled over Zalo/paper). Fall back if the
+    // must_change_password column hasn't been migrated yet.
+    let { error: profileErr } = await supabase.from("users").insert({
+      ...profileBase,
+      must_change_password: passwordWasGenerated,
     });
+    if (profileErr && /must_change_password/i.test(profileErr.message)) {
+      const retry = await supabase.from("users").insert(profileBase);
+      profileErr = retry.error;
+    }
     if (profileErr) {
       const { error: rollbackErr } = await supabase.auth.admin.deleteUser(
         created.user.id,
@@ -247,21 +270,31 @@ export async function importStudentsCsv(
   const text = await file.text();
   const { rows } = csvToRecords(text);
   if (rows.length === 0) return { error: t("emptyCsv") };
+  // Same up-front cap as the parent importer (see MAX_IMPORT_ROWS).
+  if (rows.length > MAX_IMPORT_ROWS)
+    return { error: t("tooManyRows", { max: MAX_IMPORT_ROWS }) };
 
   const supabase = createAdminClient();
 
-  // Fetch all classes + parents in this center once for the lookup map.
-  const [{ data: classes }, { data: parents }] = await Promise.all([
-    supabase
-      .from("classes")
-      .select("id, name")
-      .eq("center_id", admin.center_id),
-    supabase
-      .from("users")
-      .select("id, email, phone")
-      .eq("center_id", admin.center_id)
-      .eq("role", "parent"),
-  ]);
+  // Fetch all classes + parents + existing students in this center once for
+  // the lookup maps. Students are fetched here so the import is idempotent —
+  // a re-uploaded roster skips rows already in the DB instead of duplicating.
+  const [{ data: classes }, { data: parents }, { data: students }] =
+    await Promise.all([
+      supabase
+        .from("classes")
+        .select("id, name")
+        .eq("center_id", admin.center_id),
+      supabase
+        .from("users")
+        .select("id, email, phone")
+        .eq("center_id", admin.center_id)
+        .eq("role", "parent"),
+      supabase
+        .from("students")
+        .select("full_name, class_id")
+        .eq("center_id", admin.center_id),
+    ]);
 
   const classByName = new Map(
     (classes ?? []).map((c) => [c.name.toLowerCase(), c.id]),
@@ -275,6 +308,21 @@ export async function importStudentsCsv(
     if (p.email) parentByContact.set(p.email.toLowerCase(), p.id);
     if (p.phone) parentByContact.set(p.phone, p.id);
   }
+
+  // De-dupe students by (center_id, full_name, class_id). center_id is fixed
+  // for this import, so the composite key is just full_name + class_id.
+  // Names are lower-cased/trimmed so case-only variants still match.
+  const studentKey = (fullName: string, classId: string | null) =>
+    `${fullName.trim().toLowerCase()}::${classId ?? ""}`;
+  type StudentRow = { full_name: string; class_id: string | null };
+  const existingStudentKeys = new Set(
+    ((students ?? []) as StudentRow[]).map((s) =>
+      studentKey(s.full_name, s.class_id),
+    ),
+  );
+  // Track keys already seen in THIS file so a duplicated row doesn't insert
+  // twice. Map key → row number for a clearer message (mirrors parents).
+  const seenStudentRow = new Map<string, number>();
 
   const result: ImportResult = { imported: 0, skipped: 0, errors: [] };
 
@@ -319,6 +367,23 @@ export async function importStudentsCsv(
       });
       continue;
     }
+
+    // Idempotency: skip in-file repeats (reported as a row error) and rows
+    // that already exist in the DB (counted as skipped), mirroring parents.
+    const dedupeKey = studentKey(parsed.data.full_name, classId ?? null);
+    const dupRow = seenStudentRow.get(dedupeKey);
+    if (dupRow !== undefined) {
+      result.errors.push({
+        row: rowNum,
+        message: t("duplicateStudentInFile", { row: dupRow }),
+      });
+      continue;
+    }
+    if (existingStudentKeys.has(dedupeKey)) {
+      result.skipped++;
+      continue;
+    }
+    seenStudentRow.set(dedupeKey, rowNum);
 
     const { error } = await supabase.from("students").insert({
       center_id: admin.center_id,

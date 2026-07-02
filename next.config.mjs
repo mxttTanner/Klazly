@@ -29,6 +29,28 @@ const nextConfig = {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
+          {
+            // Report-Only so it CANNOT break the live site — it only logs
+            // violations. Allowlist reflects what the app actually loads:
+            // Supabase (Postgres/Auth over https + Realtime over wss),
+            // Microsoft Clarity (analytics tag), and Sentry ingest (US +
+            // DE regions, since the DSN host varies by project region).
+            // Inter is self-hosted via next/font, so fonts need only self.
+            // TODO: validate reports in Sentry/Clarity, then promote this
+            // to the enforcing `Content-Security-Policy` header.
+            key: "Content-Security-Policy-Report-Only",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' https://www.clarity.ms https://*.clarity.ms",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self'",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.clarity.ms https://*.clarity.ms https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
         ],
       },
     ];

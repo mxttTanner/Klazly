@@ -583,6 +583,7 @@
     "submit": "Log in",
     "submitting": "Logging in...",
     "invalidCredentials": "Incorrect email/phone or password.",
+    "rateLimited": "Too many attempts. Please wait a moment and try again.",
     "forgot": "Forgot your password?",
     "rememberMe": "Remember me",
     "showPassword": "Show password",
@@ -602,7 +603,8 @@
     "submit": "Send reset link",
     "submitting": "Sending...",
     "sentTitle": "Check your email",
-    "sentBody": "If your email is registered, we just sent you a link to set a new password. The link expires in 1 hour."
+    "sentBody": "If your email is registered, we just sent you a link to set a new password. The link expires in 1 hour.",
+    "rateLimited": "Too many requests. Please wait a few minutes and try again."
   },
   "resetPassword": {
     "title": "Set a new password",
@@ -1030,6 +1032,8 @@
     "rowMissingPhone": "Each row needs a phone number. Email is optional.",
     "rowInvalidPhone": "Phone number is not valid.",
     "duplicateInFile": "Email or phone already appears on row {row}.",
+    "duplicateStudentInFile": "This student (same name and class) already appears on row {row}.",
+    "tooManyRows": "Too many rows. Max {max} per import — split the file into batches and upload again.",
     "classNotFound": "Class '{name}' not found.",
     "parentNotFound": "Parent '{email}' not found.",
     "imported": "Imported {n} rows.",

@@ -175,13 +175,17 @@ export default async function StudentProgressPage({
 
   if (!student || student.parent_user_id !== user.id) notFound();
 
-  // Mark teacher → parent messages as read when the parent opens the page.
-  // Best-effort; ignore errors so the page renders even if the migration
-  // hasn't been applied.
-  {
+  // Mark teacher → parent messages as read — only when the parent is
+  // actually on the messages tab. Marking on the default lessons tab would
+  // flag messages read before they're seen (false "read" signal to the
+  // teacher). We pass { revalidate: false } so the action doesn't call
+  // revalidatePath during this render (which throws); read_at is committed
+  // by the RPC and this force-dynamic page recomputes unread on next load.
+  // Best-effort; ignore errors so the page renders regardless.
+  if (activeTab === "messages") {
     const fd = new FormData();
     fd.append("student_id", student.id);
-    await markThreadRead(fd).catch(() => {});
+    await markThreadRead(fd, { revalidate: false }).catch(() => {});
   }
 
   const cls = Array.isArray(student.class) ? student.class[0] : student.class;

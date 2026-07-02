@@ -16,11 +16,29 @@ export default async function PostLoginPage() {
     redirect("/super-admin");
   }
 
-  const { data: profile } = await supabase
+  // Include must_change_password so we can force a first-login reset for
+  // CSV-imported accounts. Fall back without it on older DBs that predate
+  // the column so login still routes.
+  type ProfileRow = Pick<
+    AppUser,
+    "id" | "email" | "full_name" | "role" | "center_id"
+  > & { must_change_password?: boolean };
+  let profile: ProfileRow | null = null;
+  const withFlag = await supabase
     .from("users")
-    .select("id, email, full_name, role, center_id")
+    .select("id, email, full_name, role, center_id, must_change_password")
     .eq("id", authUser.id)
     .single();
+  if (!withFlag.error && withFlag.data) {
+    profile = withFlag.data as ProfileRow;
+  } else {
+    const fb = await supabase
+      .from("users")
+      .select("id, email, full_name, role, center_id")
+      .eq("id", authUser.id)
+      .single();
+    profile = (fb.data as ProfileRow | null) ?? null;
+  }
 
   if (!profile) {
     // Auth session is valid but no profile exists. Most likely cause:
@@ -32,5 +50,13 @@ export default async function PostLoginPage() {
     await supabase.auth.signOut();
     redirect("/login");
   }
+
+  // First-login forced password change (imported temp credentials). The
+  // reset-password page works with the active session and clears the flag
+  // on success, then routes back here to the dashboard.
+  if (profile.must_change_password) {
+    redirect("/reset-password?forced=1");
+  }
+
   redirect(dashboardPathFor((profile as AppUser).role));
 }

@@ -9,7 +9,9 @@ import { requireSuperAdmin } from "@/lib/super-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
 import {
+  addMonthsClamped,
   computeFoundingSlotAvailability,
+  computePaidPeriodEnd,
   FOUNDING_DEFAULT_CAP,
 } from "@/lib/subscription";
 
@@ -287,21 +289,13 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   let nextBillingAt: string | null = null;
   if (decomposed.status === "active") {
     subscriptionStartedAt = now.toISOString();
-    if (decomposed.plan === "monthly") {
-      const e = new Date(now);
-      e.setMonth(e.getMonth() + 1);
-      subscriptionEndsAt = e.toISOString();
-      nextBillingAt = e.toISOString();
-    } else if (decomposed.plan === "six_months") {
-      const e = new Date(now);
-      e.setMonth(e.getMonth() + 6);
-      subscriptionEndsAt = e.toISOString();
-      nextBillingAt = e.toISOString();
-    } else if (decomposed.plan === "annual") {
-      const e = new Date(now);
-      e.setFullYear(e.getFullYear() + 1);
-      subscriptionEndsAt = e.toISOString();
-      nextBillingAt = e.toISOString();
+    // computePaidPeriodEnd owns the plan→length mapping and clamps
+    // month-end overflow (M7). Returns null for design-partner (plan
+    // null) which correctly leaves ends_at / next_billing_at null.
+    const end = computePaidPeriodEnd(decomposed.plan, now);
+    if (end) {
+      subscriptionEndsAt = end.toISOString();
+      nextBillingAt = end.toISOString();
     }
   }
 
@@ -464,19 +458,39 @@ export async function updateSubscriptionPlan(formData: FormData) {
       : null;
 
   const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("centers")
-    .update({ subscription_plan: plan })
-    .eq("id", id);
+
+  const patch: Record<string, string | number | null> = {
+    subscription_plan: plan,
+  };
+  // When a concrete paid plan is chosen, recompute the paid-period
+  // anchors from now so the renewal flow keys off a fresh
+  // subscription_ends_at (M6): findActiveSubsToMarkRenewal reads
+  // subscription_ends_at, so a plan change that left it stale/null
+  // would never re-enter the "renewal due" nudge. Reuses the same
+  // period computation convertCenterToPaid uses (month-end-safe, M7).
+  // Design-partner / null plan yields null → anchors left untouched.
+  if (plan) {
+    const end = computePaidPeriodEnd(plan, new Date());
+    if (end) {
+      patch.subscription_ends_at = end.toISOString();
+      patch.next_billing_at = end.toISOString();
+    }
+  }
+
+  // Go through the tolerant patcher so the plan change still lands on a
+  // DB where the lifecycle columns (subscription_ends_at /
+  // next_billing_at) haven't been migrated yet — they get dropped and
+  // the core subscription_plan write succeeds.
+  const { error } = await updateCenterPatchTolerant(supabase, id, patch);
   if (error) {
     // If the column is missing the super-admin needs to run the
     // migration; surface a helpful hint instead of silently swallowing.
     // Any other error (RLS, network, FK) also surfaces so the caller
     // doesn't think a failed update succeeded.
-    if (/subscription_plan/i.test(error.message)) {
+    if (/subscription_plan/i.test(error)) {
       return { error: "subscription_plan column not migrated yet" };
     }
-    return { error: error.message };
+    return { error };
   }
 
   revalidatePath("/super-admin");
@@ -514,11 +528,12 @@ export async function updateSubscriptionStatus(formData: FormData) {
   type CenterReadRow = {
     subscription_status?: string;
     subscription_started_at?: string | null;
+    subscription_plan?: string | null;
   };
   let existing: CenterReadRow | null = null;
   const full = await supabase
     .from("centers")
-    .select("subscription_status, subscription_started_at")
+    .select("subscription_status, subscription_started_at, subscription_plan")
     .eq("id", id)
     .single();
   if (!full.error) {
@@ -526,7 +541,7 @@ export async function updateSubscriptionStatus(formData: FormData) {
   } else if (/subscription_started_at/i.test(full.error.message)) {
     const fb = await supabase
       .from("centers")
-      .select("subscription_status")
+      .select("subscription_status, subscription_plan")
       .eq("id", id)
       .single();
     if (!fb.error) existing = fb.data as CenterReadRow;
@@ -536,10 +551,26 @@ export async function updateSubscriptionStatus(formData: FormData) {
   const patch: Record<string, string | null> = {
     subscription_status: status,
   };
-  // First-time activation stamps the start date so renewals / period
-  // math have an anchor. Don't overwrite an existing start.
-  if (status === "active" && !existing?.subscription_started_at) {
-    patch.subscription_started_at = new Date().toISOString();
+  if (status === "active") {
+    const now = new Date();
+    // First-time activation stamps the start date so renewals / period
+    // math have an anchor. Don't overwrite an existing start.
+    if (!existing?.subscription_started_at) {
+      patch.subscription_started_at = now.toISOString();
+    }
+    // Stamp the paid-period anchors so a bare status flip to 'active'
+    // actually enters the renewal flow (M6): findActiveSubsToMarkRenewal
+    // keys the "renewal due" nudge off subscription_ends_at, so leaving
+    // it null here meant a manually-activated center never got nudged.
+    // Period is derived from the center's existing plan via the same
+    // shared computePaidPeriodEnd convertCenterToPaid uses (month-end
+    // safe, M7). Plans without a fixed cycle (design-partner / unknown /
+    // absent) yield null and we leave the anchors untouched.
+    const end = computePaidPeriodEnd(existing?.subscription_plan ?? null, now);
+    if (end) {
+      patch.subscription_ends_at = end.toISOString();
+      patch.next_billing_at = end.toISOString();
+    }
   }
   // 'expired' = immediate revocation. Stamp the end date as now so the
   // lock screen activates and audit/reporting shows a real timestamp.
@@ -615,11 +646,18 @@ export async function extendTrial(formData: FormData) {
   const base = Math.max(now, currentEnd);
   const newEnd = new Date(base + days * 24 * 60 * 60 * 1000).toISOString();
 
-  const wasExpired = existing.subscription_status === "expired";
+  // Extending a trial should also unlock a center that's currently
+  // locked out, restoring it to 'trial'. Covers both auto-expired
+  // trials ('expired') and centers canceled past their grace period
+  // ('canceled') — the latter would otherwise stay locked despite now
+  // having a valid future trial_ends_at (L6).
+  const wasLocked =
+    existing.subscription_status === "expired" ||
+    existing.subscription_status === "canceled";
   const patch: Record<string, string | null> = {
     trial_ends_at: newEnd,
   };
-  if (wasExpired) patch.subscription_status = "trial";
+  if (wasLocked) patch.subscription_status = "trial";
 
   const { error: updErr } = await updateCenterPatchTolerant(
     supabase,
@@ -637,7 +675,7 @@ export async function extendTrial(formData: FormData) {
     metadata: {
       days,
       from_status: existing.subscription_status,
-      to_status: wasExpired ? "trial" : existing.subscription_status,
+      to_status: wasLocked ? "trial" : existing.subscription_status,
       previous_end: existing.trial_ends_at,
       new_end: newEnd,
     },
@@ -776,8 +814,9 @@ export async function convertCenterToPaid(formData: FormData) {
     // configured a different number), preserve it.
     const lockedPrice = existing.founding_locked_price_vnd ?? 600_000;
 
-    const nextBilling = new Date(now);
-    nextBilling.setMonth(nextBilling.getMonth() + 1);
+    // Month-end-safe next-billing anchor (M7): a founding conversion on
+    // e.g. Jan 31 renews Feb 28, not a drifted Mar 2/3.
+    const nextBilling = addMonthsClamped(now, 1);
     patch = {
       subscription_status: "active",
       subscription_plan: "monthly",
@@ -809,10 +848,11 @@ export async function convertCenterToPaid(formData: FormData) {
     // This is the "downgrade off founding" path: operator decided the
     // center isn't actually a Founding partner after all.
     const plan = choice as Plan;
-    const endsAt = new Date(now);
-    if (plan === "monthly") endsAt.setMonth(endsAt.getMonth() + 1);
-    if (plan === "six_months") endsAt.setMonth(endsAt.getMonth() + 6);
-    if (plan === "annual") endsAt.setFullYear(endsAt.getFullYear() + 1);
+    // computePaidPeriodEnd owns the plan→length mapping and clamps
+    // month-end overflow (M7). `plan` is always one of the three
+    // standard values here, so it never returns null — the assertion
+    // is safe.
+    const endsAt = computePaidPeriodEnd(plan, now)!;
     patch = {
       subscription_status: "active",
       subscription_plan: plan,
@@ -1008,14 +1048,21 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
   // silent destruction of auth users on a failed center.delete.
   //
   // Note: this signature stays void so it can plug into <form action={}>
-  // directly; errors are logged + revalidate fires so the super-admin
-  // sees the row come back in their UI on retry.
+  // directly (the calling client component binds it as a raw form
+  // action, which requires () => void | Promise<void> — it can't
+  // consume a returned value). So instead of returning an error result
+  // we report failures to Sentry (matching how the rest of this file
+  // surfaces exceptions) and let revalidate fire so the super-admin
+  // sees the row reappear in their UI and can retry.
   const { data: profiles, error: profilesErr } = await supabase
     .from("users")
     .select("id")
     .eq("center_id", id);
   if (profilesErr) {
-    console.error("[deleteCenterCascade] fetching profiles failed:", profilesErr);
+    Sentry.captureException(profilesErr, {
+      tags: { action: "deleteCenterCascade", stage: "fetch_profiles" },
+      extra: { center_id: id },
+    });
     revalidatePath("/super-admin");
     return;
   }
@@ -1023,7 +1070,10 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
   for (const p of profiles ?? []) {
     const { error: delErr } = await supabase.auth.admin.deleteUser(p.id);
     if (delErr) {
-      console.error(`[deleteCenterCascade] auth user ${p.id}:`, delErr);
+      Sentry.captureException(delErr, {
+        tags: { action: "deleteCenterCascade", stage: "delete_auth_user" },
+        extra: { center_id: id, user_id: p.id },
+      });
       revalidatePath("/super-admin");
       return;
     }
@@ -1034,7 +1084,10 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
     .delete()
     .eq("id", id);
   if (centerErr) {
-    console.error("[deleteCenterCascade] center delete failed:", centerErr);
+    Sentry.captureException(centerErr, {
+      tags: { action: "deleteCenterCascade", stage: "delete_center" },
+      extra: { center_id: id },
+    });
   }
 
   revalidatePath("/super-admin");

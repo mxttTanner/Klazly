@@ -1,5 +1,6 @@
 import "server-only";
 import { Resend } from "resend";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * Transactional email via Resend. The integration stays silent if
@@ -100,8 +101,10 @@ export async function sendNewMessageEmail(m: NewMessageEmail): Promise<void> {
     });
     if (res.error) {
       console.error("[email] resend returned error:", res.error);
+      Sentry.captureException(res.error, { tags: { area: "email" } });
     }
   } catch (err) {
     console.error("[email] send threw:", err);
+    Sentry.captureException(err, { tags: { area: "email" } });
   }
 }

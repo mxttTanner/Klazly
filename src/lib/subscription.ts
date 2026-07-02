@@ -54,6 +54,64 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const TRIAL_ENDING_SOON_DAYS = 7;
 
 /**
+ * Add N calendar months to a date, clamping to the last valid day of
+ * the target month.
+ *
+ * Plain `d.setMonth(d.getMonth() + N)` overflows at month boundaries:
+ * Jan 31 + 1mo lands on Mar 2/3 because February has no 31st, so JS
+ * silently rolls the surplus days into the next month. That corrupts
+ * billing anchors (a center billed on the 31st would drift a whole
+ * month forward). This clamps instead — Jan 31 + 1mo → Feb 28 (or
+ * Feb 29 in a leap year) — matching how a human reads "one month
+ * later" for a renewal date. Handles the +6 / +12 cases the same way
+ * (annual on Feb 29 → Feb 28 the following year rather than Mar 1).
+ *
+ * Time-of-day is preserved. Does not mutate the input; returns a new
+ * Date. N may be any integer.
+ */
+export function addMonthsClamped(date: Date, n: number): Date {
+  const result = new Date(date);
+  const day = result.getDate();
+  // Move to the 1st before shifting the month so the intermediate
+  // value can't itself overflow, then clamp the day back to whatever
+  // the target month can actually hold.
+  result.setDate(1);
+  result.setMonth(result.getMonth() + n);
+  const lastDayOfTargetMonth = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0,
+  ).getDate();
+  result.setDate(Math.min(day, lastDayOfTargetMonth));
+  return result;
+}
+
+/**
+ * Compute the paid-period end date for a standard plan, measured from
+ * `from`. Single source of truth for the "plan → period length"
+ * mapping so createCenter / convertCenterToPaid / the status + plan
+ * status flips all agree:
+ *
+ *   monthly     → +1 month
+ *   six_months  → +6 months
+ *   annual      → +12 months
+ *
+ * Returns null for plans without a fixed billing cycle (design-partner,
+ * or an unrecognised / absent plan) — the caller leaves the period
+ * anchors untouched in that case. Uses addMonthsClamped so month-end
+ * anchors don't overflow.
+ */
+export function computePaidPeriodEnd(
+  plan: string | null,
+  from: Date,
+): Date | null {
+  if (plan === "monthly") return addMonthsClamped(from, 1);
+  if (plan === "six_months") return addMonthsClamped(from, 6);
+  if (plan === "annual") return addMonthsClamped(from, 12);
+  return null;
+}
+
+/**
  * Compute the display status from raw DB columns.
  *
  * - If DB says 'trial' and trial_ends_at is in the past → 'expired'
@@ -260,9 +318,10 @@ export async function expireOverdueTrials(
   if (founding.length > 0) {
     const now = new Date();
     const nowIso = now.toISOString();
-    const nextBillingDate = new Date(now);
-    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-    const nextBillingIso = nextBillingDate.toISOString();
+    // Month-end-safe (see addMonthsClamped): a founding trial that ends
+    // on e.g. Jan 31 converts with a Feb-28 billing anchor, not a
+    // drifted Mar 2/3.
+    const nextBillingIso = addMonthsClamped(now, 1).toISOString();
     for (const row of founding) {
       const { error } = await supabase
         .from("centers")
@@ -274,6 +333,12 @@ export async function expireOverdueTrials(
           // founding_locked_price_vnd by monthlyMrrVnd() below.
           subscription_plan: "monthly",
           subscription_started_at: nowIso,
+          // Mirror next_billing_at into subscription_ends_at: the
+          // renewal detector (findActiveSubsToMarkRenewal) keys off
+          // subscription_ends_at, so without this the auto-converted
+          // founding center would never enter the "renewal due" nudge
+          // and would silently sit active forever (M6).
+          subscription_ends_at: nextBillingIso,
           next_billing_at: nextBillingIso,
         })
         .eq("id", row.id);
@@ -292,11 +357,12 @@ export async function expireOverdueTrials(
             auto: true,
             previous_trial_ends_at: row.trial_ends_at,
             subscription_started_at: nowIso,
+            subscription_ends_at: nextBillingIso,
             next_billing_at: nextBillingIso,
           },
         });
       } else if (
-        /subscription_started_at|next_billing_at|subscription_plan/i.test(error.message)
+        /subscription_started_at|subscription_ends_at|next_billing_at|subscription_plan/i.test(error.message)
       ) {
         // Lifecycle / plan columns missing — fall back to a status-only
         // flip so the founding center still moves out of 'trial' and

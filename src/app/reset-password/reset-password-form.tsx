@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { clearMustChangePassword } from "./actions";
 
 export function ResetPasswordForm() {
   const t = useTranslations("resetPassword");
@@ -53,6 +54,9 @@ export function ResetPasswordForm() {
         setError(t("updateError", { message: updateErr.message }));
         return;
       }
+      // Clear the first-login forced-reset flag (no-op for normal
+      // recovery-link resets, where it's already false).
+      await clearMustChangePassword();
       setDone(true);
       setTimeout(() => {
         router.replace("/post-login");

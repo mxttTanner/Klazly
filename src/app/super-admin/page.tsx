@@ -221,35 +221,79 @@ export default async function SuperAdminHomePage({
   let foundingSettingRaw: unknown = null;
   let foundingSettingOk = false;
   {
-    const [centersResolved, studentRes, lessonRes, settingRes] =
-      await Promise.all([
-        centersPromise,
-        supabase.from("students").select("id", { count: "exact", head: true }),
-        supabase.from("lessons").select("id", { count: "exact", head: true }),
-        supabase
-          .from("app_settings")
-          .select("value")
-          .eq("key", "founding_center_cap")
-          .maybeSingle()
-          .then(
-            (r) => ({ ok: !r.error, data: r.data }),
-            () => ({ ok: false, data: null }),
-          ),
-      ]);
+    // First batch: the centers list + the founding-cap setting run in
+    // parallel. The KPI student/lesson counts are deferred to a second
+    // batch below because they need the demo center's id (only known
+    // once the centers list resolves) so they can be scoped to exclude
+    // it — see L8 below.
+    const [centersResolved, settingRes] = await Promise.all([
+      centersPromise,
+      supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "founding_center_cap")
+        .maybeSingle()
+        .then(
+          (r) => ({ ok: !r.error, data: r.data }),
+          () => ({ ok: false, data: null }),
+        ),
+    ]);
     centers = centersResolved;
-    // Hide the built-in demo center (it powers /demo) from the
-    // operational console — the super-admin should only see real
-    // centers. The demo data stays in the DB so /demo keeps working;
-    // it just isn't listed here, so it can't be accidentally deleted.
-    if (centers) {
-      centers = centers.filter(
+
+    // Identify the built-in demo center (it powers /demo). Same
+    // predicate used to hide it from the list AND to exclude it from
+    // the aggregate KPI counts, so the two never drift apart. Usually a
+    // single row, but we collect all matches defensively.
+    const demoCenterIds = (centers ?? [])
+      .filter(
         (c) =>
-          c.signup_source !== "demo" &&
-          c.contact_email !== "lienhe@hoamai.test",
-      );
+          c.signup_source === "demo" ||
+          c.contact_email === "lienhe@hoamai.test",
+      )
+      .map((c) => c.id);
+
+    // Hide the built-in demo center from the operational console — the
+    // super-admin should only see real centers. The demo data stays in
+    // the DB so /demo keeps working; it just isn't listed here, so it
+    // can't be accidentally deleted.
+    if (centers) {
+      centers = centers.filter((c) => !demoCenterIds.includes(c.id));
     }
+
+    // Second batch: KPI aggregate counts, scoped to exclude the demo
+    // center's rows so the operational totals reflect only real centers
+    // (L8) — matching how the list hides it. `students` carries
+    // center_id directly; `lessons` reach a center only through
+    // `classes`, so we exclude demo lessons via an inner join on
+    // classes.center_id. Chained .neq()s AND together (exclude every
+    // demo id); with no demo center the queries stay unscoped totals.
+    let studentQuery = supabase
+      .from("students")
+      .select("id", { count: "exact", head: true });
+    let lessonQuery = supabase
+      .from("lessons")
+      .select("id, classes!inner(center_id)", { count: "exact", head: true });
+    for (const demoId of demoCenterIds) {
+      studentQuery = studentQuery.neq("center_id", demoId);
+      lessonQuery = lessonQuery.neq("classes.center_id", demoId);
+    }
+    const [studentRes, lessonRes] = await Promise.all([
+      studentQuery,
+      lessonQuery,
+    ]);
     studentCount = studentRes.count ?? 0;
-    lessonCount = lessonRes.count ?? 0;
+    if (!lessonRes.error) {
+      lessonCount = lessonRes.count ?? 0;
+    } else {
+      // Inner-join filter unavailable (e.g. the classes relationship
+      // isn't exposed on an older schema) — fall back to the unscoped
+      // total so the footnote still shows a real number rather than 0.
+      const fallback = await supabase
+        .from("lessons")
+        .select("id", { count: "exact", head: true });
+      lessonCount = fallback.count ?? 0;
+    }
+
     foundingSettingOk = settingRes.ok;
     foundingSettingRaw = settingRes.data
       ? (settingRes.data as { value: unknown }).value

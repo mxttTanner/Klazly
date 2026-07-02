@@ -15,10 +15,9 @@ import {
   Lock,
   UserCog,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { resolveLoginEmail } from "./actions";
+import { signInWithIdentifier } from "./actions";
 
 export function LoginForm() {
   const t = useTranslations("login");
@@ -36,22 +35,17 @@ export function LoginForm() {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const resolved = await resolveLoginEmail(identifier);
-      if ("error" in resolved) {
+      // Full sign-in happens server-side: the resolved email never
+      // crosses back to the browser (prevents phone→email harvesting).
+      const result = await signInWithIdentifier(identifier, password);
+      if ("error" in result) {
         setError(
-          resolved.error === "invalidPhone"
+          result.error === "invalidPhone"
             ? tco("invalidPhone")
-            : t("invalidCredentials"),
+            : result.error === "rateLimited"
+              ? t("rateLimited")
+              : t("invalidCredentials"),
         );
-        return;
-      }
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: resolved.email,
-        password,
-      });
-      if (signInError) {
-        setError(t("invalidCredentials"));
         return;
       }
       // Brief success state before navigating — gives the button morph

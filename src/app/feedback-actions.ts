@@ -24,6 +24,10 @@ const schema = z.object({
  */
 export async function submitFeedback(formData: FormData) {
   const user = await getCurrentUser();
+  // The widget only renders inside the authed shell, so a null user here
+  // means an unauthenticated caller hitting the action directly. Reject it
+  // rather than let it write to the super-admin inbox via the service role.
+  if (!user) return { error: "unauthorized" };
 
   const parsed = schema.safeParse({
     rating: formData.get("rating"),

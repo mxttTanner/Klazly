@@ -166,6 +166,44 @@ const lessonSchema = z.object({
   updates: z.array(studentUpdateSchema).min(1),
 });
 
+// Guard against a crafted/stale POST writing per-student rows for students
+// who aren't in this class (and possibly in another center entirely), which
+// would silently corrupt attendance/behavior stats. We read the roster via
+// the RLS-scoped client, so a teacher only ever "sees" students in classes
+// they teach and an admin only their own center — any submitted student_id
+// not visible here is rejected. Returns the subset of ids that are NOT valid.
+async function invalidStudentIds(
+  supabase: ReturnType<typeof createClient>,
+  classId: string,
+  studentIds: string[],
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("students")
+    .select("id")
+    .eq("class_id", classId);
+  const roster = new Set((data ?? []).map((r: { id: string }) => r.id));
+  return studentIds.filter((id) => !roster.has(id));
+}
+
+// A picked worksheet_id must be a real UUID that belongs to the caller's
+// center — never trust the raw form value (it could point at another
+// center's worksheet). Returns the validated id, or an error marker.
+async function verifyPickedWorksheet(
+  supabase: ReturnType<typeof createClient>,
+  rawId: string,
+  centerId: string,
+): Promise<{ id: string } | { error: "invalid" }> {
+  if (!z.string().uuid().safeParse(rawId).success) return { error: "invalid" };
+  const { data } = await supabase
+    .from("worksheets")
+    .select("id")
+    .eq("id", rawId)
+    .eq("center_id", centerId)
+    .maybeSingle();
+  if (!data) return { error: "invalid" };
+  return { id: data.id };
+}
+
 function buildUpdates(formData: FormData) {
   const studentIds = formData.getAll("student_id").map(String);
   return studentIds.map((sid) => {
@@ -228,10 +266,24 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     return { error: t("noPermission") };
   }
 
+  // Reject any per-student row whose student isn't on this class's roster.
+  const bad = await invalidStudentIds(
+    supabase,
+    parsed.data.class_id,
+    parsed.data.updates.map((u) => u.student_id),
+  );
+  if (bad.length > 0) return { error: t("validation") };
+
   let worksheetId: string | null = null;
   const pickedRaw = String(formData.get("worksheet_id") ?? "");
   if (pickedRaw && pickedRaw !== "none") {
-    worksheetId = pickedRaw;
+    const verified = await verifyPickedWorksheet(
+      supabase,
+      pickedRaw,
+      user.center_id,
+    );
+    if ("error" in verified) return { error: t("validation") };
+    worksheetId = verified.id;
   } else {
     const tw = await getTranslations("worksheets");
     const uploaded = await maybeUploadInlineWorksheet(
@@ -375,12 +427,26 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     return { error: t("noPermission") };
   }
 
+  // Reject any per-student row whose student isn't on this class's roster.
+  const bad = await invalidStudentIds(
+    supabase,
+    parsed.data.class_id,
+    parsed.data.updates.map((u) => u.student_id),
+  );
+  if (bad.length > 0) return { error: t("validation") };
+
   let worksheetId: string | null = null;
   const pickedRaw = String(formData.get("worksheet_id") ?? "");
   if (pickedRaw === "none") {
     worksheetId = null;
   } else if (pickedRaw) {
-    worksheetId = pickedRaw;
+    const verified = await verifyPickedWorksheet(
+      supabase,
+      pickedRaw,
+      user.center_id,
+    );
+    if ("error" in verified) return { error: t("validation") };
+    worksheetId = verified.id;
   } else {
     const tw = await getTranslations("worksheets");
     const uploaded = await maybeUploadInlineWorksheet(

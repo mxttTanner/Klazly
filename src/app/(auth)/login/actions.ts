@@ -1,64 +1,80 @@
 "use server";
 
+import { headers } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   isEmailLike,
   normalizeVnPhone,
   syntheticEmailForPhone,
 } from "@/lib/phone";
+import { rateLimit, clientIpFrom } from "@/lib/rate-limit";
+
+export type SignInResult =
+  | { ok: true }
+  | { error: "invalidPhone" | "empty" | "invalidCredentials" | "rateLimited" };
 
 /**
- * Resolve a user-typed login identifier (email OR phone) to the email
- * that Supabase Auth expects on signInWithPassword.
+ * Sign a user in from a typed identifier (email OR phone) + password,
+ * entirely server-side.
  *
- * - "jean@example.com" → "jean@example.com" (lowercased)
- * - "0901234567" → look up by canonical "+84901234567" in public.users:
- *   - row with email set: return that email (account has a real email,
- *     auth lives there)
- *   - row with email null (phone-only): return the deterministic
- *     synthetic email "+84901234567@phone.parent-portal.local"
- *   - no row: still return the synthetic email so the eventual
- *     signInWithPassword fails with "invalid credentials" — same shape
- *     as a wrong password, so we don't leak which phones are registered.
+ * Phone→email resolution needs the service-role client (to read
+ * public.users across centers), so it MUST happen on the server. The
+ * resolved email is used only to call signInWithPassword here and is
+ * NEVER returned to the browser — an earlier version returned the
+ * resolved email to the client, which let anyone harvest a parent's
+ * real email by POSTing their (semi-public) phone number. Now the
+ * caller only learns success/failure.
  *
- * Runs as a server action because looking up public.users by phone
- * needs the service-role client; the regular RLS-scoped client can't
- * read other users' rows.
+ * Resolution rules (unchanged):
+ *   - "jean@example.com"  → itself, lowercased
+ *   - "0901234567"        → canonical "+84901234567", then:
+ *       row with real email → that email (auth lives there)
+ *       phone-only row      → deterministic synthetic email
+ *       no row              → synthetic email, so signIn fails with
+ *                             "invalid credentials" (same shape as a
+ *                             wrong password — no enumeration leak)
+ *
+ * The sign-in uses the SSR server client so the session cookies are
+ * written on the response; the browser just calls router.refresh().
  */
-export async function resolveLoginEmail(
+export async function signInWithIdentifier(
   identifier: string,
-): Promise<{ email: string } | { error: "invalidPhone" | "empty" }> {
+  password: string,
+): Promise<SignInResult> {
   const trimmed = identifier.trim();
   if (!trimmed) return { error: "empty" };
 
+  // Rate limit per IP and per identifier: blunts credential stuffing and
+  // the phone-resolution oracle. Best-effort (see lib/rate-limit).
+  const ip = clientIpFrom(headers());
+  const byIp = await rateLimit("login-ip", ip, 20, 60);
+  if (!byIp.allowed) return { error: "rateLimited" };
+  const byId = await rateLimit("login-id", trimmed.toLowerCase(), 8, 60);
+  if (!byId.allowed) return { error: "rateLimited" };
+
+  let email: string;
   if (isEmailLike(trimmed)) {
-    return { email: trimmed.toLowerCase() };
+    email = trimmed.toLowerCase();
+  } else {
+    const phone = normalizeVnPhone(trimmed);
+    if (!phone) return { error: "invalidPhone" };
+
+    const admin = createAdminClient();
+    // limit(1): the same phone can exist across multiple centers (one
+    // parent, kids in two schools). Newest row wins; if it has a real
+    // email their auth is there, otherwise auth is on the synthetic.
+    const { data: hits } = await admin
+      .from("users")
+      .select("email")
+      .eq("phone", phone)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    email = hits?.[0]?.email ?? syntheticEmailForPhone(phone);
   }
 
-  const phone = normalizeVnPhone(trimmed);
-  if (!phone) return { error: "invalidPhone" };
-
-  const supabase = createAdminClient();
-  // Use limit(1) instead of maybeSingle: per-center uniqueness allows
-  // the same phone across multiple centers (one parent with kids in two
-  // schools). maybeSingle throws when more than one row matches, which
-  // would crash login. With limit(1) + a deterministic order we pick
-  // the newest-created row's email — if that user has a real email
-  // they're routed to their real-email auth account; if all matching
-  // rows are phone-only their auth is on the synthetic email anyway.
-  const { data: hits } = await supabase
-    .from("users")
-    .select("email")
-    .eq("phone", phone)
-    .order("created_at", { ascending: false })
-    .limit(1);
-  const hit = hits?.[0];
-
-  // If the row exists and has a real email, use that. Otherwise fall
-  // through to the synthetic email — either the user is phone-only,
-  // or the phone isn't registered and signIn will fail naturally with
-  // "invalid credentials" (same shape as a wrong password, so no
-  // enumeration leak).
-  if (hit?.email) return { email: hit.email };
-  return { email: syntheticEmailForPhone(phone) };
+  const supabase = createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return { error: "invalidCredentials" };
+  return { ok: true };
 }
