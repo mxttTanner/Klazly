@@ -115,6 +115,12 @@ export async function generateMetadata(): Promise<Metadata> {
       "mobile-web-app-capable": "yes",
       google: "notranslate",
     },
+    // Google Search Console ownership proof (URL-prefix property
+    // https://klazly.com, HTML-tag method). Keep permanently — Google
+    // re-checks it periodically and unverifies the property if removed.
+    verification: {
+      google: "7VomH_uCs1Tnt_Bbdi9bx46cWTT2DHPN99y49KPDDXg",
+    },
     openGraph: {
       type: "website",
       url,
