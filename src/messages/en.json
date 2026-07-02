@@ -770,8 +770,8 @@
     "home": {
       "title": "My classes",
       "subtitle": "Pick a class to see students and record a new lesson.",
-      "subtitleWithCount": "You have {n} classes. Pick one to get started.",
-      "subtitleWithUnread": "You have {n} classes and {unread} unread messages.",
+      "subtitleWithCount": "You have {n, plural, one {# class} other {# classes}}. Pick one to get started.",
+      "subtitleWithUnread": "You have {n, plural, one {# class} other {# classes}} and {unread, plural, one {# unread message} other {# unread messages}}.",
       "noSchedule": "No schedule yet.",
       "taughtBy": "Teacher: {name}",
       "empty": "You have not been assigned to any class yet. Contact the admin."
