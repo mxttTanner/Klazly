@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ const initialState: { error?: string; success?: string } = {};
 
 export function WorksheetUploadForm() {
   const t = useTranslations("worksheets");
-  const [state, action] = useFormState(uploadWorksheet, initialState);
+  const [state, action] = useActionState(uploadWorksheet, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

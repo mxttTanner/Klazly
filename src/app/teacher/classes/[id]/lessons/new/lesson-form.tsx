@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
 import { Bookmark, Check, FileText, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -72,11 +72,11 @@ export function LessonForm({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [state, action] = useFormState(
+  const [state, action] = useActionState(
     mode === "edit" ? updateLesson : createLesson,
     initialState,
   );
-  const [tplSaveState, tplSaveAction] = useFormState(
+  const [tplSaveState, tplSaveAction] = useActionState(
     saveLessonTemplate,
     templateState,
   );

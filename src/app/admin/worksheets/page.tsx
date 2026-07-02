@@ -14,7 +14,7 @@ export default async function WorksheetsPage() {
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Pull the library + every lesson's worksheet_id in parallel. Counting
   // attachments client-side beats two roundtrips per row.

@@ -30,13 +30,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function ClassDetailPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { tab?: string };
-}) {
+export default async function ClassDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ tab?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await requireRole(["teacher", "admin"]);
   const activeTab: "students" | "lessons" | "messages" =
     searchParams.tab === "lessons"
@@ -44,7 +45,7 @@ export default async function ClassDetailPage({
       : searchParams.tab === "messages"
         ? "messages"
         : "students";
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("teacher.class");
   const tHome = await getTranslations("teacher.home");
   const tStudent = await getTranslations("admin.students");

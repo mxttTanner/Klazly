@@ -36,7 +36,7 @@ export async function submitFeedback(formData: FormData) {
   });
   if (!parsed.success) return { error: "invalid" };
 
-  const headerList = headers();
+  const headerList = await headers();
   const userAgent = headerList.get("user-agent") ?? null;
 
   const supabase = createAdminClient();

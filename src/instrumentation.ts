@@ -1,6 +1,8 @@
 // Next.js instrumentation hook. Sentry uses this to register its
 // runtime-specific config (node vs edge) at app boot.
 
+import * as Sentry from "@sentry/nextjs";
+
 // Force the Node runtime into Vietnam time so server-side new Date()
 // calls produce VN-local calendar values. Vercel reserves the TZ env
 // var (you can't set it via dashboard/CLI), so we set it in code
@@ -23,3 +25,8 @@ export async function register() {
     await import("../sentry.edge.config");
   }
 }
+
+// Next 15 introduced the `onRequestError` instrumentation hook. Sentry uses
+// it to capture errors thrown in nested React Server Components. No-op
+// without SENTRY_DSN, like the rest of the SDK config.
+export const onRequestError = Sentry.captureRequestError;

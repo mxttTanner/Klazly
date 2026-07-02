@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { sendParentTeacherMessage } from "@/app/messages-actions";
@@ -20,7 +20,7 @@ export function MessageComposer({
   sendLabel: string;
   sendingLabel: string;
 }) {
-  const [state, action] = useFormState(sendParentTeacherMessage, initial);
+  const [state, action] = useActionState(sendParentTeacherMessage, initial);
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [length, setLength] = useState(0);

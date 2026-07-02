@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Check, CheckCheck, MessageSquareText, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,7 @@ export function MessageThreadView({
   fetchFailed?: boolean;
 }) {
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
-  const [state, action] = useFormState(sendParentTeacherMessage, initialState);
+  const [state, action] = useActionState(sendParentTeacherMessage, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -209,8 +210,8 @@ function ComposerBody({
   errorText,
 }: {
   studentId: string;
-  textRef: React.RefObject<HTMLTextAreaElement>;
-  formRef: React.RefObject<HTMLFormElement>;
+  textRef: React.RefObject<HTMLTextAreaElement | null>;
+  formRef: React.RefObject<HTMLFormElement | null>;
   labels: Labels;
   errorText: string;
 }) {

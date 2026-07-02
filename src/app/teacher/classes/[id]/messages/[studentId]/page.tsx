@@ -9,13 +9,14 @@ import { markThreadRead } from "@/app/messages-actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeacherStudentMessagesPage({
-  params,
-}: {
-  params: { id: string; studentId: string };
-}) {
+export default async function TeacherStudentMessagesPage(
+  props: {
+    params: Promise<{ id: string; studentId: string }>;
+  }
+) {
+  const params = await props.params;
   const user = await requireRole(["teacher", "admin"]);
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("messages");
   const tClass = await getTranslations("teacher.class");
 

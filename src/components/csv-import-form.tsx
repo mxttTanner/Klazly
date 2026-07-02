@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { CheckCircle2, AlertCircle, Info, KeyRound } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ const ACTIONS = {
  */
 export function CsvImportForm({ variant }: { variant: Variant }) {
   const t = useTranslations("import");
-  const [state, action] = useFormState(ACTIONS[variant], initialState);
+  const [state, action] = useActionState(ACTIONS[variant], initialState);
 
   return (
     <form action={action} className="space-y-4">

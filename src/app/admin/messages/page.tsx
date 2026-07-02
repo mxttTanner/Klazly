@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminMessagesPage() {
   const admin = await requireRole("admin");
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("messages");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";

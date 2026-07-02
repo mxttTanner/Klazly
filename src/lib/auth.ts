@@ -15,7 +15,7 @@ export type AppUser = {
 };
 
 export async function getCurrentUser(): Promise<AppUser | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

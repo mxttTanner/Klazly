@@ -11,13 +11,14 @@ import type { Template } from "../../new/page";
 
 export const dynamic = "force-dynamic";
 
-export default async function EditLessonPage({
-  params,
-}: {
-  params: { id: string; lessonId: string };
-}) {
+export default async function EditLessonPage(
+  props: {
+    params: Promise<{ id: string; lessonId: string }>;
+  }
+) {
+  const params = await props.params;
   const user = await requireRole(["teacher", "admin"]);
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("teacher.lessonForm");
 
   const { data: cls } = await supabase

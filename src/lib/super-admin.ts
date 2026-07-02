@@ -20,7 +20,7 @@ export function isSuperAdminEmail(email: string | null | undefined): boolean {
  * need a public.users row — they live above the per-center tenant model.
  */
 export async function requireSuperAdmin(): Promise<{ id: string; email: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

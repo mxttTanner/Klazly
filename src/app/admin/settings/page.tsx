@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const user = await requireRole("admin");
   const t = await getTranslations("settings");
-  const supabase = createClient();
+  const supabase = await createClient();
 
   type CenterRow = {
     name: string | null;

@@ -15,12 +15,13 @@ import { ConfirmSubmitButton } from "@/components/confirm-submit";
 
 export const dynamic = "force-dynamic";
 
-export default async function TeachersPage({
-  searchParams,
-}: {
-  searchParams: { q?: string };
-}) {
-  const supabase = createClient();
+export default async function TeachersPage(
+  props: {
+    searchParams: Promise<{ q?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const t = await getTranslations("admin.teachers");
   const tc = await getTranslations("common");
   const tAdmin = await getTranslations("admin");

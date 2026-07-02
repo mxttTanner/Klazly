@@ -35,7 +35,7 @@ export async function sendParentTeacherMessage(
   });
   if (!parsed.success) return { error: t("validationBody") };
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Look up the student to discover center_id (required for the insert).
   const { data: student } = await supabase
@@ -199,7 +199,7 @@ export async function markThreadRead(
   if (!studentId) return;
   if (isDemoUser(user)) return; // don't pollute demo read-state either
 
-  const supabase = createClient();
+  const supabase = await createClient();
   // Best-effort: this runs every time someone opens a thread. A transient
   // failure shouldn't error-boundary the user. Capture for ops visibility
   // and let the next thread visit retry.

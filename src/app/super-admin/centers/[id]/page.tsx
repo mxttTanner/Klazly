@@ -50,11 +50,12 @@ export const dynamic = "force-dynamic";
  * still renders here for follow-up — never gate the super-admin out
  * of seeing their own customers.
  */
-export default async function CenterDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function CenterDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
   const locale = await getLocale();

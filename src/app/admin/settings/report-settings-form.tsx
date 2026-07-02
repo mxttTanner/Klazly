@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +42,7 @@ export function ReportSettingsForm({
   defaults: ReportSettingsValues;
 }) {
   const t = useTranslations("settings");
-  const [state, action] = useFormState(updateReportSettings, initialState);
+  const [state, action] = useActionState(updateReportSettings, initialState);
   const [color, setColor] = useState<string>(
     (defaults.brand_color ?? "").match(/^#[0-9A-Fa-f]{6}$/)
       ? defaults.brand_color!

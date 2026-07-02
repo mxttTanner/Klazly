@@ -45,7 +45,7 @@ function initial(name: string): string {
 
 export default async function ParentHomePage() {
   const user = await requireRole("parent");
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("parent.home");
   const tLevel = await getTranslations("level");
   const tBehavior = await getTranslations("behavior");

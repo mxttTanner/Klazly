@@ -8,7 +8,7 @@ export async function setLocale(formData: FormData) {
   const value = String(formData.get("locale") ?? "");
   if (!SUPPORTED_LOCALES.includes(value as never)) return;
 
-  cookies().set(LOCALE_COOKIE, value, {
+  (await cookies()).set(LOCALE_COOKIE, value, {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax",

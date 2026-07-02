@@ -47,11 +47,12 @@ const STATUS_FILTERS = [
 ] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
-export default async function SuperAdminHomePage({
-  searchParams,
-}: {
-  searchParams: { status?: string };
-}) {
+export default async function SuperAdminHomePage(
+  props: {
+    searchParams: Promise<{ status?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
   const locale = await getLocale();

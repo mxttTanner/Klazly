@@ -15,7 +15,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * exist yet it silently no-ops.
  */
 export async function clearMustChangePassword(): Promise<void> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

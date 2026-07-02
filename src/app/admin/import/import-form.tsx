@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { CheckCircle2, AlertCircle, Info, KeyRound, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ const ACTIONS = {
 export function ImportForm({ variant }: { variant: Variant }) {
   const t = useTranslations("import");
   const tc = useTranslations("common");
-  const [state, action] = useFormState(ACTIONS[variant], initialState);
+  const [state, action] = useActionState(ACTIONS[variant], initialState);
   const [copied, setCopied] = useState(false);
 
   async function copyGenerated() {

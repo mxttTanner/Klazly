@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function TeacherHomePage() {
   const user = await requireRole(["teacher", "admin"]);
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("teacher.home");
 
   // Teachers see only their own classes; admins see every class in the center

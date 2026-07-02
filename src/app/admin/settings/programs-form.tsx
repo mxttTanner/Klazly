@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Pencil, Sparkles, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ type Program = {
 
 export function ProgramsForm({ programs }: { programs: Program[] }) {
   const t = useTranslations("settings");
-  const [addState, addAction] = useFormState(createProgram, initialAdd);
+  const [addState, addAction] = useActionState(createProgram, initialAdd);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
@@ -126,7 +126,7 @@ function RenameRow({
   cancelLabel: string;
 }) {
   const t = useTranslations("settings");
-  const [state, action] = useFormState(renameProgram, initialRename);
+  const [state, action] = useActionState(renameProgram, initialRename);
 
   // Close the row once the rename succeeds.
   if (state.success !== undefined && state.success !== null) {

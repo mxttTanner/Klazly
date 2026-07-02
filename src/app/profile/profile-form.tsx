@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,7 @@ export function ProfileForm({
   const tp = useTranslations("profile");
   const tt = useTranslations("admin.teachers");
   const tco = useTranslations("contact");
-  const [state, action] = useFormState(updateMyProfile, initialState);
+  const [state, action] = useActionState(updateMyProfile, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

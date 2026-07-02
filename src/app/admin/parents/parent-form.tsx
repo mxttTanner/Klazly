@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,7 +24,7 @@ export function ParentForm() {
   const t = useTranslations("admin.parents");
   const tt = useTranslations("admin.teachers");
   const tco = useTranslations("contact");
-  const [state, action] = useFormState(inviteParent, initialState);
+  const [state, action] = useActionState(inviteParent, initialState);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {

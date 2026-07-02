@@ -18,15 +18,16 @@ export type Template = {
   general_note: string | null;
 };
 
-export default async function NewLessonPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { template?: string; from?: string };
-}) {
+export default async function NewLessonPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ template?: string; from?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await requireRole(["teacher", "admin"]);
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("teacher.lessonForm");
 
   const { data: cls } = await supabase

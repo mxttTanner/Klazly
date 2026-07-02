@@ -32,7 +32,7 @@ export async function requestPasswordReset(
   // that separately, but guard here too.
   if (!isEmailLike(email)) return { error: "notEmail" };
 
-  const hdrs = headers();
+  const hdrs = await headers();
   const ip = clientIpFrom(hdrs);
   const byIp = await rateLimit("reset-ip", ip, 5, 300);
   if (!byIp.allowed) return { error: "rateLimited" };
@@ -43,7 +43,7 @@ export async function requestPasswordReset(
     process.env.NEXT_PUBLIC_APP_URL ??
     `https://${hdrs.get("host") ?? "klazly.com"}`;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${origin}/reset-password`,
   });

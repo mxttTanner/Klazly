@@ -27,7 +27,7 @@ export default async function AdminLayout({
   const t = await getTranslations("admin");
   const items = buildAdminNavItems((k) => t(k));
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: center } = await supabase
     .from("centers")
     .select("name, logo_url")

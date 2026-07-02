@@ -109,7 +109,7 @@ export async function saveLessonTemplate(_prev: unknown, formData: FormData) {
   });
   if (!parsed.success) return { error: t("validation") };
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.from("lesson_templates").insert({
     center_id: user.center_id,
     created_by: user.id,
@@ -173,7 +173,7 @@ const lessonSchema = z.object({
 // they teach and an admin only their own center — any submitted student_id
 // not visible here is rejected. Returns the subset of ids that are NOT valid.
 async function invalidStudentIds(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   classId: string,
   studentIds: string[],
 ): Promise<string[]> {
@@ -189,7 +189,7 @@ async function invalidStudentIds(
 // center — never trust the raw form value (it could point at another
 // center's worksheet). Returns the validated id, or an error marker.
 async function verifyPickedWorksheet(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   rawId: string,
   centerId: string,
 ): Promise<{ id: string } | { error: "invalid" }> {
@@ -252,7 +252,7 @@ export async function createLesson(_prev: unknown, formData: FormData) {
 
   if (!parsed.success) return { error: t("validation") };
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: cls } = await supabase
     .from("classes")
@@ -405,7 +405,7 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   });
   if (!parsed.success) return { error: t("validation") };
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Verify the lesson belongs to a class in the user's center, and that a
   // teacher caller teaches that class. Admin can edit anyone in their center.
@@ -552,7 +552,7 @@ export async function deleteLesson(formData: FormData) {
   if (!lessonId) return;
   if (isDemoUser(user)) return;
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: existing } = await supabase
     .from("lessons")

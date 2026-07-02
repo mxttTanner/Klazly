@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ const initialState: { error?: string; success?: string } = {};
 
 export function LogoUploadForm() {
   const t = useTranslations("settings");
-  const [state, action] = useFormState(uploadCenterLogo, initialState);
+  const [state, action] = useActionState(uploadCenterLogo, initialState);
 
   return (
     <form action={action} className="space-y-4">

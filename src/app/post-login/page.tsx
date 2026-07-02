@@ -6,7 +6,7 @@ import { isSuperAdminEmail } from "@/lib/super-admin";
 export const dynamic = "force-dynamic";
 
 export default async function PostLoginPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser();

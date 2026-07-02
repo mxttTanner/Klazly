@@ -67,17 +67,18 @@ const ATTENDANCE_TONES: Record<string, string> = {
   absent: "bg-red-100 text-red-800",
 };
 
-export default async function StudentProgressPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { tab?: string };
-}) {
+export default async function StudentProgressPage(
+  props: {
+    params: Promise<{ id: string }>;
+    searchParams: Promise<{ tab?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const user = await requireRole("parent");
   const activeTab: "lessons" | "messages" =
     searchParams.tab === "messages" ? "messages" : "lessons";
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("parent.student");
   const tHome = await getTranslations("parent.home");
   const tBehavior = await getTranslations("behavior");
@@ -506,7 +507,6 @@ export default async function StudentProgressPage({
           <PrintButton label={t("print")} generatingLabel={t("printing")} />
         </div>
       </div>
-
       {/* On-screen hero card — calm white surface, single-accent
           initials avatar. No role-colored wash or strip. */}
       <section className="relative overflow-hidden rounded-2xl border bg-card shadow-sm print:hidden">
@@ -515,11 +515,11 @@ export default async function StudentProgressPage({
             <div className="flex items-center gap-2">
               {center?.logo_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
+                (<img
                   src={center.logo_url}
                   alt={center?.name ?? ""}
                   className="size-7 rounded-md object-contain p-0.5"
-                />
+                />)
               ) : null}
               <p className="text-muted-foreground text-xs uppercase tracking-wide">
                 {center?.name}
@@ -561,7 +561,6 @@ export default async function StudentProgressPage({
           </div>
         </div>
       </section>
-
       {/* Stats strip — neutral cards. Attendance/homework still carry
           their tier through the number color (real status); lessons +
           behavior are plain. Hidden on print since the formal
@@ -638,7 +637,6 @@ export default async function StudentProgressPage({
           </div>
         </section>
       ) : null}
-
       {/* Print-only report — redesigned letterhead, stat cards,
           highlights, suggestions, teacher message. Each block is
           print-only; the on-screen view above is untouched. The
@@ -656,11 +654,11 @@ export default async function StudentProgressPage({
           <div className="report-brand-row">
             {center?.logo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
+              (<img
                 src={center.logo_url}
                 alt={center?.name ?? ""}
                 className="report-logo"
-              />
+              />)
             ) : (
               <div className="report-initials" aria-hidden="true">
                 {centerInitials}
@@ -806,7 +804,6 @@ export default async function StudentProgressPage({
           </section>
         ) : null}
       </div>
-
       {/* 30-day summary: hidden on screen (parents found it noisy) but
           still rendered in the printed report when report_show_summary
           is on, so the formal PDF keeps the stats block. */}
@@ -887,7 +884,6 @@ export default async function StudentProgressPage({
           </div>
         </section>
       ) : null}
-
       {/* Tab bar — splits the page into Buổi học / Tin nhắn so parents
           land on a focused view instead of scrolling through everything.
           Hidden on print: the printed report still includes both the
@@ -925,7 +921,6 @@ export default async function StudentProgressPage({
           })}
         </div>
       </nav>
-
       {/* On-screen tab content — only the active tab renders. */}
       {activeTab === "messages" ? (
         <section className="space-y-3 print:hidden">
@@ -945,14 +940,12 @@ export default async function StudentProgressPage({
           />
         </section>
       ) : null}
-
       {/* Print-only section heading before the lesson log */}
       {lessons.length > 0 ? (
         <div className="report-section-heading print-only">
           {t("lessonLogHeading")}
         </div>
       ) : null}
-
       {/* Lessons tab content (also always rendered for print). The lessons
           are grouped by month with <details> so a long history doesn't
           require scrolling past 30 cards — older months collapse. The
@@ -1181,7 +1174,6 @@ export default async function StudentProgressPage({
           </div>
         )}
       </div>
-
       {/* Print-only signature + footer */}
       <div
         className="print-only"

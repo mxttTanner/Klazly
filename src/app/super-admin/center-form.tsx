@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useFormState } from "react-dom";
+import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Building2,
@@ -77,7 +77,7 @@ export function CenterForm({
 }) {
   const t = useTranslations("superAdmin");
   const tco = useTranslations("contact");
-  const [state, action] = useFormState(createCenter, initialState);
+  const [state, action] = useActionState(createCenter, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   // One-shot flag: actuallySubmit() sets this true so the next
   // handleFormSubmit pass lets the default submit run (firing the

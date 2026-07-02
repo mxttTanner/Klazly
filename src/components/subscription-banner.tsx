@@ -16,7 +16,7 @@ export async function SubscriptionBanner({
   // the demo banner.
   if (isDemoEmail(userEmail)) return null;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: center } = await supabase
     .from("centers")
     .select("subscription_status, trial_ends_at")

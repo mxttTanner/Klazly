@@ -7,13 +7,13 @@ export const LOCALE_COOKIE = "locale";
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
-export function readLocale(): Locale {
-  const value = cookies().get(LOCALE_COOKIE)?.value;
+export async function readLocale(): Promise<Locale> {
+  const value = (await cookies()).get(LOCALE_COOKIE)?.value;
   return value === "en" ? "en" : "vi";
 }
 
 export default getRequestConfig(async () => {
-  const locale = readLocale();
+  const locale = await readLocale();
   return {
     locale,
     messages: (await import(`../messages/${locale}.json`)).default,

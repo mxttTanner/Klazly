@@ -23,7 +23,7 @@ export async function MessageThread({
   // writes "to the parent".
   composeTo?: "teacher" | "parent";
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("messages");
   const locale = await getLocale();
 
@@ -98,7 +98,7 @@ export async function unreadCountForUser({
   studentId: string;
   currentUserId: string;
 }): Promise<number> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { count } = await supabase
     .from("parent_teacher_messages")
     .select("id", { count: "exact", head: true })

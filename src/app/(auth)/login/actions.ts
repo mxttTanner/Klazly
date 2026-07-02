@@ -47,7 +47,7 @@ export async function signInWithIdentifier(
 
   // Rate limit per IP and per identifier: blunts credential stuffing and
   // the phone-resolution oracle. Best-effort (see lib/rate-limit).
-  const ip = clientIpFrom(headers());
+  const ip = clientIpFrom(await headers());
   const byIp = await rateLimit("login-ip", ip, 20, 60);
   if (!byIp.allowed) return { error: "rateLimited" };
   const byId = await rateLimit("login-id", trimmed.toLowerCase(), 8, 60);
@@ -73,7 +73,7 @@ export async function signInWithIdentifier(
     email = hits?.[0]?.email ?? syntheticEmailForPhone(phone);
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: "invalidCredentials" };
   return { ok: true };

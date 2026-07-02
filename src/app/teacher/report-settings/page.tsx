@@ -12,7 +12,7 @@ export default async function TeacherReportSettingsPage() {
   // shows the current center-wide settings read-only so teachers can
   // see what parents will print without being able to change them.
   const user = await requireRole(["teacher", "admin"]);
-  const supabase = createClient();
+  const supabase = await createClient();
   const t = await getTranslations("settings");
   const tHome = await getTranslations("teacher.home");
 

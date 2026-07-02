@@ -62,12 +62,13 @@ type RecentLesson = {
   teacher: { full_name: string } | { full_name: string }[] | null;
 };
 
-export default async function AdminHomePage({
-  searchParams,
-}: {
-  searchParams: { program?: string; class?: string };
-}) {
-  const supabase = createClient();
+export default async function AdminHomePage(
+  props: {
+    searchParams: Promise<{ program?: string; class?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const supabase = await createClient();
   const t = await getTranslations("admin.dashboard");
   const weekStart = weekAgoIsoDate();
 
