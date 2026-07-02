@@ -71,12 +71,13 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: name,
     authors: [{ name: "Matthew Stadler" }],
     icons: {
-      icon: "/favicon.ico",
-      // Next looks for src/app/apple-icon.png automatically — if a
-      // PNG version of the brand mark is added there later, iOS Home
-      // Screen install pulls it without further config. Until then
-      // the SVG icon is the fallback.
-      apple: "/icon.svg",
+      // favicon.ico + the PNG/SVG set are regenerated from icon.svg by
+      // scripts/generate-icons.mjs — rerun it if the brand mark changes.
+      icon: [
+        { url: "/favicon.ico", sizes: "48x48" },
+        { url: "/icon.svg", type: "image/svg+xml" },
+      ],
+      apple: "/apple-icon.png",
     },
     // Apple PWA hints. If a parent or center owner adds the site to
     // their iOS Home Screen, these meta tags make the launched
