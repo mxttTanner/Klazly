@@ -58,10 +58,13 @@ export default async function TeacherStudentMessagesPage(
       : studentRow.parent
     : null;
 
-  // Mark any unread (parent-sent) messages as read on view.
+  // Mark any unread (parent-sent) messages as read on view. This runs
+  // during the RSC render, so revalidatePath would throw — pass
+  // { revalidate: false }; the force-dynamic page recomputes unread
+  // state on the next load anyway.
   const markFd = new FormData();
   markFd.append("student_id", params.studentId);
-  await markThreadRead(markFd);
+  await markThreadRead(markFd, { revalidate: false }).catch(() => {});
 
   return (
     <div className="space-y-6">

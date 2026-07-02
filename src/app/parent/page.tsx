@@ -12,6 +12,7 @@ import {
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { parseDateOnly } from "@/lib/utils";
+import { vnLongDate } from "@/lib/vn-time";
 import { ScrollReveal } from "@/components/scroll-reveal";
 
 export const dynamic = "force-dynamic";
@@ -160,12 +161,7 @@ export default async function ParentHomePage() {
   // First-letter avatar for the parent — gives the greeting card a
   // personal feel instead of just text.
   const parentInitial = (user.full_name?.trim()?.split(/\s+/).slice(-1)[0]?.charAt(0) ?? "P").toUpperCase();
-  const today = new Date().toLocaleDateString(dateLocale, {
-    weekday: "long",
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  const today = vnLongDate(dateLocale);
 
   return (
     <div className="space-y-6">

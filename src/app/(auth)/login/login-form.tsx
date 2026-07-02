@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { signInWithIdentifier } from "./actions";
 
 export function LoginForm() {
@@ -68,6 +69,36 @@ export function LoginForm() {
 
   return (
     <div className="space-y-5">
+      {/* Full-screen branded loader while the post-login redirect
+          resolves. router.replace() keeps this page mounted (and
+          router.refresh() blanks parts of it) until the target RSC
+          payload lands — live QA showed several seconds of white
+          screen. Mirrors app/post-login/loading.tsx. */}
+      {success ? (
+        <div className="bg-navy fixed inset-0 z-50 flex flex-col items-center justify-center gap-5 text-white">
+          <BrandWordmark className="text-3xl" />
+          <svg
+            className="text-emerald-light size-6 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
+          </svg>
+        </div>
+      ) : null}
       {/* Demo quick-pick chips — for prospects who want to skip the
           form and just see the app. Neutral cards, single accent on
           hover. */}

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { VN_TZ } from "@/lib/vn-time";
 import { buttonVariants } from "@/components/ui/button";
 import { LevelSelect } from "@/components/level-select";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
@@ -610,6 +611,7 @@ export default async function ClassDetailPage(
                     const stats = messageStats.get(s.id);
                     const lastWhen = stats?.lastAt
                       ? new Date(stats.lastAt).toLocaleString(dateLocale, {
+                          timeZone: VN_TZ,
                           day: "2-digit",
                           month: "2-digit",
                           hour: "2-digit",

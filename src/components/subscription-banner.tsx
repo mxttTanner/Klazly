@@ -19,7 +19,7 @@ export async function SubscriptionBanner({
   const supabase = await createClient();
   const { data: center } = await supabase
     .from("centers")
-    .select("subscription_status, trial_ends_at")
+    .select("subscription_status, trial_ends_at, plan_tier")
     .eq("id", centerId)
     .single();
 
@@ -37,6 +37,9 @@ export async function SubscriptionBanner({
       daysLeft = Math.max(0, Math.ceil((ends - now) / (1000 * 60 * 60 * 24)));
     }
     const expired = daysLeft !== null && daysLeft <= 0;
+    // Only founding-tier centers get the "Founding Trial" label; a
+    // standard trial center saying "Founding" confuses pricing talks.
+    const founding = center.plan_tier === "founding";
 
     return (
       <div
@@ -57,8 +60,10 @@ export async function SubscriptionBanner({
             {expired
               ? t("trialExpired")
               : daysLeft !== null
-                ? t("trialDaysLeft", { n: daysLeft })
-                : t("trialActive")}
+                ? t(founding ? "trialDaysLeftFounding" : "trialDaysLeft", {
+                    n: daysLeft,
+                  })
+                : t(founding ? "trialActiveFounding" : "trialActive")}
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
@@ -19,27 +19,45 @@ const initialState: { error?: string; success?: string } = {};
  * The previous design combined the two into one "Email (or phone)"
  * field that used HTML5 type="email" validation — typing a phone
  * number into it triggered the browser's "needs an @" message.
+ *
+ * Inputs are CONTROLLED on purpose: React 19 resets uncontrolled
+ * fields after every form action — including failed ones — so a
+ * duplicate-phone error used to wipe everything the admin had typed.
+ * Controlled values survive the action; we clear them only on success.
  */
 export function ParentForm() {
   const t = useTranslations("admin.parents");
   const tt = useTranslations("admin.teachers");
   const tco = useTranslations("contact");
   const [state, action] = useActionState(inviteParent, initialState);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    if (state.success) formRef.current?.reset();
+    if (state.success) {
+      setFullName("");
+      setPhone("");
+      setEmail("");
+      setPassword("");
+    }
   }, [state.success]);
 
   return (
     <form
-      ref={formRef}
       action={action}
       className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-5"
     >
       <div className="space-y-2 lg:col-span-1">
         <Label htmlFor="parent_full_name">{tt("fullName")}</Label>
-        <Input id="parent_full_name" name="full_name" required />
+        <Input
+          id="parent_full_name"
+          name="full_name"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+        />
       </div>
       {/* Phone: required primary identifier. Comes BEFORE email. */}
       <div className="space-y-2 lg:col-span-1">
@@ -52,6 +70,8 @@ export function ParentForm() {
           inputMode="tel"
           required
           placeholder="0901 234 567"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
         />
       </div>
       {/* Email: truly optional. type="email" still inlines @-validation
@@ -70,6 +90,8 @@ export function ParentForm() {
           type="email"
           autoComplete="email"
           placeholder="ban@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
       <div className="space-y-2 lg:col-span-1">
@@ -81,6 +103,8 @@ export function ParentForm() {
           minLength={8}
           required
           placeholder={tt("passwordPlaceholder")}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
       <div className="flex items-end lg:col-span-1">

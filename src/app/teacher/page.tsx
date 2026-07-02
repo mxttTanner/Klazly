@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { vnLongDate } from "@/lib/vn-time";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -92,12 +93,7 @@ export default async function TeacherHomePage() {
             <p className="text-muted-foreground inline-flex items-center gap-1.5 text-xs sm:text-sm">
               <CalendarClock className="size-3.5 shrink-0" />
               <span className="truncate">
-                {new Date().toLocaleDateString(dateLocale, {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {vnLongDate(dateLocale)}
               </span>
             </p>
             <p className="text-foreground text-sm">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
@@ -12,27 +12,42 @@ const initialState: { error?: string; success?: string } = {};
 
 /**
  * Phone-first teacher invite form. Same shape as the parent form —
- * see parent-form.tsx for the why.
+ * see parent-form.tsx for the why, including why the inputs are
+ * controlled (React 19 resets uncontrolled fields after failed
+ * actions, wiping the admin's typing on e.g. a duplicate phone).
  */
 export function TeacherForm() {
   const t = useTranslations("admin.teachers");
   const tco = useTranslations("contact");
   const [state, action] = useActionState(inviteTeacher, initialState);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    if (state.success) formRef.current?.reset();
+    if (state.success) {
+      setFullName("");
+      setPhone("");
+      setEmail("");
+      setPassword("");
+    }
   }, [state.success]);
 
   return (
     <form
-      ref={formRef}
       action={action}
       className="grid gap-4 rounded-lg border p-4 sm:grid-cols-2 lg:grid-cols-5"
     >
       <div className="space-y-2 lg:col-span-1">
         <Label htmlFor="teacher_full_name">{t("fullName")}</Label>
-        <Input id="teacher_full_name" name="full_name" required />
+        <Input
+          id="teacher_full_name"
+          name="full_name"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+        />
       </div>
       <div className="space-y-2 lg:col-span-1">
         <Label htmlFor="teacher_phone">{tco("phoneLabel")}</Label>
@@ -44,6 +59,8 @@ export function TeacherForm() {
           inputMode="tel"
           required
           placeholder="0901 234 567"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
         />
       </div>
       <div className="space-y-2 lg:col-span-1">
@@ -59,6 +76,8 @@ export function TeacherForm() {
           type="email"
           autoComplete="email"
           placeholder="ban@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
         />
       </div>
       <div className="space-y-2 lg:col-span-1">
@@ -70,6 +89,8 @@ export function TeacherForm() {
           minLength={8}
           required
           placeholder={t("passwordPlaceholder")}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
       <div className="flex items-end lg:col-span-1">

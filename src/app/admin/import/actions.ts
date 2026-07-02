@@ -45,13 +45,28 @@ const studentRowSchema = z.object({
   age: z.string().optional(),
   class_name: z.string().trim().optional(),
   // CSV cells come in as "" not undefined when blank, so .optional() alone
-  // won't bypass .email(). Preprocess empty/whitespace to undefined.
+  // won't bypass validation. Preprocess empty/whitespace to undefined.
+  //
+  // Parents are phone-first (email optional), so this column accepts an
+  // email OR a phone number — a strict .email() here made phone-only
+  // parents unreachable by CSV (every phone failed as "rowInvalid").
+  // Bad values surface as the clearer per-row "Parent … not found".
   parent_email: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z
       .string()
-      .email()
-      .transform((s) => s.trim().toLowerCase())
+      .max(160)
+      .transform((s) => s.trim())
+      .optional(),
+  ),
+  // Dedicated phone column for rosters exported with separate contact
+  // fields. Wins over parent_email when both are present.
+  parent_phone: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z
+      .string()
+      .max(30)
+      .transform((s) => s.trim())
       .optional(),
   ),
 });
@@ -348,22 +363,23 @@ export async function importStudentsCsv(
       });
       continue;
     }
-    // parent_email column accepts email or phone (normalized) so the
+    // Parent reference: parent_phone column if present, else the
+    // parent_email column — which itself accepts email or phone so the
     // admin can reference parents however they were created.
+    const parentRef = parsed.data.parent_phone ?? parsed.data.parent_email;
     let parentId: string | null = null;
-    if (parsed.data.parent_email) {
-      const raw = parsed.data.parent_email.trim();
-      if (raw.includes("@")) {
-        parentId = parentByContact.get(raw.toLowerCase()) ?? null;
+    if (parentRef) {
+      if (parentRef.includes("@")) {
+        parentId = parentByContact.get(parentRef.toLowerCase()) ?? null;
       } else {
-        const normalized = normalizeVnPhone(raw);
+        const normalized = normalizeVnPhone(parentRef);
         if (normalized) parentId = parentByContact.get(normalized) ?? null;
       }
     }
-    if (parsed.data.parent_email && !parentId) {
+    if (parentRef && !parentId) {
       result.errors.push({
         row: rowNum,
-        message: t("parentNotFound", { email: parsed.data.parent_email }),
+        message: t("parentNotFound", { email: parentRef }),
       });
       continue;
     }

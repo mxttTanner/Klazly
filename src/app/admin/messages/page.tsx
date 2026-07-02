@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { MessageSquareText } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { VN_TZ } from "@/lib/vn-time";
 import { InboxList } from "./inbox-list";
 
 export const dynamic = "force-dynamic";
@@ -152,6 +153,7 @@ export default async function AdminMessagesPage() {
             lastWhen: new Date(thread.last.created_at).toLocaleString(
               dateLocale,
               {
+                timeZone: VN_TZ,
                 day: "2-digit",
                 month: "2-digit",
                 hour: "2-digit",

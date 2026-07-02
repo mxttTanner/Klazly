@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/print-button";
 import { ShareReportButton } from "@/components/share-report-button";
 import { parseDateOnly } from "@/lib/utils";
+import { VN_TZ } from "@/lib/vn-time";
 import { MessageThread } from "@/components/message-thread";
 import { markThreadRead } from "@/app/messages-actions";
 
@@ -341,6 +342,7 @@ export default async function StudentProgressPage(
   const topBehavior = topBehaviorEntry ? topBehaviorEntry[0] : null;
 
   const printedOn = new Date().toLocaleDateString(dateLocale, {
+    timeZone: VN_TZ,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -353,6 +355,7 @@ export default async function StudentProgressPage(
   // student's entire lesson history.
   const fmtDateObj = (d: Date) =>
     d.toLocaleDateString(dateLocale, {
+      timeZone: VN_TZ,
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

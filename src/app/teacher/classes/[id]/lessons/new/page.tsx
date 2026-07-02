@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Users } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { vnTodayYMD } from "@/lib/vn-time";
 import { LessonForm, type LessonDefaults } from "./lesson-form";
 
 export const dynamic = "force-dynamic";
@@ -69,11 +70,9 @@ export default async function NewLessonPage(
       ? allTemplates.find((tpl) => tpl.id === searchParams.template) ?? null
       : null;
 
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  const defaultDate = `${yyyy}-${mm}-${dd}`;
+  // "Today" must be Vietnam's today — the server runs in UTC, so plain
+  // getFullYear/getMonth would give yesterday between 00:00–07:00 VN.
+  const defaultDate = vnTodayYMD();
 
   // "Start from last lesson": copy lesson body (vocabulary, grammar, etc.)
   // and worksheet from a previous lesson, but reset date to today and DON'T

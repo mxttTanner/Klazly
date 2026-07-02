@@ -44,7 +44,7 @@ export default async function AdminThreadPage(
   {
     const fd = new FormData();
     fd.append("student_id", params.studentId);
-    await markThreadRead(fd).catch(() => {});
+    await markThreadRead(fd, { revalidate: false }).catch(() => {});
   }
 
   return (
