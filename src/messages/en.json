@@ -838,6 +838,8 @@
       "generalNotePlaceholder": "e.g. Class participated well; some students need pronunciation practice.",
       "perStudentHeader": "Per-student notes",
       "perStudentSubtitle": "Rate behavior, leave a note, and tick homework completion for each student.",
+      "contentHeader": "Lesson content",
+      "allRated": "Whole class rated",
       "bulkLabel": "Bulk apply to whole class:",
       "bulkAllPresent": "Mark all present",
       "bulkSetBehavior": "Set all behavior to",

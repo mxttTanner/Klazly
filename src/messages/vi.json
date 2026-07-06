@@ -838,6 +838,8 @@
       "generalNotePlaceholder": "VD: Lớp tham gia tích cực, một số bạn cần luyện thêm phát âm.",
       "perStudentHeader": "Nhận xét từng học sinh",
       "perStudentSubtitle": "Đánh giá thái độ, ghi chú và đánh dấu bài tập về nhà cho mỗi học sinh.",
+      "contentHeader": "Nội dung buổi học",
+      "allRated": "Đã đánh giá cả lớp",
       "bulkLabel": "Áp dụng nhanh cho cả lớp:",
       "bulkAllPresent": "Tất cả có mặt",
       "bulkSetBehavior": "Đặt thái độ tất cả",
