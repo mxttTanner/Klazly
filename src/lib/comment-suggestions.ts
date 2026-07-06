@@ -5,9 +5,15 @@
  * comment_suggestions table (db/comment-suggestions.sql) — nothing is
  * generated at write-time. This module only decides WHICH suggestions are
  * shown: 5 per category per calendar day, the same 5 for every teacher all
- * day, a different 5 tomorrow. Deterministic (seeded by "YYYY-MM-DD:category"),
- * so there is no per-click randomness. Callers pass the VIETNAM-local date
- * from vnTodayYMD() so the rotation flips at VN midnight, not UTC midnight.
+ * day, a different 5 tomorrow.
+ *
+ * It is a deterministic SHUFFLE BAG, not an independent daily draw. Each
+ * "cycle" (ceil(pool / 5) days) the whole category is shuffled with a
+ * per-cycle seed and dealt out 5 at a time — so consecutive days never
+ * overlap and every comment is shown exactly once before the deck
+ * reshuffles into a new order. Pools sized to a multiple of 5 rotate with
+ * zero repeats within a cycle. Callers pass the VIETNAM-local date from
+ * vnTodayYMD() so the rotation flips at VN midnight, not UTC midnight.
  */
 
 export const SUGGESTION_CATEGORIES = [
@@ -59,13 +65,35 @@ function displaySort(a: CommentSuggestion, b: CommentSuggestion): number {
   return a.text.localeCompare(b.text);
 }
 
+/** Whole-array Fisher–Yates shuffle with a seeded PRNG (pure, deterministic). */
+function shuffle<T>(arr: T[], seed: number): T[] {
+  const out = [...arr];
+  const rand = mulberry32(seed);
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Whole days since the Unix epoch for a "YYYY-MM-DD" (UTC, deterministic). */
+function epochDay(dateYMD: string): number {
+  const [y, m, d] = dateYMD.split("-").map(Number);
+  return Math.floor(Date.UTC(y, (m || 1) - 1, d || 1) / 86_400_000);
+}
+
 /**
- * Pick the day's suggestions for one category.
+ * Pick the day's suggestions for one category — a deterministic SHUFFLE BAG.
  *
- * Deterministic: the same (rows, category, dateYMD) always yields the same
- * picks regardless of the input row order. If the category has `count` or
- * fewer active rows, all of them are returned. Inactive rows are never
- * returned.
+ * Each cycle (ceil(pool / count) days) the whole category is reshuffled with
+ * a per-cycle seed and dealt `count` per day. Consecutive days show adjacent,
+ * non-overlapping slices, so a comment never repeats until the deck is
+ * exhausted and reshuffled into a new order. When the pool is a multiple of
+ * `count` the cycle is seamless (zero repeats); otherwise the last day of a
+ * cycle wraps and re-shows a few from its first day — the seed pools are
+ * sized to multiples of 5 to avoid that. Same (rows, category, dateYMD)
+ * always yields the same picks regardless of input row order; inactive rows
+ * are never returned.
  */
 export function pickDailySuggestions(
   rows: CommentSuggestion[],
@@ -75,19 +103,21 @@ export function pickDailySuggestions(
 ): CommentSuggestion[] {
   const pool = rows
     .filter((r) => r.category === category && r.active !== false)
-    // Canonical order by id so the seeded shuffle is independent of the
-    // caller's query ordering.
+    // Canonical order by id so the deck is independent of query ordering.
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
-  if (pool.length <= count) return [...pool].sort(displaySort);
+  const n = pool.length;
+  if (n <= count) return [...pool].sort(displaySort);
 
-  const rand = mulberry32(fnv1a(`${dateYMD}:${category}`));
-  // Partial Fisher–Yates: shuffle just the first `count` slots.
-  for (let i = 0; i < count; i++) {
-    const j = i + Math.floor(rand() * (pool.length - i));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-  return pool.slice(0, count).sort(displaySort);
+  const blockLen = Math.ceil(n / count);
+  const day = epochDay(dateYMD);
+  const cycle = Math.floor(day / blockLen);
+  const dayInCycle = ((day % blockLen) + blockLen) % blockLen;
+  const deck = shuffle(pool, fnv1a(`${category}:${cycle}`));
+  const start = dayInCycle * count;
+  const picks: CommentSuggestion[] = [];
+  for (let i = 0; i < count; i++) picks.push(deck[(start + i) % n]);
+  return picks.sort(displaySort);
 }
 
 /**

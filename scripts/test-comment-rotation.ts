@@ -1,6 +1,6 @@
 /**
- * Unit tests for the comment-suggestion daily rotation
- * (src/lib/comment-suggestions.ts). Pure functions, no DB.
+ * Unit tests for the comment-suggestion rotation (a deterministic shuffle
+ * bag — src/lib/comment-suggestions.ts). Pure functions, no DB.
  *
  * Run: npm run test:rotation   (tsx scripts/test-comment-rotation.ts)
  * Exits 1 on any failure — same convention as test-tenant-isolation.ts.
@@ -48,11 +48,20 @@ function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
 
+// A consecutive-day helper whose epoch-day increments by 1 per offset, so
+// tests can reason about rotation cycles. Mirrors epochDay() in the lib.
+const EPOCH0 = Math.floor(Date.UTC(2026, 0, 1) / 86_400_000);
+function ymd(dayOffset: number): string {
+  const d = new Date(Date.UTC(2026, 0, 1) + dayOffset * 86_400_000);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
+// Production pool sizes — all multiples of 5 so cycles are seamless.
 const POOL = [
-  ...makeRows("positive", 15),
-  ...makeRows("needs_improvement", 10),
-  ...makeRows("participation", 8),
-  ...makeRows("homework", 6),
+  ...makeRows("positive", 20),
+  ...makeRows("needs_improvement", 20),
+  ...makeRows("participation", 15),
+  ...makeRows("homework", 15),
 ];
 
 test("returns exactly 5 when the category has more than 5 active rows", () => {
@@ -80,34 +89,62 @@ test("ignores the caller's row ordering", () => {
   }
 });
 
+test("never returns duplicate rows within a day", () => {
+  for (let off = 0; off < 40; off++) {
+    const picks = pickDailySuggestions(POOL, "positive", ymd(off));
+    assert.equal(new Set(picks.map((r) => r.id)).size, picks.length);
+  }
+});
+
+test("consecutive days in a cycle never overlap, and a full cycle covers the whole pool exactly once", () => {
+  for (const [category, size] of [
+    ["positive", 20],
+    ["participation", 15],
+  ] as const) {
+    const count = DAILY_SUGGESTION_COUNT;
+    const blockLen = Math.ceil(size / count);
+    const byCycle = new Map<number, string[][]>();
+    for (let off = 0; off < blockLen * 6; off++) {
+      const cycle = Math.floor((EPOCH0 + off) / blockLen);
+      const ids = pickDailySuggestions(POOL, category, ymd(off)).map(
+        (r) => r.id,
+      );
+      let bucket = byCycle.get(cycle);
+      if (!bucket) {
+        bucket = [];
+        byCycle.set(cycle, bucket);
+      }
+      bucket.push(ids);
+    }
+    for (const [cycle, days] of byCycle) {
+      if (days.length !== blockLen) continue; // only assert complete cycles
+      const all = days.flat();
+      // No comment shown twice anywhere in the cycle...
+      assert.equal(
+        new Set(all).size,
+        all.length,
+        `${category} cycle ${cycle}: a comment repeated within the cycle`,
+      );
+      // ...and the cycle covers the entire pool.
+      assert.equal(
+        new Set(all).size,
+        size,
+        `${category} cycle ${cycle}: did not cover the whole pool`,
+      );
+    }
+  }
+});
+
 test("changes across dates (rotates day to day)", () => {
   const seen = new Set<string>();
-  for (let day = 1; day <= 30; day++) {
-    const date = `2026-07-${String(day).padStart(2, "0")}`;
-    const picks = pickDailySuggestions(POOL, "positive", date);
-    seen.add(picks.map((r) => r.id).join("|"));
+  for (let off = 0; off < 30; off++) {
+    const picks = pickDailySuggestions(POOL, "positive", ymd(off));
+    seen.add(picks.map((r) => r.id).sort().join("|"));
   }
-  // 30 days over C(15,5)=3003 possible sets — a handful of collisions is
-  // fine, but a broken (constant) rotation would give exactly 1.
   assert.ok(
     seen.size >= 10,
     `expected many distinct daily sets over 30 days, got ${seen.size}`,
   );
-});
-
-test("different categories rotate independently on the same date", () => {
-  const a = pickDailySuggestions(POOL, "positive", "2026-07-06").map((r) =>
-    r.id.replace(/^positive-/, ""),
-  );
-  const b = pickDailySuggestions(
-    POOL,
-    "needs_improvement",
-    "2026-07-06",
-  ).map((r) => r.id.replace(/^needs_improvement-/, ""));
-  // Not a hard guarantee for any single date, but with distinct seeds the
-  // index picks should not be identical across categories on this date —
-  // verified stable since the function is deterministic.
-  assert.notDeepEqual(a, b);
 });
 
 test("returns the whole category when it has 5 or fewer active rows", () => {
@@ -128,9 +165,8 @@ test("returns exactly 5 when a category has exactly 5 rows", () => {
 
 test("never returns inactive rows", () => {
   const rows = makeRows("positive", 20, { activeEvery: 2 }); // 10 active
-  for (let day = 1; day <= 10; day++) {
-    const date = `2026-07-${String(day).padStart(2, "0")}`;
-    const picks = pickDailySuggestions(rows, "positive", date);
+  for (let off = 0; off < 12; off++) {
+    const picks = pickDailySuggestions(rows, "positive", ymd(off));
     assert.equal(picks.length, DAILY_SUGGESTION_COUNT);
     for (const p of picks) assert.notEqual(p.active, false);
   }
@@ -144,14 +180,6 @@ test("returns [] for a category with zero active rows", () => {
 test("returns [] for an unknown category or empty input", () => {
   assert.deepEqual(pickDailySuggestions(POOL, "nope", "2026-07-06"), []);
   assert.deepEqual(pickDailySuggestions([], "positive", "2026-07-06"), []);
-});
-
-test("never returns duplicate rows", () => {
-  for (let day = 1; day <= 20; day++) {
-    const date = `2026-06-${String(day).padStart(2, "0")}`;
-    const picks = pickDailySuggestions(POOL, "positive", date);
-    assert.equal(new Set(picks.map((r) => r.id)).size, picks.length);
-  }
 });
 
 test("buildDailySuggestions covers every category with texts", () => {
