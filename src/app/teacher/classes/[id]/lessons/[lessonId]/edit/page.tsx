@@ -116,20 +116,11 @@ export default async function EditLessonPage(
     studentUpdates,
   };
 
+  // No outer heading here — LessonForm renders its own navy hero (editTitle +
+  // summary), so the page mirrors the all-navy create screen instead of
+  // showing a duplicate light heading above the dark form.
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("editTitle")}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {t("summary", {
-            className: cls.name,
-            count: students?.length ?? 0,
-          })}
-        </p>
-      </div>
-
+    <div>
       {students && students.length > 0 ? (
         <LessonForm
           classId={cls.id}

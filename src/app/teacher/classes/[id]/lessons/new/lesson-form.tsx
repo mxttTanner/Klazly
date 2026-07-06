@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { useTranslations } from "next-intl";
@@ -163,14 +163,21 @@ export function LessonForm({
     defaults?.general_note ?? selectedTemplate?.general_note ?? "";
   const worksheetDefault = defaults?.worksheet_id ?? "none";
 
-  // Live values for the lesson body. Controlled so the "save as template"
-  // form (hidden inputs below) captures the current text.
+  // Every field is controlled: the "save as template" form (hidden inputs
+  // below) captures the current body text, and controlled inputs survive a
+  // failed submit (React 19 resets uncontrolled fields after a returning
+  // action — so unit/lesson/topic/worksheet must be controlled too, or they
+  // snap blank on the error path while the rest is kept).
   const [lessonDate, setLessonDate] = useState(lessonDateDefault);
+  const [unitValue, setUnitValue] = useState(unitDefault);
+  const [lessonNumberValue, setLessonNumberValue] = useState(lessonNumberDefault);
+  const [topicValue, setTopicValue] = useState(topicDefault);
   const [vocabValue, setVocabValue] = useState(vocabDefault);
   const [grammarValue, setGrammarValue] = useState(grammarDefault);
   const [speakingValue, setSpeakingValue] = useState(speakingDefault);
   const [homeworkValue, setHomeworkValue] = useState(homeworkDefault);
   const [generalValue, setGeneralValue] = useState(generalDefault);
+  const [worksheetValue, setWorksheetValue] = useState(worksheetDefault);
 
   // Per-student state is controlled so the bulk actions, the live progress
   // meter, and the "absent dims grading" behaviour all react — and so
@@ -213,22 +220,31 @@ export function LessonForm({
     setHomeworkDone(Object.fromEntries(students.map((s) => [s.id, done])));
   }
 
-  const formKey = `${mode}-${selectedTemplate?.id ?? lessonId ?? "blank"}`;
+  // formKey deliberately EXCLUDES the picked template: switching templates
+  // must not remount the form, or it would wipe in-progress per-student
+  // grading and typed notes. It changes only between create and a specific
+  // edited lesson (each of which is a fresh page mount anyway).
+  const formKey = `${mode}-${lessonId ?? "blank"}`;
   const isEdit = mode === "edit";
 
-  // Reset live values when the picked template (or edit-mode lesson) changes.
+  // Applying a template fills ONLY the lesson-body fields — never the
+  // per-student grading. Skip the first run so it doesn't clobber the initial
+  // values (a pre-selected ?template= or a "start from last lesson" copy);
+  // after that, each template switch refills the body.
+  const skipTemplateApply = useRef(true);
   useEffect(() => {
-    setLessonDate(lessonDateDefault);
-    setVocabValue(vocabDefault);
-    setGrammarValue(grammarDefault);
-    setSpeakingValue(speakingDefault);
-    setHomeworkValue(homeworkDefault);
-    setGeneralValue(generalDefault);
-    setAttendance(initialAttendance());
-    setBehavior(initialBehavior());
-    setHomeworkDone(initialHomework());
+    if (skipTemplateApply.current) {
+      skipTemplateApply.current = false;
+      return;
+    }
+    if (isEdit) return;
+    setVocabValue(selectedTemplate?.vocabulary ?? "");
+    setGrammarValue(selectedTemplate?.grammar_point ?? "");
+    setSpeakingValue(selectedTemplate?.speaking_activity ?? "");
+    setHomeworkValue(selectedTemplate?.homework ?? "");
+    setGeneralValue(selectedTemplate?.general_note ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formKey]);
+  }, [selectedTemplate?.id]);
 
   // A student is "handled" once they're rated or marked absent — that's
   // what the progress meter and the per-card check track.
@@ -342,7 +358,8 @@ export function LessonForm({
                 <Input
                   id="unit"
                   name="unit"
-                  defaultValue={unitDefault}
+                  value={unitValue}
+                  onChange={(e) => setUnitValue(e.target.value)}
                   placeholder={t("unitPlaceholder")}
                 />
               </div>
@@ -351,7 +368,8 @@ export function LessonForm({
                 <Input
                   id="lesson_number"
                   name="lesson_number"
-                  defaultValue={lessonNumberDefault}
+                  value={lessonNumberValue}
+                  onChange={(e) => setLessonNumberValue(e.target.value)}
                   placeholder={t("lessonNumberPlaceholder")}
                 />
               </div>
@@ -362,7 +380,8 @@ export function LessonForm({
               <Input
                 id="topic"
                 name="topic"
-                defaultValue={topicDefault}
+                value={topicValue}
+                onChange={(e) => setTopicValue(e.target.value)}
                 placeholder={t("topicPlaceholder")}
                 maxLength={120}
               />
@@ -428,7 +447,8 @@ export function LessonForm({
                   <select
                     id="worksheet_id"
                     name="worksheet_id"
-                    defaultValue={worksheetDefault}
+                    value={worksheetValue}
+                    onChange={(e) => setWorksheetValue(e.target.value)}
                     className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
                   >
                     <option value="none">{tWorksheets("lessonNone")}</option>
