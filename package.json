@@ -13,6 +13,10 @@
     "check:no-ai-words": "node scripts/check-no-ai-marketing-words.mjs",
     "db:seed": "tsx scripts/seed.ts",
     "test:isolation": "tsx scripts/test-tenant-isolation.ts",
+    "test:rotation": "tsx scripts/test-comment-rotation.ts",
+    "test:photo-validation": "tsx scripts/test-photo-validation.ts",
+    "test:photo-isolation": "tsx scripts/test-photo-isolation.ts",
+    "test:unit": "tsx scripts/test-comment-rotation.ts && tsx scripts/test-photo-validation.ts",
     "db:bootstrap-sql": "node scripts/concat-migrations.mjs"
   },
   "dependencies": {

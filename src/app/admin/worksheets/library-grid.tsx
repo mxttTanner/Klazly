@@ -21,11 +21,15 @@ type Worksheet = {
   size_bytes: number;
   public_url: string;
   created_at: string;
+  category: string | null;
   uploader_name: string | null;
   usage_count: number;
 };
 
 type Filter = "all" | "images" | "pdfs";
+
+/** Legacy rows have category NULL — bucket them under "other". */
+const catKey = (w: Worksheet): string => w.category ?? "other";
 
 function formatBytes(b: number): string {
   if (b < 1024) return `${b} B`;
@@ -43,6 +47,7 @@ export function WorksheetsLibraryGrid({
   const t = useTranslations("worksheets");
   const tc = useTranslations("common");
   const [filter, setFilter] = useState<Filter>("all");
+  const [category, setCategory] = useState<string>("all");
   const [query, setQuery] = useState("");
 
   const counts = useMemo(() => {
@@ -55,6 +60,16 @@ export function WorksheetsLibraryGrid({
     return { all: worksheets.length, images, pdfs };
   }, [worksheets]);
 
+  // Only offer category chips for categories that actually have worksheets,
+  // in library order (most-used first) so the row stays short.
+  const categoryChips = useMemo(() => {
+    const byCat = new Map<string, number>();
+    for (const w of worksheets) {
+      byCat.set(catKey(w), (byCat.get(catKey(w)) ?? 0) + 1);
+    }
+    return Array.from(byCat.entries()).sort((a, b) => b[1] - a[1]);
+  }, [worksheets]);
+
   const filtered = useMemo(() => {
     const typeFiltered =
       filter === "all"
@@ -62,10 +77,14 @@ export function WorksheetsLibraryGrid({
         : filter === "images"
           ? worksheets.filter((w) => w.file_type.startsWith("image/"))
           : worksheets.filter((w) => !w.file_type.startsWith("image/"));
+    const catFiltered =
+      category === "all"
+        ? typeFiltered
+        : typeFiltered.filter((w) => catKey(w) === category);
     const q = query.trim().toLowerCase();
-    if (!q) return typeFiltered;
-    return typeFiltered.filter((w) => w.name.toLowerCase().includes(q));
-  }, [worksheets, filter, query]);
+    if (!q) return catFiltered;
+    return catFiltered.filter((w) => w.name.toLowerCase().includes(q));
+  }, [worksheets, filter, category, query]);
 
   const chips: { value: Filter; label: string; count: number }[] = [
     { value: "all", label: t("filterAll"), count: counts.all },
@@ -126,6 +145,48 @@ export function WorksheetsLibraryGrid({
           );
         })}
       </div>
+
+      {/* Category chips — shown only once there's more than one category
+          in the library, so a fresh center isn't greeted by chip noise. */}
+      {categoryChips.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground text-xs font-medium">
+            {t("category")}:
+          </span>
+          {[["all", counts.all] as [string, number], ...categoryChips].map(
+            ([key, count]) => {
+              const active = category === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setCategory(key)}
+                  className={
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition " +
+                    (active
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground")
+                  }
+                >
+                  {key === "all"
+                    ? t("filterAll")
+                    : t(`categories.${key}` as "categories.other")}
+                  <span
+                    className={
+                      "tabular-nums rounded-full px-1.5 text-[10px] " +
+                      (active
+                        ? "bg-primary-foreground/20"
+                        : "bg-muted text-muted-foreground")
+                    }
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            },
+          )}
+        </div>
+      ) : null}
 
       {filtered.length === 0 ? (
         <div className="bg-muted/30 rounded-lg border border-dashed p-10 text-center">
@@ -201,6 +262,9 @@ export function WorksheetsLibraryGrid({
                       {w.usage_count === 0
                         ? t("usageUnused")
                         : t("usageInLessons", { n: w.usage_count })}
+                    </span>
+                    <span className="bg-primary/10 text-primary inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium">
+                      {t(`categories.${catKey(w)}` as "categories.other")}
                     </span>
                   </div>
                   <div className="text-muted-foreground mt-auto flex items-center justify-between text-[11px]">

@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import {
   ArrowLeft,
   CalendarClock,
+  Camera,
   ClipboardList,
   Copy,
   GraduationCap,
@@ -14,12 +15,16 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { VN_TZ } from "@/lib/vn-time";
+import { VN_TZ, vnTodayYMD } from "@/lib/vn-time";
+import { signPhotoUrls } from "@/lib/photo-url";
 import { buttonVariants } from "@/components/ui/button";
 import { LevelSelect } from "@/components/level-select";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { PhotoLightbox } from "@/components/photo-lightbox";
 import { parseDateOnly } from "@/lib/utils";
 import { deleteLesson } from "./lessons/new/actions";
+import { deleteStudentPhoto } from "./photo-actions";
+import { PhotoUploadForm } from "./photo-upload-form";
 import {
   Table,
   TableBody,
@@ -40,14 +45,17 @@ export default async function ClassDetailPage(
   const searchParams = await props.searchParams;
   const params = await props.params;
   const user = await requireRole(["teacher", "admin"]);
-  const activeTab: "students" | "lessons" | "messages" =
+  const activeTab: "students" | "lessons" | "messages" | "photos" =
     searchParams.tab === "lessons"
       ? "lessons"
       : searchParams.tab === "messages"
         ? "messages"
-        : "students";
+        : searchParams.tab === "photos"
+          ? "photos"
+          : "students";
   const supabase = await createClient();
   const t = await getTranslations("teacher.class");
+  const tPhotos = await getTranslations("photos");
   const tHome = await getTranslations("teacher.home");
   const tStudent = await getTranslations("admin.students");
   const tForm = await getTranslations("teacher.lessonForm");
@@ -204,6 +212,61 @@ export default async function ClassDetailPage(
       }
     }
   }
+
+  // Class photos, RLS-scoped (teacher → own uploads, admin → whole center),
+  // narrowed to photos tagged to this class's roster. Fails silently to
+  // zero if the db/student-photos.sql migration hasn't been run yet.
+  // The full row fetch + signed-URL minting (a storage-API round trip)
+  // happens ONLY on the photos tab; the other tabs need just the badge
+  // count, which a head-only query answers.
+  type PhotoRow = {
+    id: string;
+    storage_path: string;
+    caption: string | null;
+    taken_at: string;
+    uploaded_by: string | null;
+    tags: { student_id: string }[];
+  };
+  let photos: PhotoRow[] = [];
+  let photoCount = 0;
+  if (studentIds.length > 0) {
+    if (activeTab === "photos") {
+      const photosRes = await supabase
+        .from("student_photos")
+        .select(
+          "id, storage_path, caption, taken_at, uploaded_by, tags:student_photo_tags!inner(student_id)",
+        )
+        .in("tags.student_id", studentIds)
+        .order("taken_at", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (photosRes.error) {
+        console.warn(
+          "[teacher/class] student_photos select failed (migration not run?):",
+          photosRes.error.message,
+        );
+      } else {
+        photos = (photosRes.data ?? []) as PhotoRow[];
+        photoCount = photos.length;
+      }
+    } else {
+      const countRes = await supabase
+        .from("student_photos")
+        .select("id, tags:student_photo_tags!inner(student_id)", {
+          count: "exact",
+          head: true,
+        })
+        .in("tags.student_id", studentIds);
+      if (!countRes.error) photoCount = countRes.count ?? 0;
+    }
+  }
+  // Sign the private-bucket URLs in one batch; a photo that fails to sign
+  // is simply not rendered.
+  const photoUrls = await signPhotoUrls(photos);
+  const studentNameById = new Map(
+    (students ?? []).map((s) => [s.id, s.full_name]),
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -272,6 +335,13 @@ export default async function ClassDetailPage(
               icon: ClipboardList,
               count: lessons?.length ?? 0,
               showCount: true,
+            },
+            {
+              key: "photos" as const,
+              label: tPhotos("tabPhotos"),
+              icon: Camera,
+              count: photoCount,
+              showCount: photoCount > 0,
             },
             {
               key: "messages" as const,
@@ -565,6 +635,97 @@ export default async function ClassDetailPage(
                 <ClipboardList className="text-muted-foreground size-5" />
               </div>
               <p className="text-muted-foreground text-sm">{t("noLessons")}</p>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {/* Photos tab — upload once, tag the students in the shot; each
+          tagged student's parent sees the photo in their child's
+          timeline. */}
+      {activeTab === "photos" ? (
+        <section className="space-y-4">
+          {students && students.length > 0 ? (
+            <PhotoUploadForm
+              classId={cls.id}
+              students={students.map((s) => ({
+                id: s.id,
+                full_name: s.full_name,
+              }))}
+              defaultDate={vnTodayYMD()}
+            />
+          ) : null}
+
+          {photos.length > 0 ? (
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {photos.map((p) => {
+                const url = photoUrls.get(p.id);
+                if (!url) return null;
+                const dateLabel =
+                  parseDateOnly(p.taken_at)?.toLocaleDateString(dateLocale, {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  }) ?? p.taken_at;
+                const names = p.tags
+                  .map((tag) => studentNameById.get(tag.student_id))
+                  .filter(Boolean)
+                  .join(", ");
+                const canDelete =
+                  user.role === "admin" || p.uploaded_by === user.id;
+                return (
+                  <li
+                    key={p.id}
+                    className="space-y-1.5 rounded-lg border bg-card p-2 shadow-sm"
+                  >
+                    <PhotoLightbox
+                      url={url}
+                      alt={p.caption ?? tPhotos("photoAlt")}
+                      caption={p.caption}
+                      dateLabel={names ? `${dateLabel} — ${names}` : dateLabel}
+                    />
+                    {p.caption ? (
+                      <p className="truncate text-xs" title={p.caption}>
+                        {p.caption}
+                      </p>
+                    ) : null}
+                    <div className="flex items-center justify-between gap-1">
+                      <p
+                        className="text-muted-foreground min-w-0 truncate text-[11px]"
+                        title={names}
+                      >
+                        {dateLabel}
+                        {names ? ` — ${names}` : ""}
+                      </p>
+                      {canDelete ? (
+                        <form action={deleteStudentPhoto}>
+                          <input type="hidden" name="id" value={p.id} />
+                          <input
+                            type="hidden"
+                            name="class_id"
+                            value={cls.id}
+                          />
+                          <ConfirmSubmitButton
+                            confirmMessage={tPhotos("deleteConfirm")}
+                            ariaLabel={tPhotos("delete")}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </ConfirmSubmitButton>
+                        </form>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="bg-muted/30 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
+              <div className="bg-background flex size-12 items-center justify-center rounded-full border">
+                <Camera className="text-muted-foreground size-5" />
+              </div>
+              <p className="text-muted-foreground max-w-sm text-sm">
+                {tPhotos("emptyClass")}
+              </p>
             </div>
           )}
         </section>

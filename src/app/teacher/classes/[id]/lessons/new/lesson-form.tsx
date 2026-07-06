@@ -13,9 +13,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { SubmitButton } from "@/components/submit-button";
 import { Button } from "@/components/ui/button";
 import { createLesson, saveLessonTemplate, updateLesson } from "./actions";
+import { NoteWithSuggestions } from "./note-suggestions";
+import type { SuggestionCategory } from "@/lib/comment-suggestions";
 import type { Template } from "./page";
 
-type Worksheet = { id: string; name: string; file_type: string };
+type Worksheet = {
+  id: string;
+  name: string;
+  file_type: string;
+  category: string | null;
+};
 
 export type StudentDefault = {
   behavior_rating: string | null;
@@ -49,6 +56,7 @@ export function LessonForm({
   templates,
   selectedTemplate,
   worksheets,
+  suggestions,
   mode = "create",
   lessonId,
   defaults,
@@ -60,6 +68,7 @@ export function LessonForm({
   templates: Template[];
   selectedTemplate: Template | null;
   worksheets: Worksheet[];
+  suggestions: Record<SuggestionCategory, string[]>;
   mode?: "create" | "edit";
   lessonId?: string;
   defaults?: LessonDefaults;
@@ -336,11 +345,38 @@ export function LessonForm({
                   className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
                 >
                   <option value="none">{tWorksheets("lessonNone")}</option>
-                  {worksheets.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name}
-                    </option>
-                  ))}
+                  {(() => {
+                    // Group by category so a long library stays scannable.
+                    // Legacy/uncategorized rows fall under "other"; skip the
+                    // optgroup chrome entirely when everything is one group.
+                    const groups = new Map<string, Worksheet[]>();
+                    for (const w of worksheets) {
+                      const key = w.category ?? "other";
+                      if (!groups.has(key)) groups.set(key, []);
+                      groups.get(key)!.push(w);
+                    }
+                    if (groups.size <= 1) {
+                      return worksheets.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
+                        </option>
+                      ));
+                    }
+                    return Array.from(groups.entries()).map(([key, ws]) => (
+                      <optgroup
+                        key={key}
+                        label={tWorksheets(
+                          `categories.${key}` as "categories.other",
+                        )}
+                      >
+                        {ws.map((w) => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ));
+                  })()}
                 </select>
               </div>
               <div className="space-y-1">
@@ -483,13 +519,10 @@ export function LessonForm({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`note_${s.id}`}>{t("individualNote")}</Label>
-                    <Textarea
-                      id={`note_${s.id}`}
-                      name={`note_${s.id}`}
-                      rows={2}
-                      defaultValue={su?.individual_note ?? ""}
-                      placeholder={t("individualNotePlaceholder")}
+                    <NoteWithSuggestions
+                      studentId={s.id}
+                      defaultNote={su?.individual_note ?? ""}
+                      suggestions={suggestions}
                     />
                   </div>
 

@@ -6,6 +6,7 @@ import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser } from "@/lib/demo-guard";
+import { isWorksheetCategory } from "@/lib/worksheet-categories";
 
 const ALLOWED_TYPES = [
   "application/pdf",
@@ -61,7 +62,12 @@ export async function uploadWorksheet(_prev: unknown, formData: FormData) {
     .from("worksheets")
     .getPublicUrl(storagePath);
 
-  const { error: insertErr } = await supabase.from("worksheets").insert({
+  // Optional category label; anything unexpected becomes null (renders as
+  // "Other"). Never trust the raw form value against the CHECK constraint.
+  const categoryRaw = String(formData.get("category") ?? "");
+  const category = isWorksheetCategory(categoryRaw) ? categoryRaw : null;
+
+  const baseRow = {
     center_id: admin.center_id,
     uploaded_by: admin.id,
     name,
@@ -69,7 +75,22 @@ export async function uploadWorksheet(_prev: unknown, formData: FormData) {
     public_url: urlData.publicUrl,
     file_type: file.type,
     size_bytes: file.size,
-  });
+  };
+  // Try with category; retry without ONLY if the column is missing
+  // (db/worksheet-categories.sql not applied). A CHECK-constraint violation
+  // also mentions "category" but must FAIL loudly, not silently save the
+  // worksheet uncategorized — hence the column/schema-cache match.
+  let insertErr = (
+    await supabase.from("worksheets").insert({ ...baseRow, category })
+  ).error;
+  if (
+    insertErr &&
+    /category/i.test(insertErr.message) &&
+    /column|schema cache/i.test(insertErr.message) &&
+    !/check constraint/i.test(insertErr.message)
+  ) {
+    insertErr = (await supabase.from("worksheets").insert(baseRow)).error;
+  }
   if (insertErr) {
     await supabase.storage.from("worksheets").remove([storagePath]);
     return { error: t("uploadError", { message: insertErr.message }) };

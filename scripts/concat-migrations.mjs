@@ -42,6 +42,9 @@ const ORDER = [
   "founding-center.sql",
   "fix-rls-recursion.sql",
   "2026-07-02-audit-fixes.sql",
+  "comment-suggestions.sql",
+  "worksheet-categories.sql",
+  "student-photos.sql",
 ];
 
 let out =

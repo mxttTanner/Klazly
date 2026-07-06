@@ -1685,3 +1685,453 @@ create unique index if not exists lessons_class_date_uniq
 
 alter table public.users
   add column if not exists must_change_password boolean not null default false;
+
+-- ==========================================================================
+-- comment-suggestions.sql
+-- ==========================================================================
+-- Comment suggestions — a pre-written, human-authored comment bank for the
+-- teacher lesson form. Nothing is generated at write-time; the app only
+-- rotates which suggestions are SHOWN (5 per category per calendar day,
+-- deterministic — see src/lib/comment-suggestions.ts). Tapping one drops
+-- its text into the normal individual_note field, which saves through the
+-- existing lesson path unchanged.
+--
+-- Each row carries a `lang` ('vi'/'en'); the form shows the bank matching
+-- the teacher's UI locale (Vietnamese is the product default, so the pool
+-- is seeded in both languages — the note text goes verbatim to parents).
+--
+-- Suggestions are GLOBAL across centers for now. To add per-center custom
+-- suggestions later: add a nullable `center_id uuid references
+-- public.centers(id) on delete cascade`, treat NULL as "global", and widen
+-- the select policy to `center_id is null or center_id =
+-- public.current_user_center_id()`. No UI for that yet by design.
+--
+-- Content is managed via migrations / service role only — there are no
+-- insert/update/delete policies on purpose.
+
+create table if not exists public.comment_suggestions (
+  id uuid primary key default uuid_generate_v4(),
+  category text not null check (
+    category in ('positive', 'needs_improvement', 'participation', 'homework')
+  ),
+  lang text not null default 'en' check (lang in ('vi', 'en')),
+  text text not null check (char_length(text) > 0 and char_length(text) <= 500),
+  active boolean not null default true,
+  sort_order int,
+  created_at timestamptz not null default now(),
+  -- Also what makes the seed below idempotent (on conflict do nothing).
+  constraint comment_suggestions_category_text_uniq unique (category, text)
+);
+
+create index if not exists comment_suggestions_lang_category_idx
+  on public.comment_suggestions (lang, category)
+  where active;
+
+alter table public.comment_suggestions enable row level security;
+
+-- Teachers and admins read the active bank; parents have no reason to see
+-- it (they only ever see the final saved note text). Global by design —
+-- the one deliberate exception to per-center query scoping (see header).
+drop policy if exists "comment_suggestions_select" on public.comment_suggestions;
+create policy "comment_suggestions_select"
+  on public.comment_suggestions for select
+  using (
+    active
+    and public.current_user_role() in ('teacher', 'admin')
+  );
+
+-- ==========================================================================
+-- Seed — starter pool, English + Vietnamese. Idempotent via the
+-- (category, text) unique key.
+-- ==========================================================================
+
+insert into public.comment_suggestions (category, lang, text, sort_order) values
+  ('positive', 'en', 'Had a great attitude in class today.', 1),
+  ('positive', 'en', 'Really engaged with today''s activities.', 2),
+  ('positive', 'en', 'Showed good improvement with today''s vocabulary.', 3),
+  ('positive', 'en', 'Helped classmates during group work.', 4),
+  ('positive', 'en', 'Answered confidently during today''s lesson.', 5),
+  ('positive', 'en', 'Stayed focused throughout the whole class.', 6),
+  ('positive', 'en', 'Did a great job with today''s speaking activity.', 7),
+  ('positive', 'en', 'Picked up today''s new words quickly.', 8),
+  ('positive', 'en', 'Was very participative during games today.', 9),
+  ('positive', 'en', 'Showed nice progress with pronunciation today.', 10),
+  ('positive', 'en', 'Worked well with a partner today.', 11),
+  ('positive', 'en', 'Completed all tasks with a positive attitude.', 12),
+  ('positive', 'en', 'Asked great questions during the lesson.', 13),
+  ('positive', 'en', 'Was a good listener today.', 14),
+  ('positive', 'en', 'Showed confidence presenting to the class.', 15),
+  ('needs_improvement', 'en', 'Had some trouble focusing today — worth keeping an eye on at home.', 1),
+  ('needs_improvement', 'en', 'Struggled a bit with today''s vocabulary; some review at home would help.', 2),
+  ('needs_improvement', 'en', 'Seemed a little tired today, participation was lower than usual.', 3),
+  ('needs_improvement', 'en', 'Could use some extra practice with today''s grammar point.', 4),
+  ('needs_improvement', 'en', 'Had some difficulty following instructions today.', 5),
+  ('needs_improvement', 'en', 'Needs a bit more encouragement to speak up in class.', 6),
+  ('needs_improvement', 'en', 'Found today''s listening activity challenging.', 7),
+  ('needs_improvement', 'en', 'Was a little distracted during group work today.', 8),
+  ('needs_improvement', 'en', 'Could benefit from reviewing today''s lesson at home.', 9),
+  ('needs_improvement', 'en', 'Had some trouble staying on task today.', 10),
+  ('participation', 'en', 'Volunteered to answer several times today.', 1),
+  ('participation', 'en', 'Was a bit quieter than usual today.', 2),
+  ('participation', 'en', 'Took a little time to warm up but joined in well.', 3),
+  ('participation', 'en', 'Worked actively in today''s pair/group activities.', 4),
+  ('participation', 'en', 'Needed some encouragement to join in today.', 5),
+  ('participation', 'en', 'Was one of the first to raise a hand today.', 6),
+  ('participation', 'en', 'Preferred listening over speaking today, which is okay.', 7),
+  ('participation', 'en', 'Got more involved as the class went on.', 8),
+  ('homework', 'en', 'Completed homework fully and correctly.', 1),
+  ('homework', 'en', 'Homework was mostly done, a few items missed.', 2),
+  ('homework', 'en', 'Homework wasn''t completed today.', 3),
+  ('homework', 'en', 'Homework showed good effort.', 4),
+  ('homework', 'en', 'A reminder about today''s homework was given.', 5),
+  ('homework', 'en', 'Homework had some errors — happy to review together next class.', 6),
+  ('positive', 'vi', 'Hôm nay con có thái độ học tập rất tốt.', 1),
+  ('positive', 'vi', 'Con tham gia rất tích cực các hoạt động hôm nay.', 2),
+  ('positive', 'vi', 'Con tiến bộ rõ với phần từ vựng hôm nay.', 3),
+  ('positive', 'vi', 'Con biết giúp đỡ các bạn khi làm việc nhóm.', 4),
+  ('positive', 'vi', 'Con trả lời rất tự tin trong buổi học hôm nay.', 5),
+  ('positive', 'vi', 'Con tập trung tốt suốt cả buổi học.', 6),
+  ('positive', 'vi', 'Con làm rất tốt hoạt động luyện nói hôm nay.', 7),
+  ('positive', 'vi', 'Con tiếp thu từ mới hôm nay rất nhanh.', 8),
+  ('positive', 'vi', 'Con tham gia trò chơi hôm nay rất sôi nổi.', 9),
+  ('positive', 'vi', 'Phát âm của con hôm nay tiến bộ rõ rệt.', 10),
+  ('positive', 'vi', 'Con phối hợp với bạn rất tốt trong giờ học hôm nay.', 11),
+  ('positive', 'vi', 'Con hoàn thành mọi nhiệm vụ với thái độ tích cực.', 12),
+  ('positive', 'vi', 'Con đặt những câu hỏi rất hay trong giờ học.', 13),
+  ('positive', 'vi', 'Hôm nay con lắng nghe rất tốt.', 14),
+  ('positive', 'vi', 'Con tự tin khi trình bày trước lớp.', 15),
+  ('needs_improvement', 'vi', 'Hôm nay con hơi khó tập trung — gia đình lưu ý thêm ở nhà giúp con nhé.', 1),
+  ('needs_improvement', 'vi', 'Con còn gặp khó với từ vựng hôm nay; ôn lại ở nhà sẽ giúp con nhiều.', 2),
+  ('needs_improvement', 'vi', 'Hôm nay con có vẻ hơi mệt, tham gia ít hơn mọi khi.', 3),
+  ('needs_improvement', 'vi', 'Con cần luyện thêm phần ngữ pháp của buổi học hôm nay.', 4),
+  ('needs_improvement', 'vi', 'Hôm nay con còn gặp khó khi làm theo hướng dẫn.', 5),
+  ('needs_improvement', 'vi', 'Con cần được động viên thêm để mạnh dạn phát biểu trong lớp.', 6),
+  ('needs_improvement', 'vi', 'Bài nghe hôm nay còn hơi khó với con.', 7),
+  ('needs_improvement', 'vi', 'Con hơi mất tập trung khi làm việc nhóm hôm nay.', 8),
+  ('needs_improvement', 'vi', 'Con nên ôn lại bài học hôm nay ở nhà.', 9),
+  ('needs_improvement', 'vi', 'Hôm nay con còn khó duy trì sự tập trung vào nhiệm vụ.', 10),
+  ('participation', 'vi', 'Hôm nay con xung phong trả lời nhiều lần.', 1),
+  ('participation', 'vi', 'Hôm nay con trầm hơn mọi khi một chút.', 2),
+  ('participation', 'vi', 'Con cần chút thời gian làm quen nhưng sau đó tham gia rất tốt.', 3),
+  ('participation', 'vi', 'Con hoạt động tích cực trong các hoạt động cặp/nhóm hôm nay.', 4),
+  ('participation', 'vi', 'Hôm nay con cần được khích lệ mới tham gia hoạt động.', 5),
+  ('participation', 'vi', 'Con là một trong những bạn giơ tay phát biểu đầu tiên hôm nay.', 6),
+  ('participation', 'vi', 'Hôm nay con thích lắng nghe hơn là nói — điều này hoàn toàn bình thường.', 7),
+  ('participation', 'vi', 'Càng về cuối buổi con càng tham gia tích cực hơn.', 8),
+  ('homework', 'vi', 'Con hoàn thành đầy đủ và chính xác bài tập về nhà.', 1),
+  ('homework', 'vi', 'Bài tập về nhà làm gần đủ, còn sót một vài phần.', 2),
+  ('homework', 'vi', 'Hôm nay con chưa hoàn thành bài tập về nhà.', 3),
+  ('homework', 'vi', 'Bài tập về nhà cho thấy con đã rất cố gắng.', 4),
+  ('homework', 'vi', 'Con đã được nhắc về bài tập về nhà hôm nay.', 5),
+  ('homework', 'vi', 'Bài tập còn một số lỗi — buổi sau lớp sẽ cùng xem lại.', 6)
+on conflict (category, text) do nothing;
+
+-- ==========================================================================
+-- worksheet-categories.sql
+-- ==========================================================================
+-- Worksheet categories — lightweight labels so the library and the lesson
+-- form's picker can be browsed by kind instead of one long list. Nullable
+-- text + CHECK (the convention for incrementally-added values, like
+-- student_lesson_updates.attendance): existing rows stay NULL and the UI
+-- shows them under "Other". Labels are i18n'd in the app
+-- (src/messages/*.json → worksheets.categories.*); the DB stores the key.
+
+alter table public.worksheets
+  add column if not exists category text
+  check (
+    category is null
+    or category in (
+      'grammar', 'vocabulary', 'reading', 'writing', 'listening',
+      'speaking', 'games', 'homework', 'exam', 'other'
+    )
+  );
+
+-- ==========================================================================
+-- student-photos.sql
+-- ==========================================================================
+-- Student photos — teachers photograph class moments and tag the students
+-- in the shot; parents see (only) their own child's photos in the child's
+-- timeline. One photo can be tagged to multiple students.
+--
+-- STORAGE STANCE (mirrors db/2026-07-02-worksheets-private.sql): the
+-- `student-photos` bucket is born PRIVATE and gets NO storage.objects
+-- policies at all — clients never talk to Storage directly. Uploads go
+-- through the server action (service role, after requireRole + roster
+-- validation) and reads happen via short-lived signed URLs minted by the
+-- server ONLY for rows the caller could already read through table RLS
+-- (src/lib/photo-url.ts). Guessing a storage path yields nothing without
+-- a valid signature. Bucket-level file_size_limit / allowed_mime_types are
+-- a hard backstop enforced by Supabase Storage itself, independent of app
+-- code.
+
+-- ==========================================================================
+-- Bucket (private; 5MB cap; images only)
+-- ==========================================================================
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'student-photos',
+  'student-photos',
+  false,
+  5242880, -- 5 MB
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do nothing;
+
+-- ==========================================================================
+-- Tables
+-- ==========================================================================
+
+create table if not exists public.student_photos (
+  id uuid primary key default uuid_generate_v4(),
+  center_id uuid not null references public.centers(id) on delete cascade,
+  -- SET NULL like worksheets.uploaded_by: removing a teacher keeps the
+  -- photos (parents keep the record); admins still manage them.
+  uploaded_by uuid references public.users(id) on delete set null,
+  -- Path convention: {center_id}/{photo_id}.{ext}. The CHECK pins every
+  -- row's object path inside its own center's storage prefix — without it,
+  -- a teacher hitting PostgREST directly could insert/update a row whose
+  -- storage_path points into ANOTHER center's prefix and have the server
+  -- sign it for them. A table constraint (not just a policy) so it also
+  -- binds service-role writes.
+  storage_path text not null
+    check (storage_path like center_id::text || '/%'),
+  caption text check (caption is null or char_length(caption) <= 200),
+  -- Date the photo belongs to in the timeline (VN-local; set by the app).
+  taken_at date not null default current_date,
+  created_at timestamptz not null default now()
+);
+create index if not exists student_photos_center_idx
+  on public.student_photos (center_id);
+create index if not exists student_photos_uploaded_by_idx
+  on public.student_photos (uploaded_by);
+
+-- One photo ↔ many students (group shots). Deleting a photo cascades its
+-- tags; the storage object is removed by the delete server action.
+create table if not exists public.student_photo_tags (
+  photo_id uuid not null references public.student_photos(id) on delete cascade,
+  student_id uuid not null references public.students(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (photo_id, student_id)
+);
+create index if not exists student_photo_tags_student_idx
+  on public.student_photo_tags (student_id);
+
+-- ==========================================================================
+-- RLS helper functions (SECURITY DEFINER to break policy recursion, same
+-- rationale as db/fix-rls-recursion.sql)
+-- ==========================================================================
+
+create or replace function public.photo_center_id(p_photo_id uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select center_id from public.student_photos where id = p_photo_id
+$$;
+
+create or replace function public.photo_uploaded_by(p_photo_id uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select uploaded_by from public.student_photos where id = p_photo_id
+$$;
+
+-- Is the current user the parent of at least one student tagged on this
+-- photo? THE rule that scopes parents to their own child's photos.
+create or replace function public.is_parent_of_tagged_student(p_photo_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.student_photo_tags t
+    join public.students s on s.id = t.student_id
+    where t.photo_id = p_photo_id
+      and s.parent_user_id = auth.uid()
+  )
+$$;
+
+-- Does the current user teach the class this student is in? (Same
+-- teacher→class→student chain as students_select.)
+create or replace function public.is_teacher_of_student(p_student_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.students s
+    join public.classes c on c.id = s.class_id
+    where s.id = p_student_id
+      and c.teacher_id = auth.uid()
+  )
+$$;
+
+create or replace function public.student_center_id(p_student_id uuid)
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select center_id from public.students where id = p_student_id
+$$;
+
+-- ==========================================================================
+-- RLS: student_photos
+--   admin   → all photos in their center
+--   teacher → photos they uploaded, in their center
+--   parent  → READ ONLY, and only photos tagged to their own child(ren)
+-- (super-admin/platform ops use the service role, which bypasses RLS.)
+-- ==========================================================================
+
+alter table public.student_photos enable row level security;
+
+drop policy if exists "student_photos_select" on public.student_photos;
+create policy "student_photos_select"
+  on public.student_photos for select
+  using (
+    (
+      public.current_user_role() = 'admin'
+      and center_id = public.current_user_center_id()
+    )
+    or (
+      public.current_user_role() = 'teacher'
+      and uploaded_by = auth.uid()
+      and center_id = public.current_user_center_id()
+    )
+    or (
+      public.current_user_role() = 'parent'
+      and center_id = public.current_user_center_id()
+      and public.is_parent_of_tagged_student(id)
+    )
+  );
+
+drop policy if exists "student_photos_insert" on public.student_photos;
+create policy "student_photos_insert"
+  on public.student_photos for insert
+  with check (
+    center_id = public.current_user_center_id()
+    and uploaded_by = auth.uid()
+    and public.current_user_role() in ('teacher', 'admin')
+  );
+
+drop policy if exists "student_photos_update" on public.student_photos;
+create policy "student_photos_update"
+  on public.student_photos for update
+  using (
+    (
+      public.current_user_role() = 'admin'
+      and center_id = public.current_user_center_id()
+    )
+    or (
+      public.current_user_role() = 'teacher'
+      and uploaded_by = auth.uid()
+      and center_id = public.current_user_center_id()
+    )
+  )
+  -- WITH CHECK mirrors USING so the NEW row must still satisfy the same
+  -- ownership rule — otherwise a teacher could reassign uploaded_by (handing
+  -- delete rights to someone else / orphaning the photo to admin-only).
+  with check (
+    (
+      public.current_user_role() = 'admin'
+      and center_id = public.current_user_center_id()
+    )
+    or (
+      public.current_user_role() = 'teacher'
+      and uploaded_by = auth.uid()
+      and center_id = public.current_user_center_id()
+    )
+  );
+
+drop policy if exists "student_photos_delete" on public.student_photos;
+create policy "student_photos_delete"
+  on public.student_photos for delete
+  using (
+    (
+      public.current_user_role() = 'admin'
+      and center_id = public.current_user_center_id()
+    )
+    or (
+      public.current_user_role() = 'teacher'
+      and uploaded_by = auth.uid()
+      and center_id = public.current_user_center_id()
+    )
+  );
+
+-- No parent write policies exist → parents cannot insert/update/delete.
+
+-- ==========================================================================
+-- RLS: student_photo_tags
+--   admin   → tags on photos in their center
+--   teacher → tags on their own photos; may only tag students of classes
+--             they teach (existing teacher→class→student scoping)
+--   parent  → READ ONLY, only tag rows pointing at their own child
+-- ==========================================================================
+
+alter table public.student_photo_tags enable row level security;
+
+drop policy if exists "student_photo_tags_select" on public.student_photo_tags;
+create policy "student_photo_tags_select"
+  on public.student_photo_tags for select
+  using (
+    (
+      public.current_user_role() = 'admin'
+      and public.photo_center_id(photo_id) = public.current_user_center_id()
+    )
+    or (
+      public.current_user_role() = 'teacher'
+      and public.photo_uploaded_by(photo_id) = auth.uid()
+      -- Center check too: a teacher moved to another center must not keep
+      -- reading tag rows from photos they uploaded at the old center.
+      and public.photo_center_id(photo_id) = public.current_user_center_id()
+    )
+    or (
+      public.current_user_role() = 'parent'
+      and public.is_parent_of_student(student_id)
+    )
+  );
+
+drop policy if exists "student_photo_tags_insert" on public.student_photo_tags;
+create policy "student_photo_tags_insert"
+  on public.student_photo_tags for insert
+  with check (
+    -- The tagged student must live in the same center as the photo, and
+    -- that center must be the caller's own.
+    public.photo_center_id(photo_id) = public.current_user_center_id()
+    and public.student_center_id(student_id) = public.current_user_center_id()
+    and (
+      public.current_user_role() = 'admin'
+      or (
+        public.current_user_role() = 'teacher'
+        and public.photo_uploaded_by(photo_id) = auth.uid()
+        and public.is_teacher_of_student(student_id)
+      )
+    )
+  );
+
+drop policy if exists "student_photo_tags_delete" on public.student_photo_tags;
+create policy "student_photo_tags_delete"
+  on public.student_photo_tags for delete
+  using (
+    public.photo_center_id(photo_id) = public.current_user_center_id()
+    and (
+      public.current_user_role() = 'admin'
+      or (
+        public.current_user_role() = 'teacher'
+        and public.photo_uploaded_by(photo_id) = auth.uid()
+      )
+    )
+  );

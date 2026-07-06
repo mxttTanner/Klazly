@@ -857,7 +857,17 @@
       "validation": "Invalid data. Please check the fields.",
       "noPermission": "You don't have permission to record lessons for this class.",
       "saveLessonError": "Could not save lesson: {message}",
-      "saveUpdatesError": "Could not save student notes: {message}"
+      "saveUpdatesError": "Could not save student notes: {message}",
+      "suggestions": {
+        "label": "Comment ideas:",
+        "empty": "No suggestions in this category today.",
+        "categories": {
+          "positive": "Positive",
+          "needs_improvement": "Needs improvement",
+          "participation": "Participation",
+          "homework": "Homework"
+        }
+      }
     }
   },
   "parent": {
@@ -1093,7 +1103,47 @@
     "lessonOrUpload": "or upload a new file",
     "lessonNone": "— None —",
     "viewAttachment": "View class worksheet",
-    "downloadAttachment": "Download worksheet"
+    "downloadAttachment": "Download worksheet",
+    "category": "Category",
+    "categories": {
+      "grammar": "Grammar",
+      "vocabulary": "Vocabulary",
+      "reading": "Reading",
+      "writing": "Writing",
+      "listening": "Listening",
+      "speaking": "Speaking",
+      "games": "Games",
+      "homework": "Homework",
+      "exam": "Exams / Tests",
+      "other": "Other"
+    }
+  },
+  "photos": {
+    "tabPhotos": "Photos",
+    "uploadTitle": "Upload a photo",
+    "uploadHelp": "PNG, JPG, or WebP. Max 5MB. The photo appears in the timeline of every tagged student.",
+    "file": "Photo",
+    "takenAt": "Date taken",
+    "caption": "Caption (optional)",
+    "captionPlaceholder": "e.g. Group work on the Family unit",
+    "tagStudents": "Students in the photo",
+    "tagAll": "Select all",
+    "tagNone": "Clear",
+    "tagHelp": "Tag at least 1 student. Parents only see photos their own child is tagged in.",
+    "uploadSubmit": "Upload",
+    "uploadSubmitting": "Uploading...",
+    "uploadSuccess": "Photo uploaded.",
+    "uploadError": "Could not upload: {message}",
+    "noFile": "Please choose a photo.",
+    "tooLarge": "Photo is too large. Max 5MB.",
+    "badType": "Unsupported format. Use PNG, JPG, or WebP.",
+    "validation": "Invalid data. Please check the photo, date, and tagged students.",
+    "noPermission": "You don't have permission to upload photos for this class.",
+    "emptyClass": "No photos yet. Upload the class's first photo above.",
+    "delete": "Delete photo",
+    "deleteConfirm": "Delete this photo? It will disappear from every tagged student's timeline.",
+    "photoAlt": "Class photo",
+    "timelineLabel": "Class photos"
   },
   "settings": {
     "title": "Center settings",

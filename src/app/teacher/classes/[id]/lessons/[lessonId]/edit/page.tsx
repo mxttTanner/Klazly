@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { fetchDailySuggestions } from "@/lib/comment-suggestions-server";
+import { fetchWorksheetOptions } from "@/lib/worksheet-options";
 import {
   LessonForm,
   type LessonDefaults,
@@ -55,7 +57,8 @@ export default async function EditLessonPage(
     | null;
   if (!lesson || lesson.class_id !== cls.id) notFound();
 
-  const [{ data: students }, updatesRes, { data: worksheets }] =
+  const locale = await getLocale();
+  const [{ data: students }, updatesRes, worksheetOptions, suggestions] =
     await Promise.all([
       supabase
         .from("students")
@@ -80,10 +83,10 @@ export default async function EditLessonPage(
         }
         return r1;
       })(),
-      supabase
-        .from("worksheets")
-        .select("id, name, file_type")
-        .order("created_at", { ascending: false }),
+      fetchWorksheetOptions(supabase),
+      // The day's suggestion bank — seeded by VN "today" (the day the
+      // teacher is writing), not the lesson's own date.
+      fetchDailySuggestions(supabase, locale),
     ]);
   const updates = updatesRes.data;
 
@@ -113,12 +116,6 @@ export default async function EditLessonPage(
     studentUpdates,
   };
 
-  const worksheetOptions = (worksheets ?? []) as Array<{
-    id: string;
-    name: string;
-    file_type: string;
-  }>;
-
   return (
     <div className="space-y-6">
       <div>
@@ -142,6 +139,7 @@ export default async function EditLessonPage(
           templates={[] as Template[]}
           selectedTemplate={null}
           worksheets={worksheetOptions}
+          suggestions={suggestions}
           mode="edit"
           lessonId={lesson.id}
           defaults={defaults}

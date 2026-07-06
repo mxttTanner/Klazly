@@ -857,7 +857,17 @@
       "validation": "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại các trường.",
       "noPermission": "Bạn không có quyền ghi bài học cho lớp này.",
       "saveLessonError": "Không thể lưu bài học: {message}",
-      "saveUpdatesError": "Không thể lưu nhận xét học sinh: {message}"
+      "saveUpdatesError": "Không thể lưu nhận xét học sinh: {message}",
+      "suggestions": {
+        "label": "Gợi ý nhận xét:",
+        "empty": "Hôm nay chưa có gợi ý cho nhóm này.",
+        "categories": {
+          "positive": "Tích cực",
+          "needs_improvement": "Cần cải thiện",
+          "participation": "Mức độ tham gia",
+          "homework": "Bài tập về nhà"
+        }
+      }
     }
   },
   "parent": {
@@ -1093,7 +1103,47 @@
     "lessonOrUpload": "hoặc tải lên tệp mới",
     "lessonNone": "— Không có —",
     "viewAttachment": "Xem tài liệu lớp",
-    "downloadAttachment": "Tải tài liệu"
+    "downloadAttachment": "Tải tài liệu",
+    "category": "Phân loại",
+    "categories": {
+      "grammar": "Ngữ pháp",
+      "vocabulary": "Từ vựng",
+      "reading": "Đọc",
+      "writing": "Viết",
+      "listening": "Nghe",
+      "speaking": "Nói",
+      "games": "Trò chơi",
+      "homework": "Bài tập về nhà",
+      "exam": "Đề thi / Kiểm tra",
+      "other": "Khác"
+    }
+  },
+  "photos": {
+    "tabPhotos": "Ảnh lớp học",
+    "uploadTitle": "Tải ảnh mới",
+    "uploadHelp": "PNG, JPG hoặc WebP. Tối đa 5MB. Ảnh sẽ hiển thị trong dòng thời gian của các học sinh được gắn thẻ.",
+    "file": "Ảnh",
+    "takenAt": "Ngày chụp",
+    "caption": "Chú thích (tuỳ chọn)",
+    "captionPlaceholder": "VD: Hoạt động nhóm bài Family",
+    "tagStudents": "Học sinh trong ảnh",
+    "tagAll": "Chọn tất cả",
+    "tagNone": "Bỏ chọn",
+    "tagHelp": "Chọn ít nhất 1 học sinh. Phụ huynh chỉ thấy ảnh có con mình được gắn thẻ.",
+    "uploadSubmit": "Tải lên",
+    "uploadSubmitting": "Đang tải lên...",
+    "uploadSuccess": "Đã tải ảnh lên.",
+    "uploadError": "Không thể tải lên: {message}",
+    "noFile": "Vui lòng chọn một ảnh.",
+    "tooLarge": "Ảnh quá lớn. Tối đa 5MB.",
+    "badType": "Định dạng không được hỗ trợ. Dùng PNG, JPG hoặc WebP.",
+    "validation": "Dữ liệu không hợp lệ. Vui lòng kiểm tra ảnh, ngày và học sinh được chọn.",
+    "noPermission": "Bạn không có quyền tải ảnh cho lớp này.",
+    "emptyClass": "Chưa có ảnh nào. Tải ảnh đầu tiên của lớp lên ở trên.",
+    "delete": "Xoá ảnh",
+    "deleteConfirm": "Xoá ảnh này? Ảnh sẽ biến mất khỏi dòng thời gian của các học sinh được gắn thẻ.",
+    "photoAlt": "Ảnh lớp học",
+    "timelineLabel": "Ảnh buổi học"
   },
   "settings": {
     "title": "Cài đặt trung tâm",

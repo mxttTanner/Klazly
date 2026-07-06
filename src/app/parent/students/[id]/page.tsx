@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   ArrowLeft,
+  Camera,
   ClipboardList,
   FileText,
   MessageSquareText,
@@ -10,6 +11,8 @@ import {
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { signWorksheetUrls } from "@/lib/worksheet-url";
+import { signPhotoUrls } from "@/lib/photo-url";
+import { PhotoLightbox } from "@/components/photo-lightbox";
 import { Badge } from "@/components/ui/badge";
 import { PrintButton } from "@/components/print-button";
 import { ShareReportButton } from "@/components/share-report-button";
@@ -68,6 +71,40 @@ const ATTENDANCE_TONES: Record<string, string> = {
   absent: "bg-red-100 text-red-800",
 };
 
+type PhotoView = { id: string; url: string; caption: string | null };
+
+/** Label row + thumbnail grid for one day's photos — shared by the lesson
+ *  card strip and the photo-only day card so the two can't drift. */
+function PhotoStripBlock({
+  photos,
+  dateText,
+  label,
+}: {
+  photos: PhotoView[];
+  dateText: string;
+  label: string;
+}) {
+  return (
+    <div>
+      <p className="text-muted-foreground mb-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide">
+        <Camera className="size-3" />
+        {label}
+      </p>
+      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+        {photos.map((p) => (
+          <PhotoLightbox
+            key={p.id}
+            url={p.url}
+            alt={p.caption ?? label}
+            caption={p.caption}
+            dateLabel={dateText}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function StudentProgressPage(
   props: {
     params: Promise<{ id: string }>;
@@ -85,6 +122,7 @@ export default async function StudentProgressPage(
   const tBehavior = await getTranslations("behavior");
   const tLevel = await getTranslations("level");
   const tWorksheets = await getTranslations("worksheets");
+  const tPhotos = await getTranslations("photos");
   const tAttendance = await getTranslations("attendance");
   const tMessages = await getTranslations("messages");
   const locale = await getLocale();
@@ -282,6 +320,48 @@ export default async function StudentProgressPage(
   const updateByLesson = new Map<string, UpdateRow>();
   for (const u of (updatesRes.data ?? []) as UpdateRow[]) {
     updateByLesson.set(u.lesson_id, u);
+  }
+
+  // Photos tagged to THIS child. RLS only ever returns photos with a tag
+  // pointing at the caller's own child; the !inner filter narrows to this
+  // student. Fails silently to [] if the db/student-photos.sql migration
+  // hasn't been run yet. URLs are signed in one batch (private bucket) and
+  // a photo that fails to sign is simply not rendered — no broken images.
+  // Fetched only on the lessons tab: the messages tab never shows photos
+  // (they're print:hidden inside the print-only timeline), so the fetch +
+  // signing round trips would be pure waste there.
+  const photosByDate = new Map<string, PhotoView[]>();
+  if (activeTab === "lessons") {
+    const photosRes = await supabase
+      .from("student_photos")
+      .select(
+        "id, storage_path, caption, taken_at, tags:student_photo_tags!inner(student_id)",
+      )
+      .eq("tags.student_id", student.id)
+      .order("taken_at", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (photosRes.error) {
+      console.warn(
+        "[parent/student] student_photos select failed (migration not run?):",
+        photosRes.error.message,
+      );
+    } else {
+      const rows = (photosRes.data ?? []) as Array<{
+        id: string;
+        storage_path: string;
+        caption: string | null;
+        taken_at: string;
+      }>;
+      const signed = await signPhotoUrls(rows);
+      for (const row of rows) {
+        const url = signed.get(row.id);
+        if (!url) continue;
+        const list = photosByDate.get(row.taken_at) ?? [];
+        list.push({ id: row.id, url, caption: row.caption });
+        photosByDate.set(row.taken_at, list);
+      }
+    }
   }
 
   // Last-30-days summary across the lessons we just fetched. We compute on the
@@ -960,17 +1040,36 @@ export default async function StudentProgressPage(
             : "hidden print:block print:space-y-2"
         }
       >
-        {lessons.length > 0 ? (
+        {lessons.length > 0 || photosByDate.size > 0 ? (
           (() => {
-            // Group lessons by year-month, preserving the desc order of
-            // the parent array (newest first).
-            const byMonth = new Map<string, typeof lessons>();
-            for (const l of lessons) {
-              const d = parseDateOnly(l.lesson_date);
+            // Merge lessons and photo-days into ONE timeline: photos taken
+            // on a lesson day render inside that day's lesson card; photos
+            // on days without a lesson get their own dated card.
+            type TimelineItem = {
+              date: string;
+              lesson: (typeof lessons)[number] | null;
+              photos: PhotoView[];
+            };
+            const lessonDates = new Set(lessons.map((l) => l.lesson_date));
+            const items: TimelineItem[] = [
+              ...lessons.map((l) => ({
+                date: l.lesson_date,
+                lesson: l as (typeof lessons)[number] | null,
+                photos: photosByDate.get(l.lesson_date) ?? [],
+              })),
+              ...Array.from(photosByDate.entries())
+                .filter(([date]) => !lessonDates.has(date))
+                .map(([date, photos]) => ({ date, lesson: null, photos })),
+            ].sort((a, b) => b.date.localeCompare(a.date));
+
+            // Group by year-month, newest first.
+            const byMonth = new Map<string, TimelineItem[]>();
+            for (const item of items) {
+              const d = parseDateOnly(item.date);
               if (!d) continue;
               const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
               if (!byMonth.has(key)) byMonth.set(key, []);
-              byMonth.get(key)!.push(l);
+              byMonth.get(key)!.push(item);
             }
             const monthLabel = (key: string) => {
               const [y, m] = key.split("-").map(Number);
@@ -980,11 +1079,28 @@ export default async function StudentProgressPage(
               });
             };
             const entries = Array.from(byMonth.entries());
-            return entries.map(([monthKey, monthLessons], monthIdx) => (
+            // The print/PDF report only shows OPEN <details>. Open the
+            // newest month that actually contains lessons — a newer
+            // photo-only month (photos are print:hidden) must not steal
+            // the slot and produce an empty printed report.
+            const firstLessonMonthIdx = entries.findIndex(([, items]) =>
+              items.some((i) => i.lesson),
+            );
+            const openIdx = firstLessonMonthIdx === -1 ? 0 : firstLessonMonthIdx;
+            return entries.map(([monthKey, monthItems], monthIdx) => {
+              const monthLessonCount = monthItems.filter(
+                (i) => i.lesson,
+              ).length;
+              return (
               <details
                 key={monthKey}
-                open={monthIdx === 0}
-                className="bg-card group rounded-xl border shadow-sm print:border-0 print:bg-transparent print:shadow-none"
+                open={monthIdx === openIdx}
+                className={
+                  "bg-card group rounded-xl border shadow-sm print:border-0 print:bg-transparent print:shadow-none" +
+                  // A month with only photo-days contributes nothing to the
+                  // printed report — don't print its empty shell.
+                  (monthLessonCount === 0 ? " print:hidden" : "")
+                }
               >
                 <summary className="hover:bg-muted/40 flex cursor-pointer items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden print:hidden">
                   <span className="inline-flex items-center gap-2">
@@ -992,16 +1108,46 @@ export default async function StudentProgressPage(
                     <span className="text-base font-semibold capitalize tracking-tight">
                       {monthLabel(monthKey)}
                     </span>
-                    <span className="text-muted-foreground text-xs">
-                      ({monthLessons.length})
-                    </span>
+                    {monthLessonCount > 0 ? (
+                      <span className="text-muted-foreground text-xs">
+                        ({monthLessonCount})
+                      </span>
+                    ) : null}
                   </span>
                   <span className="text-muted-foreground text-xs transition group-open:rotate-180">
                     ▾
                   </span>
                 </summary>
                 <ul className="space-y-3 px-3 pb-3 print:p-0">
-                  {monthLessons.map((l) => {
+                  {monthItems.map((item) => {
+            // A day with photos but no lesson gets its own compact card
+            // (screen only — the printed report stays lessons-only).
+            if (!item.lesson) {
+              const dateText =
+                parseDateOnly(item.date)?.toLocaleDateString(dateLocale, {
+                  weekday: "short",
+                  day: "2-digit",
+                  month: "2-digit",
+                }) ?? "";
+              return (
+                <li
+                  key={`photos-${item.date}`}
+                  className="rounded-xl border bg-card p-3.5 shadow-sm sm:p-5 print:hidden"
+                >
+                  <span className="bg-primary/10 text-primary inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide">
+                    {dateText}
+                  </span>
+                  <div className="mt-3">
+                    <PhotoStripBlock
+                      photos={item.photos}
+                      dateText={dateText}
+                      label={tPhotos("timelineLabel")}
+                    />
+                  </div>
+                </li>
+              );
+            }
+            const l = item.lesson;
             const u = updateByLesson.get(l.id);
             const rating = u?.behavior_rating;
             const ratingTone = rating ? BEHAVIOR_TONES[rating] : null;
@@ -1161,12 +1307,25 @@ export default async function StudentProgressPage(
                     </div>
                   </div>
                 ) : null}
+
+                {/* Photos from this day, tagged to this child (screen
+                    only — the printed report stays text-based). */}
+                {item.photos.length > 0 ? (
+                  <div className="mt-3.5 print:hidden">
+                    <PhotoStripBlock
+                      photos={item.photos}
+                      dateText={dateText}
+                      label={tPhotos("timelineLabel")}
+                    />
+                  </div>
+                ) : null}
               </li>
             );
           })}
                 </ul>
               </details>
-            ));
+              );
+            });
           })()
         ) : (
           <div className="bg-muted/30 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center print:hidden">

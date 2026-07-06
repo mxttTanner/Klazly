@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SubmitButton } from "@/components/submit-button";
+import { WORKSHEET_CATEGORIES } from "@/lib/worksheet-categories";
 import { uploadWorksheet } from "./actions";
 
 const initialState: { error?: string; success?: string } = {};
@@ -39,6 +40,21 @@ export function WorksheetUploadForm() {
             accept="application/pdf,image/png,image/jpeg,image/webp"
             required
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="category">{t("category")}</Label>
+          <select
+            id="category"
+            name="category"
+            defaultValue="other"
+            className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+          >
+            {WORKSHEET_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {t(`categories.${c}`)}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       <p className="text-muted-foreground text-xs">{t("uploadHelp")}</p>

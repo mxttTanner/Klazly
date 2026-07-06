@@ -18,11 +18,11 @@ export default async function WorksheetsPage() {
 
   // Pull the library + every lesson's worksheet_id in parallel. Counting
   // attachments client-side beats two roundtrips per row.
-  const [worksheetsRes, lessonsRes] = await Promise.all([
+  const [worksheetsResFirst, lessonsRes] = await Promise.all([
     supabase
       .from("worksheets")
       .select(
-        "id, name, file_type, size_bytes, storage_path, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
+        "id, name, file_type, size_bytes, storage_path, public_url, created_at, category, uploader:users!worksheets_uploaded_by_fkey(full_name)",
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -30,6 +30,45 @@ export default async function WorksheetsPage() {
       .select("worksheet_id")
       .not("worksheet_id", "is", null),
   ]);
+  // Retry without `category` ONLY when the error is about that column
+  // (db/worksheet-categories.sql not applied) — a transient failure must
+  // not silently render the whole library as uncategorized.
+  type WsRow = {
+    id: string;
+    name: string;
+    file_type: string;
+    size_bytes: number;
+    storage_path: string | null;
+    public_url: string;
+    created_at: string;
+    category: string | null;
+    uploader: { full_name: string } | { full_name: string }[] | null;
+  };
+  let worksheetRows: WsRow[];
+  if (worksheetsResFirst.error && /category/i.test(worksheetsResFirst.error.message)) {
+    console.warn(
+      "[admin/worksheets] category column missing (migration not run?), falling back:",
+      worksheetsResFirst.error.message,
+    );
+    const fb = await supabase
+      .from("worksheets")
+      .select(
+        "id, name, file_type, size_bytes, storage_path, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
+      )
+      .order("created_at", { ascending: false });
+    worksheetRows = ((fb.data ?? []) as Omit<WsRow, "category">[]).map((w) => ({
+      ...w,
+      category: null,
+    }));
+  } else {
+    if (worksheetsResFirst.error) {
+      console.warn(
+        "[admin/worksheets] worksheets select failed:",
+        worksheetsResFirst.error.message,
+      );
+    }
+    worksheetRows = (worksheetsResFirst.data ?? []) as WsRow[];
+  }
 
   // Build a usage map: worksheet_id → number of lessons that reference it.
   const usageByWorksheet = new Map<string, number>();
@@ -45,15 +84,9 @@ export default async function WorksheetsPage() {
   // if signing fails). Keeps the field name `public_url` in the props so the
   // client grid needs no change, while letting us flip the bucket to private
   // later without breaking the links.
-  const signed = await signWorksheetUrls(
-    (worksheetsRes.data ?? []) as {
-      id: string;
-      storage_path: string | null;
-      public_url: string | null;
-    }[],
-  );
+  const signed = await signWorksheetUrls(worksheetRows);
 
-  const worksheets = (worksheetsRes.data ?? []).map((w) => {
+  const worksheets = worksheetRows.map((w) => {
     const uploader = Array.isArray(w.uploader) ? w.uploader[0] : w.uploader;
     return {
       id: w.id,
@@ -62,6 +95,7 @@ export default async function WorksheetsPage() {
       size_bytes: w.size_bytes,
       public_url: signed.get(w.id) ?? w.public_url,
       created_at: w.created_at,
+      category: w.category,
       uploader_name: uploader?.full_name ?? null,
       usage_count: usageByWorksheet.get(w.id) ?? 0,
     };

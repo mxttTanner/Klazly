@@ -1,10 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Users } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { vnTodayYMD } from "@/lib/vn-time";
+import { fetchDailySuggestions } from "@/lib/comment-suggestions-server";
+import { fetchWorksheetOptions } from "@/lib/worksheet-options";
 import { LessonForm, type LessonDefaults } from "./lesson-form";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +42,8 @@ export default async function NewLessonPage(
   if (cls.center_id !== user.center_id) notFound();
   if (user.role === "teacher" && cls.teacher_id !== user.id) notFound();
 
-  const [{ data: students }, { data: templates }, { data: worksheets }] =
+  const locale = await getLocale();
+  const [{ data: students }, { data: templates }, worksheetOptions, suggestions] =
     await Promise.all([
       supabase
         .from("students")
@@ -53,18 +56,14 @@ export default async function NewLessonPage(
           "id, name, vocabulary, grammar_point, speaking_activity, homework, general_note",
         )
         .order("name", { ascending: true }),
-      supabase
-        .from("worksheets")
-        .select("id, name, file_type")
-        .order("created_at", { ascending: false }),
+      fetchWorksheetOptions(supabase),
+      // The day's comment-suggestion bank in the teacher's language (hidden
+      // if the migration isn't applied). Seeded by VN "today" so the 5 per
+      // category flip at VN midnight for every teacher at once.
+      fetchDailySuggestions(supabase, locale),
     ]);
 
   const allTemplates = (templates ?? []) as Template[];
-  const worksheetOptions = (worksheets ?? []) as Array<{
-    id: string;
-    name: string;
-    file_type: string;
-  }>;
   const selectedTemplate =
     searchParams.template
       ? allTemplates.find((tpl) => tpl.id === searchParams.template) ?? null
@@ -130,6 +129,7 @@ export default async function NewLessonPage(
           templates={allTemplates}
           selectedTemplate={selectedTemplate}
           worksheets={worksheetOptions}
+          suggestions={suggestions}
           defaults={duplicateDefaults}
         />
       ) : (
