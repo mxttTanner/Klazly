@@ -1,9 +1,30 @@
 import { redirect } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { dashboardPathFor, type AppUser } from "@/lib/auth";
 import { isSuperAdminEmail } from "@/lib/super-admin";
+import { BrandWordmark } from "@/components/brand-wordmark";
+import { PostLoginRedirect } from "./redirect-client";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Renders the branded loader with a client-side hop to `to`. We resolve
+ * the destination server-side but navigate client-side: a server
+ * redirect() chain skips the destination's loading.tsx during client
+ * navigations, which left users staring at a blank white screen while
+ * their dashboard queries ran (worst on the login and demo role-switch
+ * paths). See redirect-client.tsx.
+ */
+function RouteTo({ to }: { to: string }) {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-5 bg-navy text-white">
+      <BrandWordmark className="text-3xl" />
+      <Loader2 className="size-6 animate-spin text-emerald-light" />
+      <PostLoginRedirect to={to} />
+    </div>
+  );
+}
 
 export default async function PostLoginPage() {
   const supabase = await createClient();
@@ -13,7 +34,7 @@ export default async function PostLoginPage() {
   if (!authUser) redirect("/login");
 
   if (isSuperAdminEmail(authUser.email)) {
-    redirect("/super-admin");
+    return <RouteTo to="/super-admin" />;
   }
 
   // Include must_change_password so we can force a first-login reset for
@@ -55,8 +76,8 @@ export default async function PostLoginPage() {
   // reset-password page works with the active session and clears the flag
   // on success, then routes back here to the dashboard.
   if (profile.must_change_password) {
-    redirect("/reset-password?forced=1");
+    return <RouteTo to="/reset-password?forced=1" />;
   }
 
-  redirect(dashboardPathFor((profile as AppUser).role));
+  return <RouteTo to={dashboardPathFor((profile as AppUser).role)} />;
 }

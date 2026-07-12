@@ -45,9 +45,12 @@ export async function SiteNav({ active }: { active?: NavKey }) {
         </div>
         <div className="ml-auto flex items-center gap-3">
           <LanguageToggle tone="dark" />
+          {/* Always visible — parents are told "log in at klazly.com" on
+              their phones; hiding this below sm left mobile users with no
+              login entry point in the nav. */}
           <Link
             href="/login"
-            className="hidden text-sm text-brand-mut-2 transition hover:text-white sm:inline"
+            className="text-sm text-brand-mut-2 transition hover:text-white"
           >
             {t("navLogin")}
           </Link>
