@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { unreadCountsByStudent } from "@/lib/message-reads";
 import { VN_TZ, vnTodayYMD } from "@/lib/vn-time";
 import { signPhotoUrls } from "@/lib/photo-url";
 import { buttonVariants } from "@/components/ui/button";
@@ -182,30 +183,32 @@ export default async function ClassDetailPage(
   const messageStats = new Map<string, StudentMessageStats>();
   const studentIds = (students ?? []).map((s) => s.id);
   if (studentIds.length > 0) {
-    const msgRes = await supabase
-      .from("parent_teacher_messages")
-      .select("student_id, sender_user_id, body, created_at, read_at")
-      .in("student_id", studentIds)
-      .order("created_at", { ascending: false })
-      .limit(500);
+    const [msgRes, unreadByStudent] = await Promise.all([
+      supabase
+        .from("parent_teacher_messages")
+        .select("student_id, sender_user_id, body, created_at")
+        .in("student_id", studentIds)
+        .order("created_at", { ascending: false })
+        .limit(500),
+      // Per-user unread counts (message_reads), not the shared read_at
+      // flag — and counted server-side, so the 500-row preview cap above
+      // can't undercount a chatty class.
+      unreadCountsByStudent(supabase, studentIds, user.id),
+    ]);
     if (!msgRes.error && msgRes.data) {
       type MsgRow = {
         student_id: string;
         sender_user_id: string;
         body: string;
         created_at: string;
-        read_at: string | null;
       };
       const rows = msgRes.data as MsgRow[];
       for (const sid of studentIds) {
         const mine = rows.filter((r) => r.student_id === sid);
-        const unread = mine.filter(
-          (r) => r.sender_user_id !== user.id && r.read_at === null,
-        ).length;
         const latest = mine[0];
         messageStats.set(sid, {
           total: mine.length,
-          unread,
+          unread: unreadByStudent.get(sid) ?? 0,
           lastBody: latest?.body ?? null,
           lastAt: latest?.created_at ?? null,
         });

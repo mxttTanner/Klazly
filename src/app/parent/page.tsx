@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { unreadCountsByStudent } from "@/lib/message-reads";
 import { parseDateOnly } from "@/lib/utils";
 import { vnLongDate } from "@/lib/vn-time";
 import { ScrollReveal } from "@/components/scroll-reveal";
@@ -92,11 +93,10 @@ export default async function ParentHomePage() {
     .filter((v): v is string => Boolean(v));
 
   type LessonRow = { id: string; class_id: string; lesson_date: string };
-  type UnreadRow = { student_id: string };
 
   // Lessons (needs classIds) and unread messages (only needs studentIds)
   // can run in parallel. Updates has to wait for lessons.
-  const [lessonsRes, unreadRes] = await Promise.all([
+  const [lessonsRes, unreadByStudent] = await Promise.all([
     classIds.length
       ? supabase
           .from("lessons")
@@ -105,14 +105,7 @@ export default async function ParentHomePage() {
           .order("lesson_date", { ascending: false })
           .limit(50)
       : Promise.resolve({ data: [] as LessonRow[], error: null }),
-    studentIds.length
-      ? supabase
-          .from("parent_teacher_messages")
-          .select("student_id")
-          .in("student_id", studentIds)
-          .neq("sender_user_id", user.id)
-          .is("read_at", null)
-      : Promise.resolve({ data: [] as UnreadRow[], error: null }),
+    unreadCountsByStudent(supabase, studentIds, user.id),
   ]);
   const allLessons = (lessonsRes.data ?? []) as LessonRow[];
 
@@ -133,18 +126,6 @@ export default async function ParentHomePage() {
           )
       : { data: [] as UpdateRow[] };
   const allUpdates = (updatesRes.data ?? []) as UpdateRow[];
-
-  // Unread message count per student (messages NOT sent by this parent and
-  // with no read_at). Fails soft if the messages table doesn't exist.
-  const unreadByStudent = new Map<string, number>();
-  if (!("error" in unreadRes ? unreadRes.error : null) && unreadRes.data) {
-    for (const row of unreadRes.data as UnreadRow[]) {
-      unreadByStudent.set(
-        row.student_id,
-        (unreadByStudent.get(row.student_id) ?? 0) + 1,
-      );
-    }
-  }
 
   // Build helpers per student.
   const lessonsByClass = new Map<string, LessonRow[]>();

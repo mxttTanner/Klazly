@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { MessageSquareText } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { unreadCountsByStudent } from "@/lib/message-reads";
 import { VN_TZ } from "@/lib/vn-time";
 import { InboxList } from "./inbox-list";
 
@@ -23,11 +24,10 @@ export default async function AdminMessagesPage() {
     sender_user_id: string;
     body: string;
     created_at: string;
-    read_at: string | null;
   };
   const msgRes = await supabase
     .from("parent_teacher_messages")
-    .select("id, student_id, sender_user_id, body, created_at, read_at")
+    .select("id, student_id, sender_user_id, body, created_at")
     .order("created_at", { ascending: false })
     .limit(1000);
 
@@ -61,18 +61,30 @@ export default async function AdminMessagesPage() {
       byStudent.set(r.student_id, {
         student_id: r.student_id,
         last: r,
-        unread: r.read_at === null && r.sender_user_id !== admin.id ? 1 : 0,
+        unread: 0,
         total: 1,
       });
     } else {
       existing.total++;
-      if (r.read_at === null && r.sender_user_id !== admin.id) existing.unread++;
       // rows are ordered desc, so the first one wins for `last`
     }
   }
 
   // Hydrate student names + class info for each thread.
   const studentIds = Array.from(byStudent.keys());
+
+  // Unread = messages THIS admin hasn't read (message_reads), not the
+  // legacy shared read_at flag — another participant reading a thread no
+  // longer clears the admin's badge, and vice versa.
+  const unreadByStudent = await unreadCountsByStudent(
+    supabase,
+    studentIds,
+    admin.id,
+  );
+  for (const [sid, n] of unreadByStudent) {
+    const thread = byStudent.get(sid);
+    if (thread) thread.unread = n;
+  }
   let students: Array<{
     id: string;
     full_name: string;

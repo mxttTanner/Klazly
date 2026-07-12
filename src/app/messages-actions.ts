@@ -187,8 +187,9 @@ async function notifyRecipientByEmail(opts: {
 }
 
 /**
- * Mark all visible messages in a student's thread as read (sets read_at on
- * messages that are not from the current user and are not already read).
+ * Mark all visible messages in a student's thread as read FOR THE CURRENT
+ * USER (per-user rows in message_reads; the legacy shared read_at column
+ * is still stamped for backward compatibility but no longer read).
  */
 export async function markThreadRead(
   formData: FormData,

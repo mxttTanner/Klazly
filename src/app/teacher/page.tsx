@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { unreadCountsByStudent } from "@/lib/message-reads";
 import { vnLongDate } from "@/lib/vn-time";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
@@ -51,18 +52,15 @@ export default async function TeacherHomePage() {
       ((classStudents ?? []) as CS[]).map((s) => [s.id, s.class_id]),
     );
     if (sIds.length > 0) {
-      const unreadRes = await supabase
-        .from("parent_teacher_messages")
-        .select("student_id")
-        .in("student_id", sIds)
-        .neq("sender_user_id", user.id)
-        .is("read_at", null);
-      if (!unreadRes.error && unreadRes.data) {
-        for (const row of unreadRes.data as Array<{ student_id: string }>) {
-          const cid = studentToClass.get(row.student_id);
-          if (!cid) continue;
-          unreadByClass.set(cid, (unreadByClass.get(cid) ?? 0) + 1);
-        }
+      const unreadByStudent = await unreadCountsByStudent(
+        supabase,
+        sIds,
+        user.id,
+      );
+      for (const [sid, n] of unreadByStudent) {
+        const cid = studentToClass.get(sid);
+        if (!cid) continue;
+        unreadByClass.set(cid, (unreadByClass.get(cid) ?? 0) + n);
       }
     }
   }
