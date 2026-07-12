@@ -56,10 +56,7 @@ async function maybeUploadInlineWorksheet(
     });
   if (uploadErr) return { id: null, error: uploadErr.message };
 
-  const { data: urlData } = supabase.storage
-    .from("worksheets")
-    .getPublicUrl(storagePath);
-
+  // Bucket is private; files are served via signed URLs (see lib/worksheets.ts).
   const { data: inserted, error: insertErr } = await supabase
     .from("worksheets")
     .insert({
@@ -67,7 +64,6 @@ async function maybeUploadInlineWorksheet(
       uploaded_by: uploaderId,
       name: file.name,
       storage_path: storagePath,
-      public_url: urlData.publicUrl,
       file_type: file.type,
       size_bytes: file.size,
     })

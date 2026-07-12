@@ -19,7 +19,8 @@ type Worksheet = {
   name: string;
   file_type: string;
   size_bytes: number;
-  public_url: string;
+  // Short-lived signed URL (bucket is private). Null if signing failed.
+  file_url: string | null;
   created_at: string;
   category: string | null;
   uploader_name: string | null;
@@ -204,7 +205,7 @@ export function WorksheetsLibraryGrid({
                 className="group bg-card flex flex-col overflow-hidden rounded-xl border shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
                 <a
-                  href={w.public_url}
+                  href={w.file_url ?? undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-muted/40 relative block aspect-[4/3] overflow-hidden"
@@ -212,7 +213,7 @@ export function WorksheetsLibraryGrid({
                   {isImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={w.public_url}
+                      src={w.file_url ?? undefined}
                       alt={w.name}
                       loading="lazy"
                       className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
@@ -238,7 +239,7 @@ export function WorksheetsLibraryGrid({
                 </a>
                 <div className="flex flex-1 flex-col gap-2 p-3">
                   <a
-                    href={w.public_url}
+                    href={w.file_url ?? undefined}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-primary line-clamp-2 text-sm font-medium leading-snug"
@@ -289,7 +290,7 @@ export function WorksheetsLibraryGrid({
                   ) : null}
                   <div className="flex items-center justify-between gap-2 pt-1">
                     <a
-                      href={w.public_url}
+                      href={w.file_url ?? undefined}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-muted-foreground hover:text-primary inline-flex items-center gap-1 text-xs"

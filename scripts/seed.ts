@@ -30,6 +30,7 @@
 
 import { config } from "dotenv";
 import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 
 config({ path: resolve(process.cwd(), ".env.local") });
@@ -570,31 +571,42 @@ async function main() {
   const [an, ngoc, linh, hongAnh, huy, minh, ha] = students!;
 
   console.log("Creating worksheets...");
-  // placehold.co serves real PNGs on demand — the URLs resolve in the
-  // browser so a center owner clicking a worksheet sees the image (a
-  // labeled placeholder), not a 404. Storage bucket is bypassed for the
-  // demo since we don't need real PDFs.
-  // Bundled local thumbnail (public/worksheet-thumb.svg) instead of a
-  // third-party placeholder — no external requests on production.
-  const ws = (name: string, ext: string = "png") => ({
+  // The worksheets bucket is PRIVATE — the app serves files via short-lived
+  // signed URLs derived from storage_path, so a row needs a real object in
+  // the bucket or its link won't resolve. We upload the bundled thumbnail
+  // (public/worksheet-thumb.svg) to each path so the demo's worksheet links
+  // open a labeled placeholder, not a broken link.
+  const thumbBytes = readFileSync(
+    resolve(process.cwd(), "public/worksheet-thumb.svg"),
+  );
+  const ws = (name: string) => ({
     center_id: centerId,
     uploaded_by: huong,
     name,
-    storage_path: `demo/${centerId}/${name.replace(/\s+/g, "_")}.${ext}`,
-    public_url: "/worksheet-thumb.svg",
-    file_type: ext === "pdf" ? "application/pdf" : "image/svg+xml",
-    size_bytes: 245_000,
+    storage_path: `demo/${centerId}/${name.replace(/\s+/g, "_")}.svg`,
+    file_type: "image/svg+xml",
+    size_bytes: thumbBytes.byteLength,
   });
+  const worksheetRows = [
+    ws("Family Tree Worksheet"),
+    ws("Daily Routines Cut-out"),
+    ws("Food Vocabulary Bingo"),
+    ws("KET Practice — Reading"),
+    ws("Environment Crossword"),
+    ws("Job Interview Role Cards"),
+  ];
+  for (const row of worksheetRows) {
+    const { error: upErr } = await supabase.storage
+      .from("worksheets")
+      .upload(row.storage_path, thumbBytes, {
+        upsert: true,
+        contentType: "image/svg+xml",
+      });
+    if (upErr) throw upErr;
+  }
   const { data: worksheets, error: wErr } = await supabase
     .from("worksheets")
-    .insert([
-      ws("Family Tree Worksheet"),
-      ws("Daily Routines Cut-out"),
-      ws("Food Vocabulary Bingo"),
-      ws("KET Practice — Reading"),
-      ws("Environment Crossword"),
-      ws("Job Interview Role Cards"),
-    ])
+    .insert(worksheetRows)
     .select();
   if (wErr) throw wErr;
   const [familyWs, routinesWs, foodWs, ketWs, envWs, jobWs] = worksheets!;

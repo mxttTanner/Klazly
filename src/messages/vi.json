@@ -185,6 +185,9 @@
     "cancel": "Huỷ",
     "delete": "Xoá",
     "actions": "Hành động",
+    "copy": "Sao chép",
+    "copied": "Đã chép",
+    "close": "Đóng",
     "name": "Họ và tên",
     "email": "Email",
     "back": "Quay lại",
@@ -707,6 +710,10 @@
       "saveProfileError": "Không thể lưu hồ sơ giáo viên: {message}",
       "addedHint": "Đã thêm giáo viên {name}. Vui lòng chuyển mật khẩu cho giáo viên qua kênh riêng.",
       "deleteConfirm": "Xoá giáo viên {name}? Các lớp họ phụ trách sẽ trở thành chưa được phân công.",
+      "resetPassword": "Đặt lại mật khẩu",
+      "resetConfirm": "Đặt lại mật khẩu cho {name}? Mật khẩu hiện tại sẽ ngừng hoạt động.",
+      "resetIntro": "Mật khẩu tạm thời mới cho {name}. Gửi cho giáo viên; họ có thể đổi lại trong trang cá nhân.",
+      "resetError": "Không thể đặt lại mật khẩu: {message}",
       "empty": "Chưa có giáo viên nào."
     },
     "parents": {
@@ -717,6 +724,10 @@
       "saveProfileError": "Không thể lưu hồ sơ phụ huynh: {message}",
       "addedHint": "Đã thêm phụ huynh {name}. Vui lòng chuyển mật khẩu cho phụ huynh qua kênh riêng.",
       "deleteConfirm": "Xoá phụ huynh {name}? Các con của họ sẽ bị huỷ liên kết.",
+      "resetPassword": "Đặt lại mật khẩu",
+      "resetConfirm": "Đặt lại mật khẩu cho {name}? Mật khẩu hiện tại sẽ ngừng hoạt động.",
+      "resetIntro": "Mật khẩu tạm thời mới cho {name}. Gửi cho phụ huynh; họ có thể đổi lại trong trang cá nhân.",
+      "resetError": "Không thể đặt lại mật khẩu: {message}",
       "empty": "Chưa có phụ huynh nào."
     },
     "classes": {
@@ -988,6 +999,7 @@
     "validationBody": "Vui lòng nhập nội dung (1–2000 ký tự).",
     "notAllowed": "Bạn không có quyền nhắn về học sinh này.",
     "sendError": "Không thể gửi: {message}",
+    "emailNotDelivered": "Đã lưu tin nhắn, nhưng chưa gửi được thông báo email cho người nhận.",
     "teacherTag": "Giáo viên",
     "adminTag": "Quản trị",
     "classHeading": "Tin nhắn",

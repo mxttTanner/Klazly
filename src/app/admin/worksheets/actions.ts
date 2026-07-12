@@ -58,9 +58,8 @@ export async function uploadWorksheet(_prev: unknown, formData: FormData) {
     return { error: t("uploadError", { message: uploadErr.message }) };
   }
 
-  const { data: urlData } = supabase.storage
-    .from("worksheets")
-    .getPublicUrl(storagePath);
+  // The bucket is private; access is via signed URLs minted at read time from
+  // storage_path (see src/lib/worksheets.ts), so we don't store a public URL.
 
   // Optional category label; anything unexpected becomes null (renders as
   // "Other"). Never trust the raw form value against the CHECK constraint.
@@ -72,7 +71,6 @@ export async function uploadWorksheet(_prev: unknown, formData: FormData) {
     uploaded_by: admin.id,
     name,
     storage_path: storagePath,
-    public_url: urlData.publicUrl,
     file_type: file.type,
     size_bytes: file.size,
   };

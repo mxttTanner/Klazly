@@ -9,9 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TeacherForm } from "./teacher-form";
-import { removeTeacher } from "./actions";
+import { removeTeacher, resetTeacherPassword } from "./actions";
 import { SearchInput } from "@/components/search-input";
 import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ResetPasswordButton } from "@/components/reset-password-button";
 
 export const dynamic = "force-dynamic";
 
@@ -112,16 +113,32 @@ export default async function TeachersPage(
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <form action={removeTeacher}>
-                      <input type="hidden" name="id" value={teacher.id} />
-                      <ConfirmSubmitButton
-                        confirmMessage={t("deleteConfirm", {
-                          name: teacher.full_name,
-                        })}
-                      >
-                        {tc("delete")}
-                      </ConfirmSubmitButton>
-                    </form>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <ResetPasswordButton
+                        userId={teacher.id}
+                        action={resetTeacherPassword}
+                        labels={{
+                          reset: t("resetPassword"),
+                          confirm: t("resetConfirm", {
+                            name: teacher.full_name,
+                          }),
+                          intro: t("resetIntro", { name: teacher.full_name }),
+                          copy: tc("copy"),
+                          copied: tc("copied"),
+                          close: tc("close"),
+                        }}
+                      />
+                      <form action={removeTeacher}>
+                        <input type="hidden" name="id" value={teacher.id} />
+                        <ConfirmSubmitButton
+                          confirmMessage={t("deleteConfirm", {
+                            name: teacher.full_name,
+                          })}
+                        >
+                          {tc("delete")}
+                        </ConfirmSubmitButton>
+                      </form>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

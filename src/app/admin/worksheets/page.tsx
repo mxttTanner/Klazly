@@ -2,7 +2,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { FolderOpen, Upload } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { signWorksheetUrls } from "@/lib/worksheet-url";
+import { signWorksheetUrls } from "@/lib/worksheets";
 import { WorksheetUploadForm } from "./worksheet-upload-form";
 import { WorksheetsLibraryGrid } from "./library-grid";
 
@@ -22,7 +22,7 @@ export default async function WorksheetsPage() {
     supabase
       .from("worksheets")
       .select(
-        "id, name, file_type, size_bytes, storage_path, public_url, created_at, category, uploader:users!worksheets_uploaded_by_fkey(full_name)",
+        "id, name, file_type, size_bytes, storage_path, created_at, category, uploader:users!worksheets_uploaded_by_fkey(full_name)",
       )
       .order("created_at", { ascending: false }),
     supabase
@@ -39,7 +39,6 @@ export default async function WorksheetsPage() {
     file_type: string;
     size_bytes: number;
     storage_path: string | null;
-    public_url: string;
     created_at: string;
     category: string | null;
     uploader: { full_name: string } | { full_name: string }[] | null;
@@ -53,7 +52,7 @@ export default async function WorksheetsPage() {
     const fb = await supabase
       .from("worksheets")
       .select(
-        "id, name, file_type, size_bytes, storage_path, public_url, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
+        "id, name, file_type, size_bytes, storage_path, created_at, uploader:users!worksheets_uploaded_by_fkey(full_name)",
       )
       .order("created_at", { ascending: false });
     worksheetRows = ((fb.data ?? []) as Omit<WsRow, "category">[]).map((w) => ({
@@ -80,11 +79,11 @@ export default async function WorksheetsPage() {
     );
   }
 
-  // Sign every worksheet's URL server-side (falls back to public_url per row
-  // if signing fails). Keeps the field name `public_url` in the props so the
-  // client grid needs no change, while letting us flip the bucket to private
-  // later without breaking the links.
-  const signed = await signWorksheetUrls(worksheetRows);
+  // The bucket is private — mint a short-lived signed URL per file for this
+  // render instead of relying on a world-readable public URL.
+  const signedUrls = await signWorksheetUrls(
+    worksheetRows.map((w) => w.storage_path),
+  );
 
   const worksheets = worksheetRows.map((w) => {
     const uploader = Array.isArray(w.uploader) ? w.uploader[0] : w.uploader;
@@ -93,7 +92,7 @@ export default async function WorksheetsPage() {
       name: w.name,
       file_type: w.file_type,
       size_bytes: w.size_bytes,
-      public_url: signed.get(w.id) ?? w.public_url,
+      file_url: w.storage_path ? signedUrls.get(w.storage_path) ?? null : null,
       created_at: w.created_at,
       category: w.category,
       uploader_name: uploader?.full_name ?? null,

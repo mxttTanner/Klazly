@@ -96,7 +96,7 @@ export async function sendParentTeacherMessage(
   // fails, the message is already in the DB and we still revalidate.
   // Uses the admin client because the parent/teacher RLS scope won't
   // let a sender read the recipient's email column.
-  await notifyRecipientByEmail({
+  const notify = await notifyRecipientByEmail({
     senderRole: user.role,
     senderName: user.full_name,
     centerId: student.center_id,
@@ -115,8 +115,17 @@ export async function sendParentTeacherMessage(
   revalidatePath("/teacher/classes/[id]/messages/[studentId]", "page");
   revalidatePath("/teacher/classes", "layout");
   revalidatePath("/admin/messages", "layout");
-  return { success: true };
+
+  // The message is saved regardless; we only warn (non-blocking) when there
+  // was a recipient on file whose email notification didn't go out — so the
+  // sender knows the other side won't get a ping. "no_recipient" (e.g. a
+  // phone-only parent with no email) is expected and stays silent.
+  const emailWarning =
+    notify === "failed" || notify === "not_configured" ? true : undefined;
+  return { success: true, emailWarning };
 }
+
+type NotifyResult = "sent" | "no_recipient" | "not_configured" | "failed";
 
 async function notifyRecipientByEmail(opts: {
   senderRole: "parent" | "teacher" | "admin";
@@ -126,7 +135,7 @@ async function notifyRecipientByEmail(opts: {
   parentUserId: string | null;
   classId: string | null;
   body: string;
-}): Promise<void> {
+}): Promise<NotifyResult> {
   try {
     const admin = createAdminClient();
     // Need the student name for the subject line; one cheap fetch.
@@ -137,52 +146,76 @@ async function notifyRecipientByEmail(opts: {
       .single();
     const studentName = student?.full_name ?? "—";
 
+    let recipient: {
+      email: string;
+      name: string;
+      roleLabel: string;
+      threadPath: string;
+    } | null = null;
+
     if (opts.senderRole === "parent") {
       // Notify the class teacher.
-      if (!opts.classId) return;
+      if (!opts.classId) return "no_recipient";
       const { data: cls } = await admin
         .from("classes")
         .select("teacher_id")
         .eq("id", opts.classId)
         .single();
-      if (!cls?.teacher_id) return;
+      if (!cls?.teacher_id) return "no_recipient";
       const { data: teacher } = await admin
         .from("users")
         .select("email, full_name")
         .eq("id", cls.teacher_id)
         .single();
-      if (!teacher?.email) return;
-      await sendNewMessageEmail({
-        toEmail: teacher.email,
-        toName: teacher.full_name,
-        fromName: opts.senderName,
-        fromRoleLabel: "Phụ huynh / Parent",
-        studentName,
-        body: opts.body,
+      if (!teacher?.email) return "no_recipient";
+      recipient = {
+        email: teacher.email,
+        name: teacher.full_name,
+        roleLabel: "Phụ huynh / Parent",
         threadPath: `/teacher/classes/${opts.classId}/messages/${opts.studentId}`,
-      });
+      };
     } else {
       // Teacher or admin → notify the parent.
-      if (!opts.parentUserId) return;
+      if (!opts.parentUserId) return "no_recipient";
       const { data: parent } = await admin
         .from("users")
         .select("email, full_name")
         .eq("id", opts.parentUserId)
         .single();
-      if (!parent?.email) return;
-      await sendNewMessageEmail({
-        toEmail: parent.email,
-        toName: parent.full_name,
-        fromName: opts.senderName,
-        fromRoleLabel:
+      if (!parent?.email) return "no_recipient";
+      recipient = {
+        email: parent.email,
+        name: parent.full_name,
+        roleLabel:
           opts.senderRole === "admin" ? "Quản trị / Admin" : "Giáo viên / Teacher",
-        studentName,
-        body: opts.body,
         threadPath: `/parent/students/${opts.studentId}`,
-      });
+      };
     }
+
+    const result = await sendNewMessageEmail({
+      toEmail: recipient.email,
+      toName: recipient.name,
+      fromName: opts.senderName,
+      fromRoleLabel: recipient.roleLabel,
+      studentName,
+      body: opts.body,
+      threadPath: recipient.threadPath,
+    });
+    if (result.ok) return "sent";
+    if (result.reason === "send_failed") {
+      // A real delivery failure (vs. an unconfigured provider) is worth an
+      // ops alert — the recipient silently won't get notified otherwise.
+      Sentry.captureException(
+        new Error(`Message email delivery failed: ${result.error ?? "unknown"}`),
+        { tags: { feature: "message-email" } },
+      );
+      return "failed";
+    }
+    return "not_configured";
   } catch (err) {
     console.error("[messages] email notify failed:", err);
+    Sentry.captureException(err);
+    return "failed";
   }
 }
 
