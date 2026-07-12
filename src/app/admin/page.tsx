@@ -12,17 +12,19 @@ import {
   Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { vnTodayYMD } from "@/lib/vn-time";
 
 export const dynamic = "force-dynamic";
 
-/** "6 days ago" in local time as YYYY-MM-DD (the week window). */
+/**
+ * "6 days ago" as YYYY-MM-DD, anchored to the VIETNAM calendar day — the
+ * server runs in UTC, so between 00:00–07:00 VN a server-local window was
+ * a day stale and lessons fell in/out of "this week" incorrectly.
+ */
 function weekAgoIsoDate(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 6);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  const [y, m, d] = vnTodayYMD().split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d - 6));
+  return dt.toISOString().slice(0, 10);
 }
 
 /** Initial = first letter of the last word (the given name in VN order). */
@@ -111,7 +113,13 @@ export default async function AdminHomePage(
       .select("id, full_name")
       .eq("role", "teacher")
       .order("full_name", { ascending: true }),
-    supabase.from("lessons").select("teacher_id, lesson_date"),
+    // WEEK window only — the old unbounded select silently truncated at
+    // PostgREST's 1000-row cap once a center had ~1000 lessons total,
+    // skewing every per-teacher stat. Totals come from count queries below.
+    supabase
+      .from("lessons")
+      .select("teacher_id, lesson_date")
+      .gte("lesson_date", weekStart),
     supabase
       .from("lessons")
       .select(
@@ -127,16 +135,24 @@ export default async function AdminHomePage(
   const allLessons = (lessons ?? []) as LessonLite[];
   const teacherList = (teachers ?? []) as TeacherRow[];
 
-  // Per-teacher week / total lesson counts.
+  // Per-teacher week counts from the week-windowed rows; totals via exact
+  // count queries (immune to the 1000-row cap; a handful of cheap HEADs).
   const weekByTeacher = new Map<string, number>();
-  const totalByTeacher = new Map<string, number>();
   for (const l of allLessons) {
     if (!l.teacher_id) continue;
-    totalByTeacher.set(l.teacher_id, (totalByTeacher.get(l.teacher_id) ?? 0) + 1);
-    if (l.lesson_date >= weekStart) {
-      weekByTeacher.set(l.teacher_id, (weekByTeacher.get(l.teacher_id) ?? 0) + 1);
-    }
+    weekByTeacher.set(l.teacher_id, (weekByTeacher.get(l.teacher_id) ?? 0) + 1);
   }
+  const totalByTeacher = new Map<string, number>(
+    await Promise.all(
+      teacherList.map(async (tr): Promise<[string, number]> => {
+        const { count } = await supabase
+          .from("lessons")
+          .select("id", { count: "exact", head: true })
+          .eq("teacher_id", tr.id);
+        return [tr.id, count ?? 0];
+      }),
+    ),
+  );
   const maxWeek = Math.max(1, ...teacherList.map((tr) => weekByTeacher.get(tr.id) ?? 0));
   const analytics = teacherList
     .map((tr) => {

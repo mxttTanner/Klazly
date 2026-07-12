@@ -7,7 +7,7 @@ import { StatusSelect } from "./status-select";
 import { PlanSelect } from "./plan-select";
 import { NotesCell } from "./notes-cell";
 import { TierBadge } from "./tier-badge";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { deleteCenterCascade } from "./actions";
 
 export type CenterCardData = {
@@ -138,15 +138,14 @@ export function CenterCard({ center }: { center: CenterCardData }) {
             </span>
           </div>
         </div>
-        <form action={deleteCenterCascade}>
-          <input type="hidden" name="id" value={center.id} />
-          <ConfirmSubmitButton
-            confirmMessage={t("deleteConfirm", { name: center.name })}
-            ariaLabel={tc("delete")}
-          >
-            <Trash2 className="size-3.5" />
-          </ConfirmSubmitButton>
-        </form>
+        <ConfirmDeleteForm
+          action={deleteCenterCascade}
+          hidden={{ id: center.id }}
+          confirmMessage={t("deleteConfirm", { name: center.name })}
+          ariaLabel={tc("delete")}
+        >
+          <Trash2 className="size-3.5" />
+        </ConfirmDeleteForm>
       </header>
 
       {/* Subscription controls */}

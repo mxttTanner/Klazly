@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SubmitButton } from "@/components/submit-button";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import {
   createProgram,
   deleteProgram,
@@ -65,17 +65,16 @@ export function ProgramsForm({ programs }: { programs: Program[] }) {
                     <Pencil className="size-3.5" />
                     {t("programsRename")}
                   </Button>
-                  <form action={deleteProgram}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <ConfirmSubmitButton
-                      confirmMessage={t("programsDeleteConfirm", {
-                        label: p.label,
-                      })}
-                      ariaLabel={t("programsDelete")}
-                    >
-                      <X className="size-3.5" />
-                    </ConfirmSubmitButton>
-                  </form>
+                  <ConfirmDeleteForm
+                    action={deleteProgram}
+                    hidden={{ id: p.id }}
+                    confirmMessage={t("programsDeleteConfirm", {
+                      label: p.label,
+                    })}
+                    ariaLabel={t("programsDelete")}
+                  >
+                    <X className="size-3.5" />
+                  </ConfirmDeleteForm>
                 </>
               )}
             </li>

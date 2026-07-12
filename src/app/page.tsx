@@ -505,7 +505,7 @@ export default async function HomePage() {
           </div>
           <div className="mt-9 flex flex-col items-start justify-between gap-2 border-t border-brand-line-dark pt-5 text-[12px] text-[#5b6b82] sm:flex-row sm:items-center">
             <span>{t("footerCopyright")}</span>
-            <span>{t("footerMade")} 🇻🇳</span>
+            <span>{t("footerMade")}</span>
           </div>
         </div>
       </footer>

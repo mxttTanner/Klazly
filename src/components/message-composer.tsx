@@ -1,7 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { SubmitButton } from "@/components/submit-button";
 import { sendParentTeacherMessage } from "@/app/messages-actions";
@@ -27,11 +26,16 @@ export function MessageComposer({
   const [length, setLength] = useState(0);
 
   // After a successful send, clear the textarea and refocus so it feels
-  // like a chat input — no full reload between messages.
-  if (state.success && textareaRef.current && textareaRef.current.value) {
-    textareaRef.current.value = "";
-    if (length !== 0) setLength(0);
-  }
+  // like a chat input — no full reload between messages. In an effect,
+  // not during render: mutating the DOM mid-render worked by accident
+  // and set state during render (message-thread-view does it this way).
+  useEffect(() => {
+    if (state.success && textareaRef.current) {
+      textareaRef.current.value = "";
+      setLength(0);
+      textareaRef.current.focus();
+    }
+  }, [state]);
 
   // Only show the counter once they're close to the cap so it doesn't
   // clutter a typical short message.

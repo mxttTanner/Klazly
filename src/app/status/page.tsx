@@ -18,7 +18,9 @@ import {
   type SystemState,
 } from "./status-data";
 
-export const dynamic = "force-dynamic";
+// Cached for 60s: during an incident this page takes traffic spikes, and
+// force-dynamic (previously set alongside revalidate) silently defeated
+// the caching intent by winning over it.
 export const revalidate = 60;
 
 const STATE_LABEL_KEY: Record<SystemState, string> = {

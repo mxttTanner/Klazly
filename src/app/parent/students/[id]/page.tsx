@@ -840,7 +840,7 @@ export default async function StudentProgressPage(
         {highlights.length > 0 ? (
           <section className="report-callout report-callout-highlights">
             <h2 className="report-callout-heading">
-              ★ {t("highlightsHeading")}
+              {t("highlightsHeading")}
             </h2>
             <ul className="report-callout-list">
               {highlights.map((h) => (

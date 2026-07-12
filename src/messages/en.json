@@ -180,6 +180,9 @@
     "errorGeneric": "Couldn't send right now. Try again in a moment."
   },
   "common": {
+    "notAllowed": "You do not have permission for that action.",
+    "saveFailed": "Could not save changes: {message}",
+    "deleteFailed": "Could not delete: {message}",
     "logout": "Log out",
     "save": "Save",
     "cancel": "Cancel",
@@ -199,8 +202,7 @@
     "appName": "Klazly",
     "appTagline": "Parent portal for English centers",
     "demoReadOnly": "Demo mode — changes aren't saved. Sign up your center to use this for real.",
-    "copy": "Copy",
-    "copied": "Copied"
+    "brandTagline": "The Parent Portal for English centers"
   },
   "profile": {
     "title": "My profile",
@@ -210,7 +212,8 @@
     "saved": "Profile updated.",
     "validation": "Please check the fields.",
     "authUpdateError": "Couldn't update login account: {message}",
-    "saveError": "Couldn't save profile: {message}"
+    "saveError": "Couldn't save profile: {message}",
+    "emailConfirmSent": "We sent a confirmation link to {email}. Your email will change after you open it."
   },
   "locked": {
     "title": "Your center is paused",
@@ -800,7 +803,10 @@
       "noLessons": "No lessons recorded yet.",
       "tabStudents": "Students",
       "tabLessons": "Lessons",
-      "tabMessages": "Messages"
+      "tabMessages": "Messages",
+      "olderLessons": "Older lessons",
+      "newerLessons": "Newer lessons",
+      "lessonsPageInfo": "{from}–{to} of {total}"
     },
     "templates": {
       "pickerLabel": "Use a saved template:",
@@ -870,6 +876,7 @@
       "validation": "Invalid data. Please check the fields.",
       "noPermission": "You don't have permission to record lessons for this class.",
       "saveLessonError": "Could not save lesson: {message}",
+      "duplicateDate": "A lesson for this class already exists on that date. Open the Lessons tab and edit it instead.",
       "saveUpdatesError": "Could not save student notes: {message}",
       "suggestions": {
         "label": "Comment ideas:",
@@ -1146,6 +1153,7 @@
     "tagHelp": "Tag at least 1 student. Parents only see photos their own child is tagged in.",
     "uploadSubmit": "Upload",
     "uploadSubmitting": "Uploading...",
+    "processingPhoto": "Processing photo...",
     "uploadSuccess": "Photo uploaded.",
     "uploadError": "Could not upload: {message}",
     "noFile": "Please choose a photo.",
@@ -1170,6 +1178,7 @@
     "logoUpload": "Upload a new logo",
     "logoUploadHelp": "PNG, JPG, WebP, or SVG. Max 2MB.",
     "logoRemove": "Remove current logo",
+    "logoRemoveConfirm": "Remove the center logo?",
     "uploadSubmit": "Upload",
     "uploadSubmitting": "Uploading...",
     "uploadSuccess": "Center logo updated.",
@@ -1229,7 +1238,8 @@
     "programsSeedTitle": "Get started with common programs",
     "programsSeedHelp": "Adds Cambridge KET / PET / FCE, IELTS, TOEIC, English Communication, Young Learners. You can rename or delete them after.",
     "programsSeedSubmit": "Add suggested defaults",
-    "programsSeedSubmitting": "Adding…"
+    "programsSeedSubmitting": "Adding…",
+    "navAria": "Settings sections"
   },
   "subscription": {
     "trialActive": "You are on a trial.",
@@ -1499,5 +1509,10 @@
     "planMonthlyPrice": "1,200,000₫ / month",
     "planSixMonthsPrice": "5,400,000₫ / 6 months",
     "planAnnualPrice": "9,900,000₫ / year"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved. You may have been signed out, or the link has changed.",
+    "backHome": "Back to home"
   }
 }

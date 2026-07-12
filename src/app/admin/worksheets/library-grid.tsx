@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { deleteWorksheet } from "./actions";
 
 type Worksheet = {
@@ -298,14 +298,13 @@ export function WorksheetsLibraryGrid({
                       <ExternalLink className="size-3" />
                       {t("openInNewTab")}
                     </a>
-                    <form action={deleteWorksheet}>
-                      <input type="hidden" name="id" value={w.id} />
-                      <ConfirmSubmitButton
-                        confirmMessage={t("deleteConfirm", { name: w.name })}
-                      >
-                        {tc("delete")}
-                      </ConfirmSubmitButton>
-                    </form>
+                    <ConfirmDeleteForm
+                      action={deleteWorksheet}
+                      hidden={{ id: w.id }}
+                      confirmMessage={t("deleteConfirm", { name: w.name })}
+                    >
+                      {tc("delete")}
+                    </ConfirmDeleteForm>
                   </div>
                 </div>
               </div>

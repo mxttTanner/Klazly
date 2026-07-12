@@ -13,7 +13,7 @@ import { InlineSelect } from "./inline-select";
 import { deleteStudent } from "./actions";
 import { SearchInput } from "@/components/search-input";
 import { LevelSelect } from "@/components/level-select";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { InlineImportSection } from "@/components/inline-import-section";
 
 export const dynamic = "force-dynamic";
@@ -125,16 +125,15 @@ Nguyễn Bảo Ngọc,10,Lớp Junior A,hoa@parent.test`}
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <form action={deleteStudent}>
-                      <input type="hidden" name="id" value={s.id} />
-                      <ConfirmSubmitButton
-                        confirmMessage={t("deleteConfirm", {
-                          name: s.full_name,
-                        })}
-                      >
-                        {tc("delete")}
-                      </ConfirmSubmitButton>
-                    </form>
+                    <ConfirmDeleteForm
+                      action={deleteStudent}
+                      hidden={{ id: s.id }}
+                      confirmMessage={t("deleteConfirm", {
+                        name: s.full_name,
+                      })}
+                    >
+                      {tc("delete")}
+                    </ConfirmDeleteForm>
                   </TableCell>
                 </TableRow>
               ))

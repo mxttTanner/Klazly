@@ -11,7 +11,7 @@ import {
 import { TeacherForm } from "./teacher-form";
 import { removeTeacher, resetTeacherPassword } from "./actions";
 import { SearchInput } from "@/components/search-input";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { ResetPasswordButton } from "@/components/reset-password-button";
 
 export const dynamic = "force-dynamic";
@@ -128,16 +128,15 @@ export default async function TeachersPage(
                           close: tc("close"),
                         }}
                       />
-                      <form action={removeTeacher}>
-                        <input type="hidden" name="id" value={teacher.id} />
-                        <ConfirmSubmitButton
-                          confirmMessage={t("deleteConfirm", {
-                            name: teacher.full_name,
-                          })}
-                        >
-                          {tc("delete")}
-                        </ConfirmSubmitButton>
-                      </form>
+                      <ConfirmDeleteForm
+                        action={removeTeacher}
+                        hidden={{ id: teacher.id }}
+                        confirmMessage={t("deleteConfirm", {
+                          name: teacher.full_name,
+                        })}
+                      >
+                        {tc("delete")}
+                      </ConfirmDeleteForm>
                     </div>
                   </TableCell>
                 </TableRow>

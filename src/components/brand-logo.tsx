@@ -1,11 +1,12 @@
+import { useTranslations } from "next-intl";
 import { BrandMark } from "@/components/brand-mark";
 
 /**
  * App brand lockup used in headers / login / footer. Wordmark is
- * "Klazly". On size="lg" we add the Vietnamese subtitle
- * ("Cổng Phụ Huynh cho trung tâm tiếng Anh") underneath since
+ * "Klazly". On size="lg" we add the localized tagline underneath since
  * there's room; on sm/md we keep the wordmark alone so the topbar
- * stays compact.
+ * stays compact. (useTranslations works in both server and client
+ * components, which this shared lockup is used from.)
  */
 export function BrandLogo({
   size = "md",
@@ -14,13 +15,14 @@ export function BrandLogo({
   size?: "sm" | "md" | "lg";
   showText?: boolean;
 }) {
+  const t = useTranslations("common");
   const dimensions = {
     sm: { mark: "size-7", text: "text-base", sub: null },
     md: { mark: "size-9", text: "text-lg", sub: null },
     lg: {
       mark: "size-12",
       text: "text-2xl",
-      sub: "Cổng Phụ Huynh cho trung tâm tiếng Anh",
+      sub: t("brandTagline"),
     },
   }[size];
 

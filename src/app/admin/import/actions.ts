@@ -77,7 +77,12 @@ const studentRowSchema = z.object({
 // one-time passwords are returned to nobody, and which a re-upload then skips
 // as "existing". Reject oversized files up front (before creating anything)
 // rather than time out partway through. Same cap applies to student imports.
-const MAX_IMPORT_ROWS = 200;
+// 50, not 200: each row costs ~4 sequential round trips (dupe checks +
+// auth createUser + profile insert), and a batch that outlives the
+// function timeout strands the generated passwords (they're returned
+// only in the final response). 50 keeps the worst case comfortably
+// inside the limit; bigger lists just get split into multiple uploads.
+const MAX_IMPORT_ROWS = 50;
 
 export type ImportResult = {
   imported: number;

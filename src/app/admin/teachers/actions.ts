@@ -112,11 +112,14 @@ export async function inviteTeacher(_prev: unknown, formData: FormData) {
   return { success: t("addedHint", { name: parsed.data.full_name }) };
 }
 
-export async function removeTeacher(formData: FormData) {
+export async function removeTeacher(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   const admin = await requireRole("admin");
+  const tc = await getTranslations("common");
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
-  if (isDemoUser(admin)) return;
+  if (!id) return { error: tc("notAllowed") };
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const supabase = createAdminClient();
 
@@ -131,11 +134,11 @@ export async function removeTeacher(formData: FormData) {
     target.center_id !== admin.center_id ||
     target.role !== "teacher"
   ) {
-    return;
+    return { error: tc("notAllowed") };
   }
 
   const { error } = await supabase.auth.admin.deleteUser(id);
-  if (error) throw new Error(`removeTeacher failed: ${error.message}`);
+  if (error) return { error: tc("deleteFailed", { message: error.message }) };
   revalidatePath("/admin/teachers");
   revalidatePath("/admin");
 }

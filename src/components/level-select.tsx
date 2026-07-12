@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import { setStudentLevel } from "@/app/teacher/classes/[id]/actions";
 
@@ -13,12 +13,17 @@ export function LevelSelect({
 }) {
   const t = useTranslations("level");
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const fd = new FormData();
     fd.append("student_id", studentId);
     fd.append("level", e.target.value);
-    startTransition(() => setStudentLevel(fd));
+    setError(null);
+    startTransition(async () => {
+      const res = await setStudentLevel(fd);
+      if (res?.error) setError(res.error);
+    });
   }
 
   const tones: Record<string, string> = {
@@ -29,16 +34,23 @@ export function LevelSelect({
   const tone = currentLevel ? tones[currentLevel] : "";
 
   return (
-    <select
-      defaultValue={currentLevel ?? "none"}
-      onChange={handleChange}
-      disabled={pending}
-      className={`h-8 rounded-md border px-2 text-xs font-medium ${tone}`}
-    >
-      <option value="none">{t("none")}</option>
-      <option value="good">{t("good")}</option>
-      <option value="okay">{t("okay")}</option>
-      <option value="needs_attention">{t("needs_attention")}</option>
-    </select>
+    <div className="space-y-1">
+      <select
+        defaultValue={currentLevel ?? "none"}
+        onChange={handleChange}
+        disabled={pending}
+        className={`h-8 rounded-md border px-2 text-xs font-medium ${tone}`}
+      >
+        <option value="none">{t("none")}</option>
+        <option value="good">{t("good")}</option>
+        <option value="okay">{t("okay")}</option>
+        <option value="needs_attention">{t("needs_attention")}</option>
+      </select>
+      {error ? (
+        <p className="text-destructive text-[10px]" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }

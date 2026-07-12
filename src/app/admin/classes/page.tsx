@@ -16,7 +16,7 @@ import { InlineProgram } from "./inline-program";
 import { deleteClass } from "./actions";
 import { buttonVariants } from "@/components/ui/button";
 import { SearchInput } from "@/components/search-input";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 
 export const dynamic = "force-dynamic";
 
@@ -165,14 +165,13 @@ export default async function ClassesPage(
                       >
                         {t("openClass")}
                       </Link>
-                      <form action={deleteClass}>
-                        <input type="hidden" name="id" value={c.id} />
-                        <ConfirmSubmitButton
-                          confirmMessage={t("deleteConfirm", { name: c.name })}
-                        >
-                          {tc("delete")}
-                        </ConfirmSubmitButton>
-                      </form>
+                      <ConfirmDeleteForm
+                        action={deleteClass}
+                        hidden={{ id: c.id }}
+                        confirmMessage={t("deleteConfirm", { name: c.name })}
+                      >
+                        {tc("delete")}
+                      </ConfirmDeleteForm>
                     </div>
                   </TableCell>
                 </TableRow>

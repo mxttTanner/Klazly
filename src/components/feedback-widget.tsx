@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { MessageSquareHeart, X } from "lucide-react";
+import { Frown, Meh, MessageSquareHeart, Smile, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -106,10 +106,10 @@ export function FeedbackWidget() {
             <>
               <div className="grid grid-cols-3 gap-2">
                 {([
-                  { v: "sad" as const, emoji: "😞", label: t("ratingSad") },
-                  { v: "meh" as const, emoji: "😐", label: t("ratingMeh") },
-                  { v: "happy" as const, emoji: "😊", label: t("ratingHappy") },
-                ]).map(({ v, emoji, label }) => (
+                  { v: "sad" as const, Icon: Frown, label: t("ratingSad") },
+                  { v: "meh" as const, Icon: Meh, label: t("ratingMeh") },
+                  { v: "happy" as const, Icon: Smile, label: t("ratingHappy") },
+                ]).map(({ v, Icon, label }) => (
                   <button
                     key={v}
                     type="button"
@@ -122,7 +122,7 @@ export function FeedbackWidget() {
                         : "hover:bg-muted/40")
                     }
                   >
-                    <span className="text-2xl leading-none">{emoji}</span>
+                    <Icon className="size-6" aria-hidden />
                     {label}
                   </button>
                 ))}

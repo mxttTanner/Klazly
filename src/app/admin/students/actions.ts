@@ -73,13 +73,18 @@ export async function createStudent(_prev: unknown, formData: FormData) {
   return { success: t("createdHint", { name: parsed.data.full_name }) };
 }
 
-export async function updateStudent(formData: FormData) {
+export async function updateStudent(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   const admin = await requireRole("admin");
+  const tc = await getTranslations("common");
   const id = String(formData.get("id") ?? "");
   const field = String(formData.get("field") ?? "");
   const valueRaw = formData.get("value");
-  if (!id || !["class_id", "parent_user_id"].includes(field)) return;
-  if (isDemoUser(admin)) return;
+  if (!id || !["class_id", "parent_user_id"].includes(field)) {
+    return { error: tc("notAllowed") };
+  }
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const supabase = createAdminClient();
 
@@ -88,7 +93,9 @@ export async function updateStudent(formData: FormData) {
     .select("center_id")
     .eq("id", id)
     .single();
-  if (!student || student.center_id !== admin.center_id) return;
+  if (!student || student.center_id !== admin.center_id) {
+    return { error: tc("notAllowed") };
+  }
 
   const value = nullable(valueRaw);
 
@@ -98,7 +105,9 @@ export async function updateStudent(formData: FormData) {
       .select("center_id")
       .eq("id", value)
       .single();
-    if (!cls || cls.center_id !== admin.center_id) return;
+    if (!cls || cls.center_id !== admin.center_id) {
+      return { error: tc("notAllowed") };
+    }
   }
   if (field === "parent_user_id" && value) {
     const { data: p } = await supabase
@@ -106,22 +115,27 @@ export async function updateStudent(formData: FormData) {
       .select("center_id, role")
       .eq("id", value)
       .single();
-    if (!p || p.center_id !== admin.center_id || p.role !== "parent") return;
+    if (!p || p.center_id !== admin.center_id || p.role !== "parent") {
+      return { error: tc("notAllowed") };
+    }
   }
 
   const { error } = await supabase
     .from("students")
     .update({ [field]: value })
     .eq("id", id);
-  if (error) throw new Error(`updateStudent failed: ${error.message}`);
+  if (error) return { error: tc("saveFailed", { message: error.message }) };
   revalidatePath("/admin/students");
 }
 
-export async function deleteStudent(formData: FormData) {
+export async function deleteStudent(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   const admin = await requireRole("admin");
+  const tc = await getTranslations("common");
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
-  if (isDemoUser(admin)) return;
+  if (!id) return { error: tc("notAllowed") };
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
 
   const supabase = createAdminClient();
 
@@ -130,10 +144,12 @@ export async function deleteStudent(formData: FormData) {
     .select("center_id")
     .eq("id", id)
     .single();
-  if (!student || student.center_id !== admin.center_id) return;
+  if (!student || student.center_id !== admin.center_id) {
+    return { error: tc("notAllowed") };
+  }
 
   const { error } = await supabase.from("students").delete().eq("id", id);
-  if (error) throw new Error(`deleteStudent failed: ${error.message}`);
+  if (error) return { error: tc("deleteFailed", { message: error.message }) };
   revalidatePath("/admin/students");
   revalidatePath("/admin");
 }

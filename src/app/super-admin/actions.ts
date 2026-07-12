@@ -1025,7 +1025,9 @@ export async function updateCenterNotes(formData: FormData) {
   return { success: true };
 }
 
-export async function deleteCenterCascade(formData: FormData): Promise<void> {
+export async function deleteCenterCascade(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   await requireSuperAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
@@ -1047,13 +1049,9 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
   // the chain and is what a manual retry needs to finish — no more
   // silent destruction of auth users on a failed center.delete.
   //
-  // Note: this signature stays void so it can plug into <form action={}>
-  // directly (the calling client component binds it as a raw form
-  // action, which requires () => void | Promise<void> — it can't
-  // consume a returned value). So instead of returning an error result
-  // we report failures to Sentry (matching how the rest of this file
-  // surfaces exceptions) and let revalidate fire so the super-admin
-  // sees the row reappear in their UI and can retry.
+  // Failures are BOTH captured to Sentry and returned as { error } —
+  // the ConfirmDeleteForm wrapper renders the message inline, and the
+  // revalidate makes the row reappear so the super-admin can retry.
   const { data: profiles, error: profilesErr } = await supabase
     .from("users")
     .select("id")
@@ -1064,7 +1062,7 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
       extra: { center_id: id },
     });
     revalidatePath("/super-admin");
-    return;
+    return { error: profilesErr.message };
   }
 
   for (const p of profiles ?? []) {
@@ -1075,7 +1073,7 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
         extra: { center_id: id, user_id: p.id },
       });
       revalidatePath("/super-admin");
-      return;
+      return { error: delErr.message };
     }
   }
 
@@ -1088,6 +1086,8 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
       tags: { action: "deleteCenterCascade", stage: "delete_center" },
       extra: { center_id: id },
     });
+    revalidatePath("/super-admin");
+    return { error: centerErr.message };
   }
 
   revalidatePath("/super-admin");

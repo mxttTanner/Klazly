@@ -5,18 +5,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { UserSquare2, GraduationCap, Heart } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoRole } from "@/lib/demo";
+import { type DemoRole } from "@/lib/demo";
+import { signInAsDemo } from "./actions";
 import { BrandLogo } from "@/components/brand-logo";
 
 // Per-role identity is carried by icon + label only — no hue-coding.
+// Labels come from the demo card titles so Vietnamese prospects don't
+// see an English heading mid sign-in.
 const ROLE_VISUAL: Record<
   DemoRole,
-  { icon: typeof UserSquare2; label: string }
+  { icon: typeof UserSquare2; labelKey: "roleAdminTitle" | "roleTeacherTitle" | "roleParentTitle" }
 > = {
-  admin: { icon: UserSquare2, label: "Center Admin" },
-  teacher: { icon: GraduationCap, label: "Teacher" },
-  parent: { icon: Heart, label: "Parent" },
+  admin: { icon: UserSquare2, labelKey: "roleAdminTitle" },
+  teacher: { icon: GraduationCap, labelKey: "roleTeacherTitle" },
+  parent: { icon: Heart, labelKey: "roleParentTitle" },
 };
 
 export function DemoLogin({ role }: { role: DemoRole }) {
@@ -30,14 +32,13 @@ export function DemoLogin({ role }: { role: DemoRole }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: DEMO_ACCOUNTS[role],
-        password: DEMO_PASSWORD,
-      });
+      // Server action: the session cookie is set server-side, so the
+      // shared demo password never ships in the client bundle.
+      const res = await signInAsDemo(role).catch(() => ({
+        error: "signin failed",
+      }));
       if (cancelled) return;
-      if (signInError) {
+      if (res.error) {
         setError(t("loadError"));
         return;
       }
@@ -104,7 +105,7 @@ export function DemoLogin({ role }: { role: DemoRole }) {
                   {t("banner")}
                 </p>
                 <h1 className="text-2xl font-bold tracking-tight">
-                  {visual.label}
+                  {t(visual.labelKey)}
                 </h1>
                 <p className="text-slate-300 text-sm">{t("loading")}</p>
               </div>

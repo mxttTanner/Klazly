@@ -216,10 +216,19 @@ export function PhotoUploadForm({
         <p className="text-sm text-emerald-700">{state.success}</p>
       ) : null}
 
-      <SubmitButton
-        idleLabel={t("uploadSubmit")}
-        pendingLabel={t("uploadSubmitting")}
-      />
+      {/* While the client-side re-encode runs, the submit handler above
+          blocks submission — show that state instead of a silently inert
+          button (a fast-tapping teacher otherwise gets no cue). */}
+      {processing ? (
+        <Button type="button" disabled>
+          {t("processingPhoto")}
+        </Button>
+      ) : (
+        <SubmitButton
+          idleLabel={t("uploadSubmit")}
+          pendingLabel={t("uploadSubmitting")}
+        />
+      )}
     </form>
   );
 }

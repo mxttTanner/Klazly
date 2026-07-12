@@ -153,9 +153,10 @@ export async function updateReportSettings(
   return { success: t("reportSaveSuccess") };
 }
 
-export async function removeCenterLogo() {
+export async function removeCenterLogo(): Promise<{ error?: string } | void> {
   const admin = await requireRole("admin");
-  if (isDemoUser(admin)) return;
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
   const supabase = createAdminClient();
 
   // Best-effort delete every plausible extension; we don't know what was uploaded.
@@ -167,7 +168,7 @@ export async function removeCenterLogo() {
     .from("centers")
     .update({ logo_url: null })
     .eq("id", admin.center_id);
-  if (error) throw new Error(`removeCenterLogo failed: ${error.message}`);
+  if (error) return { error: tc("deleteFailed", { message: error.message }) };
 
   revalidatePath("/admin/settings");
   revalidatePath("/parent", "layout");

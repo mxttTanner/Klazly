@@ -99,11 +99,14 @@ export async function uploadWorksheet(_prev: unknown, formData: FormData) {
   return { success: t("uploadSuccess", { name }) };
 }
 
-export async function deleteWorksheet(formData: FormData) {
+export async function deleteWorksheet(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   const user = await requireRole(["admin", "teacher"]);
+  const tc = await getTranslations("common");
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
-  if (isDemoUser(user)) return;
+  if (!id) return { error: tc("notAllowed") };
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const supabase = createAdminClient();
 
@@ -112,19 +115,25 @@ export async function deleteWorksheet(formData: FormData) {
     .select("center_id, storage_path, uploaded_by")
     .eq("id", id)
     .single();
-  if (!ws || ws.center_id !== user.center_id) return;
+  if (!ws || ws.center_id !== user.center_id) {
+    return { error: tc("notAllowed") };
+  }
 
   // Teachers can only delete worksheets THEY uploaded. Admins can delete
   // any worksheet in their center. Without this check, one teacher could
   // wipe out another teacher's or the admin's worksheet library by
   // hitting the delete form action directly.
-  if (user.role === "teacher" && ws.uploaded_by !== user.id) return;
+  if (user.role === "teacher" && ws.uploaded_by !== user.id) {
+    return { error: tc("notAllowed") };
+  }
 
   const { error: delErr } = await supabase
     .from("worksheets")
     .delete()
     .eq("id", id);
-  if (delErr) throw new Error(`deleteWorksheet failed: ${delErr.message}`);
+  if (delErr) {
+    return { error: tc("deleteFailed", { message: delErr.message }) };
+  }
 
   // Storage cleanup is best-effort: the row is gone, so the file is already
   // unreachable from the app. A leftover orphan blob is wasted bytes, not a

@@ -69,7 +69,7 @@ export async function SiteFooter() {
             <Link href="/legal/privacy" className="transition hover:text-white">
               {t("footerPrivacy")}
             </Link>
-            <span>{t("footerMade")} 🇻🇳</span>
+            <span>{t("footerMade")}</span>
           </div>
         </div>
       </div>

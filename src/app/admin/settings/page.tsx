@@ -7,7 +7,7 @@ import { ReportSettingsForm } from "./report-settings-form";
 import { ProgramsForm } from "./programs-form";
 import { SettingsTabs } from "./settings-tabs";
 import { removeCenterLogo } from "./actions";
-import { buttonVariants } from "@/components/ui/button";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 
 export const dynamic = "force-dynamic";
 
@@ -102,17 +102,14 @@ export default async function SettingsPage() {
             <div className="flex-1 min-w-[16rem] space-y-3">
               <p className="text-sm font-medium">{center?.name ?? "—"}</p>
               {center?.logo_url ? (
-                <form action={removeCenterLogo}>
-                  <button
-                    type="submit"
-                    className={buttonVariants({
-                      variant: "outline",
-                      size: "sm",
-                    })}
-                  >
-                    {t("logoRemove")}
-                  </button>
-                </form>
+                <ConfirmDeleteForm
+                  action={removeCenterLogo}
+                  hidden={{}}
+                  confirmMessage={t("logoRemoveConfirm")}
+                  variant="outline"
+                >
+                  {t("logoRemove")}
+                </ConfirmDeleteForm>
               ) : null}
             </div>
           </div>

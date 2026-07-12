@@ -20,7 +20,10 @@ export const DEMO_ACCOUNTS = {
 
 export type DemoRole = keyof typeof DEMO_ACCOUNTS;
 
-export const DEMO_PASSWORD = "password123";
+// The shared demo password lives in src/lib/demo-server.ts ("server-only"):
+// demo sign-in happens through a server action, so the credential never
+// ships in the client bundle where anyone could lift it and rotate the
+// account's password via the auth API, bricking the sales demo.
 
 const DEMO_EMAILS = new Set(
   Object.values(DEMO_ACCOUNTS).map((e) => e.toLowerCase()),

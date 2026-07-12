@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { Check, CheckCheck, MessageSquareText, Send } from "lucide-react";
@@ -114,8 +114,24 @@ export function MessageThreadView({
     }
   }, [state.success]);
 
+  // "Today"/"Yesterday" depend on the clock, so they're resolved only
+  // after mount: if the server renders just before VN midnight and the
+  // client hydrates just after, computing them during render makes the
+  // two disagree and React aborts hydration (#418). First paint shows
+  // plain dates; the effect swaps in the relative labels immediately.
+  const [dayRef, setDayRef] = useState<{
+    today: string;
+    yesterday: string;
+  } | null>(null);
+  useEffect(() => {
+    setDayRef({
+      today: vnDayKey(new Date()),
+      yesterday: vnDayKey(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+    });
+  }, []);
+
   // Group messages by day.
-  const groups = groupByDay(messages, dateLocale, labels);
+  const groups = groupByDay(messages, dateLocale, labels, dayRef);
 
   const hasMessages = messages.length > 0;
 
@@ -294,9 +310,10 @@ function groupByDay(
   messages: ChatMessage[],
   dateLocale: string,
   labels: Pick<Labels, "dayToday" | "dayYesterday">,
+  dayRef: { today: string; yesterday: string } | null,
 ): { label: string; items: ChatMessage[] }[] {
-  const todayKey = vnDayKey(new Date());
-  const yesterdayKey = vnDayKey(new Date(Date.now() - 24 * 60 * 60 * 1000));
+  const todayKey = dayRef?.today ?? null;
+  const yesterdayKey = dayRef?.yesterday ?? null;
   const buckets = new Map<string, { label: string; items: ChatMessage[] }>();
 
   for (const m of messages) {

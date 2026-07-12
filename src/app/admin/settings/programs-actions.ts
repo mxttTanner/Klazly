@@ -157,11 +157,14 @@ export async function renameProgram(_prev: unknown, formData: FormData) {
 /**
  * Delete a program. Clears `program` on every class that referenced it.
  */
-export async function deleteProgram(formData: FormData) {
+export async function deleteProgram(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   const admin = await requireRole("admin");
-  if (isDemoUser(admin)) return;
+  const tc = await getTranslations("common");
+  if (isDemoUser(admin)) return { error: tc("demoReadOnly") };
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) return { error: tc("notAllowed") };
 
   const supabase = createAdminClient();
 
@@ -170,21 +173,26 @@ export async function deleteProgram(formData: FormData) {
     .select("id, center_id, label")
     .eq("id", id)
     .single();
-  if (!prog || prog.center_id !== admin.center_id) return;
+  if (!prog || prog.center_id !== admin.center_id) {
+    return { error: tc("notAllowed") };
+  }
 
   const { error: cascadeErr } = await supabase
     .from("classes")
     .update({ program: null })
     .eq("center_id", admin.center_id)
     .eq("program", prog.label as string);
-  if (cascadeErr)
-    throw new Error(`deleteProgram cascade failed: ${cascadeErr.message}`);
+  if (cascadeErr) {
+    return { error: tc("deleteFailed", { message: cascadeErr.message }) };
+  }
 
   const { error: delErr } = await supabase
     .from("center_programs")
     .delete()
     .eq("id", id);
-  if (delErr) throw new Error(`deleteProgram failed: ${delErr.message}`);
+  if (delErr) {
+    return { error: tc("deleteFailed", { message: delErr.message }) };
+  }
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin");

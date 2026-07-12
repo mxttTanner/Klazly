@@ -297,6 +297,12 @@ export async function createLesson(_prev: unknown, formData: FormData) {
     lErr = retry.error;
   }
   if (lErr || !lesson) {
+    // The unique (class_id, lesson_date) index is the double-submit
+    // backstop; surface it as a friendly "edit the existing lesson"
+    // hint instead of a raw Postgres constraint error.
+    if (lErr && /lessons_class_date_uniq/i.test(lErr.message)) {
+      return { error: t("duplicateDate") };
+    }
     return { error: t("saveLessonError", { message: lErr?.message ?? "" }) };
   }
 
@@ -374,7 +380,7 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   // teacher caller teaches that class. Admin can edit anyone in their center.
   const { data: existing } = await supabase
     .from("lessons")
-    .select("id, class_id, class:classes!inner(teacher_id, center_id)")
+    .select("id, class_id, worksheet_id, class:classes!inner(teacher_id, center_id)")
     .eq("id", lessonId)
     .single();
   type ClassRow = { teacher_id: string; center_id: string };
@@ -390,11 +396,36 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     return { error: t("noPermission") };
   }
 
+  // Everything below scopes to the lesson's REAL class. The form's class_id
+  // is never trusted for validation — a teacher of two classes could
+  // otherwise submit class B's id (and roster) against class A's lesson.
+  const classId = existing.class_id as string;
+
+  // Edit-mode roster drift: a student who joined the class AFTER this
+  // lesson appears in the form defaulting to "present / homework not
+  // done". Saving an unrelated edit must not backfill that row — only
+  // students the teacher actually touched, or who already have a row,
+  // get written. (The form marks touched students via touched_{id}.)
+  const { data: existingSluRows } = await supabase
+    .from("student_lesson_updates")
+    .select("student_id")
+    .eq("lesson_id", lessonId);
+  const hasExistingRow = new Set(
+    ((existingSluRows ?? []) as { student_id: string }[]).map(
+      (r) => r.student_id,
+    ),
+  );
+  const effectiveUpdates = parsed.data.updates.filter(
+    (u) =>
+      hasExistingRow.has(u.student_id) ||
+      String(formData.get(`touched_${u.student_id}`) ?? "") === "1",
+  );
+
   // Reject any per-student row whose student isn't on this class's roster.
   const bad = await invalidStudentIds(
     supabase,
-    parsed.data.class_id,
-    parsed.data.updates.map((u) => u.student_id),
+    classId,
+    effectiveUpdates.map((u) => u.student_id),
   );
   if (bad.length > 0) return { error: t("validation") };
 
@@ -421,7 +452,13 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     if (uploaded.error) {
       return { error: t("saveLessonError", { message: uploaded.error }) };
     }
-    worksheetId = uploaded.id;
+    // An empty select + no new file means "no change", NOT "detach": the
+    // select submits nothing when the attached worksheet is missing from
+    // the options (deleted from the library, or the options query failed),
+    // and an unrelated edit must not silently strip the attachment.
+    // Detaching is only ever the explicit "none" choice above.
+    worksheetId =
+      uploaded.id ?? ((existing.worksheet_id as string | null) ?? null);
   }
 
   // Same topic-column resilience as createLesson.
@@ -448,6 +485,9 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     lErr = retry.error;
   }
   if (lErr) {
+    if (/lessons_class_date_uniq/i.test(lErr.message)) {
+      return { error: t("duplicateDate") };
+    }
     return { error: t("saveLessonError", { message: lErr.message }) };
   }
 
@@ -461,7 +501,7 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
   // edit, their row from the original lesson stays — that's a feature,
   // not a bug. Their attendance/behavior for that day shouldn't vanish
   // just because they later left the class.
-  const updateRows = parsed.data.updates.map((u) => ({
+  const updateRows = effectiveUpdates.map((u) => ({
     lesson_id: lessonId,
     student_id: u.student_id,
     behavior_rating: u.behavior_rating,
@@ -469,6 +509,12 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     homework_completed: u.homework_completed,
     attendance: u.attendance,
   }));
+  if (updateRows.length === 0) {
+    // Nothing per-student to write (e.g. body-only edit on a lesson whose
+    // roster has entirely turned over) — the lesson update above is done.
+    revalidatePath(`/teacher/classes/${classId}`);
+    redirect(`/teacher/classes/${classId}`);
+  }
   let { error: uErr } = await supabase
     .from("student_lesson_updates")
     .upsert(updateRows, { onConflict: "lesson_id,student_id" });
@@ -504,16 +550,19 @@ export async function updateLesson(_prev: unknown, formData: FormData) {
     return { error: t("saveUpdatesError", { message: uErr.message }) };
   }
 
-  revalidatePath(`/teacher/classes/${parsed.data.class_id}`);
-  redirect(`/teacher/classes/${parsed.data.class_id}`);
+  revalidatePath(`/teacher/classes/${classId}`);
+  redirect(`/teacher/classes/${classId}`);
 }
 
-export async function deleteLesson(formData: FormData) {
+export async function deleteLesson(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   const user = await requireRole(["teacher", "admin"]);
+  const tc = await getTranslations("common");
   const lessonId = String(formData.get("lesson_id") ?? "");
   const classId = String(formData.get("class_id") ?? "");
-  if (!lessonId) return;
-  if (isDemoUser(user)) return;
+  if (!lessonId) return { error: tc("notAllowed") };
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const supabase = await createClient();
 
@@ -528,13 +577,17 @@ export async function deleteLesson(formData: FormData) {
         | ClassRow
         | undefined
     : undefined;
-  if (!existing || !cls || cls.center_id !== user.center_id) return;
-  if (user.role === "teacher" && cls.teacher_id !== user.id) return;
+  if (!existing || !cls || cls.center_id !== user.center_id) {
+    return { error: tc("notAllowed") };
+  }
+  if (user.role === "teacher" && cls.teacher_id !== user.id) {
+    return { error: tc("notAllowed") };
+  }
 
   const { error } = await supabase
     .from("lessons")
     .delete()
     .eq("id", lessonId);
-  if (error) throw new Error(`deleteLesson failed: ${error.message}`);
+  if (error) return { error: tc("deleteFailed", { message: error.message }) };
   if (classId) revalidatePath(`/teacher/classes/${classId}`);
 }

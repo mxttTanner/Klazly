@@ -20,7 +20,7 @@ import { VN_TZ, vnTodayYMD } from "@/lib/vn-time";
 import { signPhotoUrls } from "@/lib/photo-url";
 import { buttonVariants } from "@/components/ui/button";
 import { LevelSelect } from "@/components/level-select";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { PhotoLightbox } from "@/components/photo-lightbox";
 import { parseDateOnly } from "@/lib/utils";
 import { deleteLesson } from "./lessons/new/actions";
@@ -37,10 +37,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const LESSONS_PAGE_SIZE = 20;
+
 export default async function ClassDetailPage(
   props: {
     params: Promise<{ id: string }>;
-    searchParams: Promise<{ tab?: string }>;
+    searchParams: Promise<{ tab?: string; lessonsPage?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -54,6 +56,12 @@ export default async function ClassDetailPage(
         : searchParams.tab === "photos"
           ? "photos"
           : "students";
+  const lessonsPage = Math.max(
+    1,
+    Number.parseInt(searchParams.lessonsPage ?? "1", 10) || 1,
+  );
+  const lessonsFrom = (lessonsPage - 1) * LESSONS_PAGE_SIZE;
+  const lessonsTo = lessonsFrom + LESSONS_PAGE_SIZE - 1;
   const supabase = await createClient();
   const t = await getTranslations("teacher.class");
   const tPhotos = await getTranslations("photos");
@@ -82,6 +90,9 @@ export default async function ClassDetailPage(
   const lessonSelectNoTopic =
     "id, lesson_date, unit, lesson_number, vocabulary, grammar_point, general_note";
 
+  // Lessons are paginated (?lessonsPage=N): the previous hard cap of 10
+  // silently locked teachers out of viewing/editing anything older, since
+  // the edit page is only reachable from this list.
   const [{ data: students }, lessonsRes] = await Promise.all([
     supabase
       .from("students")
@@ -92,10 +103,10 @@ export default async function ClassDetailPage(
       .order("full_name", { ascending: true }),
     supabase
       .from("lessons")
-      .select(lessonSelectWithTopic)
+      .select(lessonSelectWithTopic, { count: "exact" })
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
-      .limit(10),
+      .range(lessonsFrom, lessonsTo),
   ]);
 
   type LessonListRow = {
@@ -110,23 +121,38 @@ export default async function ClassDetailPage(
   };
 
   let lessons: LessonListRow[];
-  if (lessonsRes.error) {
+  let lessonsTotal: number;
+  if (lessonsRes.error && /range not satisfiable/i.test(lessonsRes.error.message)) {
+    // ?lessonsPage= pointed past the end (hand-edited URL) — PostgREST
+    // rejects out-of-range windows instead of returning empty. Show the
+    // empty state with the real total so the pager can lead back.
+    const { count } = await supabase
+      .from("lessons")
+      .select("id", { count: "exact", head: true })
+      .eq("class_id", cls.id);
+    lessons = [];
+    lessonsTotal = count ?? 0;
+  } else if (lessonsRes.error) {
     console.warn(
       "[teacher/class] lessons select with topic failed, falling back:",
       lessonsRes.error.message,
     );
     const fallback = await supabase
       .from("lessons")
-      .select(lessonSelectNoTopic)
+      .select(lessonSelectNoTopic, { count: "exact" })
       .eq("class_id", cls.id)
       .order("lesson_date", { ascending: false })
-      .limit(50);
+      .range(lessonsFrom, lessonsTo);
     lessons = ((fallback.data ?? []) as Omit<LessonListRow, "topic">[]).map(
       (l) => ({ ...l, topic: null }),
     );
+    lessonsTotal = fallback.count ?? lessons.length;
   } else {
     lessons = (lessonsRes.data ?? []) as LessonListRow[];
+    lessonsTotal = lessonsRes.count ?? lessons.length;
   }
+  const hasOlderLessons = lessonsFrom + lessons.length < lessonsTotal;
+  const hasNewerLessons = lessonsPage > 1;
 
   // Per-student behavior trend: ratings from the 5 most recent lessons,
   // ordered newest-first, capped at 3 dots per student.
@@ -336,7 +362,7 @@ export default async function ClassDetailPage(
               key: "lessons" as const,
               label: t("tabLessons"),
               icon: ClipboardList,
-              count: lessons?.length ?? 0,
+              count: lessonsTotal,
               showCount: true,
             },
             {
@@ -575,24 +601,17 @@ export default async function ClassDetailPage(
                                 >
                                   <Pencil className="size-3.5" />
                                 </Link>
-                                <form action={deleteLesson}>
-                                  <input
-                                    type="hidden"
-                                    name="lesson_id"
-                                    value={l.id}
-                                  />
-                                  <input
-                                    type="hidden"
-                                    name="class_id"
-                                    value={cls.id}
-                                  />
-                                  <ConfirmSubmitButton
-                                    confirmMessage={tForm("deleteConfirm")}
-                                    ariaLabel={tForm("delete")}
-                                  >
-                                    <Trash2 className="size-3.5" />
-                                  </ConfirmSubmitButton>
-                                </form>
+                                <ConfirmDeleteForm
+                                  action={deleteLesson}
+                                  hidden={{
+                                    lesson_id: l.id,
+                                    class_id: cls.id,
+                                  }}
+                                  confirmMessage={tForm("deleteConfirm")}
+                                  ariaLabel={tForm("delete")}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </ConfirmDeleteForm>
                               </div>
                             </div>
                             {l.vocabulary || l.grammar_point || l.general_note ? (
@@ -640,6 +659,40 @@ export default async function ClassDetailPage(
               <p className="text-muted-foreground text-sm">{t("noLessons")}</p>
             </div>
           )}
+
+          {hasNewerLessons || hasOlderLessons ? (
+            <div className="flex items-center justify-between gap-3">
+              {hasNewerLessons ? (
+                <Link
+                  href={`/teacher/classes/${cls.id}?tab=lessons&lessonsPage=${lessonsPage - 1}`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  {t("newerLessons")}
+                </Link>
+              ) : (
+                <span />
+              )}
+              {lessons.length > 0 ? (
+                <p className="text-muted-foreground text-xs">
+                  {t("lessonsPageInfo", {
+                    from: lessonsFrom + 1,
+                    to: lessonsFrom + lessons.length,
+                    total: lessonsTotal,
+                  })}
+                </p>
+              ) : null}
+              {hasOlderLessons ? (
+                <Link
+                  href={`/teacher/classes/${cls.id}?tab=lessons&lessonsPage=${lessonsPage + 1}`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  {t("olderLessons")}
+                </Link>
+              ) : (
+                <span />
+              )}
+            </div>
+          ) : null}
         </section>
       ) : null}
 
@@ -701,20 +754,14 @@ export default async function ClassDetailPage(
                         {names ? ` — ${names}` : ""}
                       </p>
                       {canDelete ? (
-                        <form action={deleteStudentPhoto}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <input
-                            type="hidden"
-                            name="class_id"
-                            value={cls.id}
-                          />
-                          <ConfirmSubmitButton
-                            confirmMessage={tPhotos("deleteConfirm")}
-                            ariaLabel={tPhotos("delete")}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </ConfirmSubmitButton>
-                        </form>
+                        <ConfirmDeleteForm
+                          action={deleteStudentPhoto}
+                          hidden={{ id: p.id, class_id: cls.id }}
+                          confirmMessage={tPhotos("deleteConfirm")}
+                          ariaLabel={tPhotos("delete")}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </ConfirmDeleteForm>
                       ) : null}
                     </div>
                   </li>

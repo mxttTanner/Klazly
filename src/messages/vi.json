@@ -180,13 +180,16 @@
     "errorGeneric": "Chưa gửi được. Vui lòng thử lại trong giây lát."
   },
   "common": {
+    "notAllowed": "Bạn không có quyền thực hiện thao tác này.",
+    "saveFailed": "Không thể lưu thay đổi: {message}",
+    "deleteFailed": "Không thể xoá: {message}",
     "logout": "Đăng xuất",
     "save": "Lưu",
     "cancel": "Huỷ",
     "delete": "Xoá",
     "actions": "Hành động",
     "copy": "Sao chép",
-    "copied": "Đã chép",
+    "copied": "Đã sao chép",
     "close": "Đóng",
     "name": "Họ và tên",
     "email": "Email",
@@ -199,8 +202,7 @@
     "appName": "Klazly",
     "appTagline": "Cổng Phụ Huynh cho trung tâm tiếng Anh",
     "demoReadOnly": "Chế độ demo — thay đổi không được lưu. Đăng ký trung tâm của bạn để dùng thật.",
-    "copy": "Sao chép",
-    "copied": "Đã sao chép"
+    "brandTagline": "Cổng Phụ Huynh cho trung tâm tiếng Anh"
   },
   "profile": {
     "title": "Hồ sơ của tôi",
@@ -210,7 +212,8 @@
     "saved": "Đã cập nhật hồ sơ.",
     "validation": "Vui lòng kiểm tra các trường.",
     "authUpdateError": "Không thể cập nhật tài khoản đăng nhập: {message}",
-    "saveError": "Không thể lưu hồ sơ: {message}"
+    "saveError": "Không thể lưu hồ sơ: {message}",
+    "emailConfirmSent": "Đã gửi liên kết xác nhận tới {email}. Email của bạn sẽ được thay đổi sau khi bạn mở liên kết đó."
   },
   "locked": {
     "title": "Tài khoản của trung tâm bị tạm khoá",
@@ -800,7 +803,10 @@
       "noLessons": "Chưa có bài học nào được ghi nhận.",
       "tabStudents": "Học sinh",
       "tabLessons": "Buổi học",
-      "tabMessages": "Tin nhắn"
+      "tabMessages": "Tin nhắn",
+      "olderLessons": "Bài học cũ hơn",
+      "newerLessons": "Bài học mới hơn",
+      "lessonsPageInfo": "{from}–{to} / {total}"
     },
     "templates": {
       "pickerLabel": "Dùng mẫu có sẵn:",
@@ -870,6 +876,7 @@
       "validation": "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại các trường.",
       "noPermission": "Bạn không có quyền ghi bài học cho lớp này.",
       "saveLessonError": "Không thể lưu bài học: {message}",
+      "duplicateDate": "Lớp này đã có bài học cho ngày đó. Mở tab Bài học và chỉnh sửa bài học hiện có nhé.",
       "saveUpdatesError": "Không thể lưu nhận xét học sinh: {message}",
       "suggestions": {
         "label": "Gợi ý nhận xét:",
@@ -1146,6 +1153,7 @@
     "tagHelp": "Chọn ít nhất 1 học sinh. Phụ huynh chỉ thấy ảnh có con mình được gắn thẻ.",
     "uploadSubmit": "Tải lên",
     "uploadSubmitting": "Đang tải lên...",
+    "processingPhoto": "Đang xử lý ảnh...",
     "uploadSuccess": "Đã tải ảnh lên.",
     "uploadError": "Không thể tải lên: {message}",
     "noFile": "Vui lòng chọn một ảnh.",
@@ -1170,6 +1178,7 @@
     "logoUpload": "Tải lên logo mới",
     "logoUploadHelp": "Định dạng PNG, JPG, WebP hoặc SVG. Tối đa 2MB.",
     "logoRemove": "Xoá logo hiện tại",
+    "logoRemoveConfirm": "Xoá logo của trung tâm?",
     "uploadSubmit": "Tải lên",
     "uploadSubmitting": "Đang tải lên...",
     "uploadSuccess": "Đã cập nhật logo trung tâm.",
@@ -1229,7 +1238,8 @@
     "programsSeedTitle": "Bắt đầu với các chương trình phổ biến",
     "programsSeedHelp": "Thêm Cambridge KET / PET / FCE, IELTS, TOEIC, Giao tiếp tiếng Anh, Anh ngữ thiếu nhi. Bạn có thể đổi tên hoặc xoá sau.",
     "programsSeedSubmit": "Thêm các chương trình gợi ý",
-    "programsSeedSubmitting": "Đang thêm…"
+    "programsSeedSubmitting": "Đang thêm…",
+    "navAria": "Các mục cài đặt"
   },
   "subscription": {
     "trialActive": "Trung tâm đang trong giai đoạn dùng thử.",
@@ -1499,5 +1509,10 @@
     "planMonthlyPrice": "1.200.000₫ / tháng",
     "planSixMonthsPrice": "5.400.000₫ / 6 tháng",
     "planAnnualPrice": "9.900.000₫ / năm"
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "description": "Trang bạn đang tìm không tồn tại hoặc đã bị di chuyển. Có thể bạn đã đăng xuất hoặc liên kết đã thay đổi.",
+    "backHome": "Về trang chủ"
   }
 }

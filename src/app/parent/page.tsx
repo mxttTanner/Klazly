@@ -96,18 +96,29 @@ export default async function ParentHomePage() {
 
   // Lessons (needs classIds) and unread messages (only needs studentIds)
   // can run in parallel. Updates has to wait for lessons.
-  const [lessonsRes, unreadByStudent] = await Promise.all([
-    classIds.length
-      ? supabase
+  //
+  // One query PER CLASS, not one shared budget: with a single
+  // `.in(classIds).limit(50)`, a first child in a busy class could eat
+  // the whole budget and leave a sibling's card with no trend dots and
+  // no "last lesson" despite having data. Parents have at most a
+  // handful of children, so this stays a couple of cheap queries.
+  const uniqueClassIds = Array.from(new Set(classIds));
+  const [lessonsPerClass, unreadByStudent] = await Promise.all([
+    Promise.all(
+      uniqueClassIds.map((cid) =>
+        supabase
           .from("lessons")
           .select("id, class_id, lesson_date")
-          .in("class_id", classIds)
+          .eq("class_id", cid)
           .order("lesson_date", { ascending: false })
-          .limit(50)
-      : Promise.resolve({ data: [] as LessonRow[], error: null }),
+          .limit(50),
+      ),
+    ),
     unreadCountsByStudent(supabase, studentIds, user.id),
   ]);
-  const allLessons = (lessonsRes.data ?? []) as LessonRow[];
+  const allLessons = lessonsPerClass.flatMap(
+    (r) => (r.data ?? []) as LessonRow[],
+  );
 
   type UpdateRow = {
     student_id: string;

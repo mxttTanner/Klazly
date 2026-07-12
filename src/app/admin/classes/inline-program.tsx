@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { updateClassProgram } from "./actions";
 
 export function InlineProgram({
@@ -15,12 +15,17 @@ export function InlineProgram({
   noneLabel: string;
 }) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const fd = new FormData();
     fd.append("id", classId);
     fd.append("program", e.target.value);
-    startTransition(() => updateClassProgram(fd));
+    setError(null);
+    startTransition(async () => {
+      const res = await updateClassProgram(fd);
+      if (res?.error) setError(res.error);
+    });
   }
 
   // If the class points at a label that's no longer in the catalog (admin
@@ -30,23 +35,30 @@ export function InlineProgram({
     currentProgram !== null && currentProgram !== "" && !known.has(currentProgram);
 
   return (
-    <select
-      defaultValue={currentProgram ?? "none"}
-      onChange={handleChange}
-      disabled={pending}
-      className="border-input bg-background h-8 w-full rounded-md border px-2 text-xs"
-    >
-      <option value="none">{noneLabel}</option>
-      {programs.map((p) => (
-        <option key={p.id} value={p.label}>
-          {p.label}
-        </option>
-      ))}
-      {showOrphan ? (
-        <option value={currentProgram!}>
-          {currentProgram} (?)
-        </option>
+    <div className="space-y-1">
+      <select
+        defaultValue={currentProgram ?? "none"}
+        onChange={handleChange}
+        disabled={pending}
+        className="border-input bg-background h-8 w-full rounded-md border px-2 text-xs"
+      >
+        <option value="none">{noneLabel}</option>
+        {programs.map((p) => (
+          <option key={p.id} value={p.label}>
+            {p.label}
+          </option>
+        ))}
+        {showOrphan ? (
+          <option value={currentProgram!}>
+            {currentProgram} (?)
+          </option>
+        ) : null}
+      </select>
+      {error ? (
+        <p className="text-destructive text-[10px]" role="alert">
+          {error}
+        </p>
       ) : null}
-    </select>
+    </div>
   );
 }

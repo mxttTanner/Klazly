@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, UserCircle } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireUser, dashboardPathFor } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isSyntheticEmail } from "@/lib/phone";
 import { ProfileForm } from "./profile-form";
 
@@ -20,6 +22,28 @@ export default async function ProfilePage() {
   const user = await requireUser();
   const tp = await getTranslations("profile");
   const tco = await getTranslations("contact");
+
+  // Email changes go through the confirmation-link flow (see actions.ts):
+  // the auth email switches only after the user clicks the link, at which
+  // point public.users.email is stale until this sync runs. Best-effort —
+  // a failure just means it heals on the next visit.
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+  const authEmail = authUser?.email?.toLowerCase() ?? null;
+  if (
+    authEmail &&
+    !isSyntheticEmail(authEmail) &&
+    authEmail !== (user.email ?? "").toLowerCase()
+  ) {
+    const admin = createAdminClient();
+    const { error: syncErr } = await admin
+      .from("users")
+      .update({ email: authEmail })
+      .eq("id", user.id);
+    if (!syncErr) user.email = authEmail;
+  }
 
   // The user may have a synthetic auth email (phone-only account). The
   // public.users.email column is null in that case — show empty in the

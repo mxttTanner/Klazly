@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import {
   BookMarked,
   FileText,
@@ -36,6 +37,7 @@ export function SettingsTabs({
   tabs: SettingsTab[];
   defaultId?: string;
 }) {
+  const t = useTranslations("settings");
   const [activeId, setActiveId] = useState<string>(
     defaultId ?? tabs[0]?.id ?? "",
   );
@@ -46,7 +48,7 @@ export function SettingsTabs({
       <aside className="lg:sticky lg:top-20 lg:self-start">
         <nav
           role="tablist"
-          aria-label="Settings sections"
+          aria-label={t("navAria")}
           className="flex flex-wrap gap-1 lg:flex-col"
         >
           {tabs.map((tab) => {

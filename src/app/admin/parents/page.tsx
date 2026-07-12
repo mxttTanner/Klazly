@@ -11,7 +11,7 @@ import {
 import { ParentForm } from "./parent-form";
 import { removeParent, resetParentPassword } from "./actions";
 import { SearchInput } from "@/components/search-input";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { ConfirmDeleteForm } from "@/components/confirm-delete-form";
 import { ResetPasswordButton } from "@/components/reset-password-button";
 import { InlineImportSection } from "@/components/inline-import-section";
 
@@ -134,16 +134,15 @@ Lê Văn Long,+84987654321,,`}
                           close: tc("close"),
                         }}
                       />
-                      <form action={removeParent}>
-                        <input type="hidden" name="id" value={p.id} />
-                        <ConfirmSubmitButton
-                          confirmMessage={t("deleteConfirm", {
-                            name: p.full_name,
-                          })}
-                        >
-                          {tc("delete")}
-                        </ConfirmSubmitButton>
-                      </form>
+                      <ConfirmDeleteForm
+                        action={removeParent}
+                        hidden={{ id: p.id }}
+                        confirmMessage={t("deleteConfirm", {
+                          name: p.full_name,
+                        })}
+                      >
+                        {tc("delete")}
+                      </ConfirmDeleteForm>
                     </div>
                   </TableCell>
                 </TableRow>

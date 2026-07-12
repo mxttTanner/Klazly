@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { healDemoAccounts } from "@/lib/demo-server";
 import { getLocale, getTranslations } from "next-intl/server";
 import {
   AlarmClock,
@@ -300,6 +301,11 @@ export default async function SuperAdminHomePage(
       ? (settingRes.data as { value: unknown }).value
       : null;
   }
+
+  // Lazy self-heal for the shared demo accounts: resets their password
+  // and email back to canonical values in case a demo visitor rotated
+  // them via the auth API. Fire-and-forget — never blocks the dashboard.
+  void healDemoAccounts();
 
   // Lazy auto-expire: any trial whose trial_ends_at is in the past
   // gets flipped to 'expired' before the dashboard renders, with one

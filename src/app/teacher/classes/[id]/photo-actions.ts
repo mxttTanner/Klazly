@@ -115,12 +115,15 @@ export async function uploadStudentPhoto(_prev: unknown, formData: FormData) {
   return { success: t("uploadSuccess") };
 }
 
-export async function deleteStudentPhoto(formData: FormData) {
+export async function deleteStudentPhoto(
+  formData: FormData,
+): Promise<{ error?: string } | void> {
   const user = await requireRole(["teacher", "admin"]);
+  const tc = await getTranslations("common");
   const id = String(formData.get("id") ?? "");
   const classId = String(formData.get("class_id") ?? "");
-  if (!id) return;
-  if (isDemoUser(user)) return;
+  if (!id) return { error: tc("notAllowed") };
+  if (isDemoUser(user)) return { error: tc("demoReadOnly") };
 
   const admin = createAdminClient();
 
@@ -129,18 +132,24 @@ export async function deleteStudentPhoto(formData: FormData) {
     .select("center_id, storage_path, uploaded_by")
     .eq("id", id)
     .single();
-  if (!photo || photo.center_id !== user.center_id) return;
+  if (!photo || photo.center_id !== user.center_id) {
+    return { error: tc("notAllowed") };
+  }
 
   // Teachers can only delete photos THEY uploaded; admins any in their
   // center (mirrors deleteWorksheet).
-  if (user.role === "teacher" && photo.uploaded_by !== user.id) return;
+  if (user.role === "teacher" && photo.uploaded_by !== user.id) {
+    return { error: tc("notAllowed") };
+  }
 
   // Row first (cascades tags); the file is unreachable once the row is gone.
   const { error: delErr } = await admin
     .from("student_photos")
     .delete()
     .eq("id", id);
-  if (delErr) throw new Error(`deleteStudentPhoto failed: ${delErr.message}`);
+  if (delErr) {
+    return { error: tc("deleteFailed", { message: delErr.message }) };
+  }
 
   // Storage cleanup is best-effort — an orphan blob is wasted bytes, not
   // something to error-boundary the teacher over.

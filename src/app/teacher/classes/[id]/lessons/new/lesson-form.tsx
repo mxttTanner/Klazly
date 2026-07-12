@@ -210,14 +210,27 @@ export function LessonForm({
   const [homeworkDone, setHomeworkDone] =
     useState<Record<string, boolean>>(initialHomework);
 
+  // Edit mode only: which students the teacher actually interacted with.
+  // The action uses this (touched_{id}) to avoid backfilling a default
+  // "present / homework not done" row for a student who joined the class
+  // AFTER this lesson, when the teacher only edited something unrelated.
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const markTouched = (id: string) =>
+    setTouched((p) => (p[id] ? p : { ...p, [id]: true }));
+  const markAllTouched = () =>
+    setTouched(Object.fromEntries(students.map((s) => [s.id, true])));
+
   function setAllAttendance(value: "present" | "absent" | "late") {
     setAttendance(Object.fromEntries(students.map((s) => [s.id, value])));
+    markAllTouched();
   }
   function setAllBehavior(value: string) {
     setBehavior(Object.fromEntries(students.map((s) => [s.id, value])));
+    markAllTouched();
   }
   function setAllHomework(done: boolean) {
     setHomeworkDone(Object.fromEntries(students.map((s) => [s.id, done])));
+    markAllTouched();
   }
 
   // formKey deliberately EXCLUDES the picked template: switching templates
@@ -598,6 +611,13 @@ export function LessonForm({
                     }
                   >
                     <input type="hidden" name="student_id" value={s.id} />
+                    {isEdit ? (
+                      <input
+                        type="hidden"
+                        name={`touched_${s.id}`}
+                        value={touched[s.id] ? "1" : "0"}
+                      />
+                    ) : null}
 
                     {/* Header: done state + name | attendance toggle */}
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -621,12 +641,13 @@ export function LessonForm({
                               name={`attendance_${s.id}`}
                               value={a.value}
                               checked={attendance[s.id] === a.value}
-                              onChange={() =>
+                              onChange={() => {
+                                markTouched(s.id);
                                 setAttendance((p) => ({
                                   ...p,
                                   [s.id]: a.value,
-                                }))
-                              }
+                                }));
+                              }}
                               className="peer sr-only"
                             />
                             <span
@@ -667,12 +688,13 @@ export function LessonForm({
                                   name={`behavior_${s.id}`}
                                   value={o.value}
                                   checked={behavior[s.id] === o.value}
-                                  onChange={() =>
+                                  onChange={() => {
+                                    markTouched(s.id);
                                     setBehavior((p) => ({
                                       ...p,
                                       [s.id]: o.value,
-                                    }))
-                                  }
+                                    }));
+                                  }}
                                   className="peer sr-only"
                                 />
                                 <span
@@ -701,24 +723,34 @@ export function LessonForm({
                             id={`homework_${s.id}`}
                             name={`homework_${s.id}`}
                             checked={hwDone}
-                            onCheckedChange={(v) =>
+                            onCheckedChange={(v) => {
+                              markTouched(s.id);
                               setHomeworkDone((prev) => ({
                                 ...prev,
                                 [s.id]: v === true,
-                              }))
-                            }
+                              }));
+                            }}
                           />
                           {t("homeworkDone")}
                         </label>
                       </div>
 
-                      <NoteWithSuggestions
-                        studentId={s.id}
-                        defaultNote={
-                          defaults?.studentUpdates[s.id]?.individual_note ?? ""
-                        }
-                        suggestions={suggestions}
-                      />
+                      {/* onInput bubbles from the note textarea; suggestion
+                          chips insert text programmatically, so also catch
+                          clicks inside the suggestion area. */}
+                      <div
+                        onInput={() => markTouched(s.id)}
+                        onClick={() => markTouched(s.id)}
+                      >
+                        <NoteWithSuggestions
+                          studentId={s.id}
+                          defaultNote={
+                            defaults?.studentUpdates[s.id]?.individual_note ??
+                            ""
+                          }
+                          suggestions={suggestions}
+                        />
+                      </div>
                     </div>
                   </div>
                 );

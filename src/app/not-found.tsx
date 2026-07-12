@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Compass, Home } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getTranslations("notFound");
   return (
     <div className="min-h-dvh bg-background flex items-center justify-center px-4">
       <div className="bg-card max-w-md space-y-5 rounded-2xl border p-6 shadow-sm text-center">
@@ -14,15 +16,9 @@ export default function NotFound() {
             404
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Page not found
+            {t("title")}
           </h1>
-          <p className="text-muted-foreground text-sm">
-            Trang bạn đang tìm không tồn tại hoặc đã bị di chuyển. Có thể bạn
-            đã đăng xuất hoặc liên kết đã thay đổi.
-          </p>
-          <p className="text-muted-foreground text-sm">
-            The page you&apos;re looking for doesn&apos;t exist or has been moved.
-          </p>
+          <p className="text-muted-foreground text-sm">{t("description")}</p>
         </div>
         <div className="flex justify-center">
           <Link
@@ -30,7 +26,7 @@ export default function NotFound() {
             className="bg-primary text-primary-foreground inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-medium hover:opacity-90"
           >
             <Home className="size-4" />
-            Back to home / Về trang chủ
+            {t("backHome")}
           </Link>
         </div>
         <div className="border-t pt-4">
