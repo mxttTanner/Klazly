@@ -8,22 +8,43 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeVnPhone, syntheticEmailForPhone } from "@/lib/phone";
-import {
-  computeFoundingSlotAvailability,
-  FOUNDING_DEFAULT_CAP,
-} from "@/lib/subscription";
+import { generateTempPassword } from "@/lib/temp-password";
+import { TRIAL_DAYS } from "@/lib/subscription";
+
+/**
+ * Reset ANY user's password, from the super-admin console. The platform
+ * owner is the last line of support for a locked-out center admin,
+ * teacher, or parent — this generates a fresh temporary password and
+ * returns it once for the owner to relay. Owner-managed recovery: the
+ * super-admin can solve any password problem in any center.
+ */
+export async function resetCenterUserPassword(
+  _prev: unknown,
+  formData: FormData,
+) {
+  await requireSuperAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "missing id" };
+
+  const supabase = createAdminClient();
+  const { data: target } = await supabase
+    .from("users")
+    .select("id, full_name")
+    .eq("id", id)
+    .single();
+  if (!target) return { error: "user not found" };
+
+  const tempPassword = generateTempPassword();
+  const { error } = await supabase.auth.admin.updateUserById(id, {
+    password: tempPassword,
+  });
+  if (error) return { error: error.message };
+
+  return { tempPassword, name: target.full_name };
+}
 
 const PLAN_VALUES = ["monthly", "six_months", "annual"] as const;
 type Plan = (typeof PLAN_VALUES)[number];
-
-/**
- * Values accepted by the Convert dialog. 'founding' is special — it
- * means "convert this Founding-tier center to active at its locked
- * monthly price" and only validates if the row's plan_tier='founding'.
- * Standard centers use the three Plan values directly.
- */
-const CONVERT_VALUES = [...PLAN_VALUES, "founding"] as const;
-type ConvertChoice = (typeof CONVERT_VALUES)[number];
 
 /**
  * Lifecycle columns added by db/subscription-lifecycle.sql. Treated as
@@ -36,13 +57,8 @@ const LIFECYCLE_COLS = [
   "subscription_ends_at",
   "last_payment_at",
   "next_billing_at",
-  // Founding-slot columns also degrade gracefully — if the slot
-  // migration hasn't run, the convert action still flips status +
-  // plan but skips the slot assignment.
-  "founding_center_number",
-  "founding_locked_price_vnd",
-  // plan_tier column may not exist on the oldest pre-founding-center
-  // databases; allow it to drop too so a status flip still lands.
+  // plan_tier column may not exist on the oldest databases; allow it to
+  // drop too so a status flip still lands.
   "plan_tier",
 ] as const;
 type LifecycleCol = (typeof LIFECYCLE_COLS)[number];
@@ -144,22 +160,18 @@ async function writeAuditLog(
  * via PLAN_TYPE_DECOMPOSITION below.
  */
 const PLAN_TYPE_VALUES = [
-  // Default: vanilla 15-day standard trial. The common case for a new
-  // center that hasn't been pitched the Founding deal yet. Listed
-  // first so the dropdown defaults to the safest non-committal option.
-  // (Founding centers get 30 days — double the standard window — which
-  // is the perk the sales pitch promises.)
+  // Default: the 6-month free trial. This is how the owner grants a new
+  // center free access — it expires (locks out) after TRIAL_DAYS unless
+  // they pay. Listed first so the dropdown defaults to it.
   "trial_standard",
-  "trial_founding",
   "active_monthly",
   "active_six_months",
   "active_annual",
-  "active_founding",
   "active_design_partner",
 ] as const;
 type PlanType = (typeof PLAN_TYPE_VALUES)[number];
 
-type Tier = "standard" | "founding" | "design_partner";
+type Tier = "standard" | "design_partner";
 type ActiveStatus = "trial" | "active";
 
 const PLAN_TYPE_DECOMPOSITION: Record<
@@ -171,12 +183,10 @@ const PLAN_TYPE_DECOMPOSITION: Record<
     trialDays: number | null;
   }
 > = {
-  trial_standard: { status: "trial", plan: null, tier: "standard", trialDays: 15 },
-  trial_founding: { status: "trial", plan: null, tier: "founding", trialDays: 30 },
+  trial_standard: { status: "trial", plan: null, tier: "standard", trialDays: TRIAL_DAYS },
   active_monthly: { status: "active", plan: "monthly", tier: "standard", trialDays: null },
   active_six_months: { status: "active", plan: "six_months", tier: "standard", trialDays: null },
   active_annual: { status: "active", plan: "annual", tier: "standard", trialDays: null },
-  active_founding: { status: "active", plan: "monthly", tier: "founding", trialDays: null },
   active_design_partner: { status: "active", plan: null, tier: "design_partner", trialDays: null },
 };
 
@@ -201,20 +211,6 @@ const createCenterSchema = z.object({
   plan_type: z.enum(PLAN_TYPE_VALUES).default("trial_standard"),
   signup_source: z.enum(SIGNUP_SOURCE_VALUES).default("zalo_cold"),
   referral_note: z.string().max(280).optional().nullable(),
-  // Founding slot — only meaningful when plan_type maps to a founding
-  // tier. Coerce empty string / non-numeric to null. Range checked by
-  // the DB partial unique index + the server-side uniqueness retry.
-  founding_center_number: z
-    .preprocess(
-      (v) => {
-        if (v === "" || v === null || v === undefined) return null;
-        const n = Number(v);
-        return Number.isFinite(n) && n > 0 ? Math.floor(n) : null;
-      },
-      z.number().int().positive().nullable(),
-    )
-    .optional()
-    .nullable(),
 });
 
 export async function createCenter(_prev: unknown, formData: FormData) {
@@ -239,7 +235,6 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       : "zalo_cold",
     referral_note:
       String(formData.get("referral_note") ?? "").trim() || null,
-    founding_center_number: formData.get("founding_center_number"),
   });
   if (!parsed.success) return { error: t("validation") };
 
@@ -277,10 +272,9 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   }
 
   // Active plans need subscription_started_at/ends_at populated so the
-  // dashboard's paid-plan card has real data. For founding/design-
-  // partner active plans we still set started_at = now; ends_at is
-  // computed from the plan length (founding = monthly so we set one
-  // month; design partner has no billing cycle so ends_at stays null).
+  // dashboard's paid-plan card has real data. Design-partner active
+  // plans still set started_at = now, but have no billing cycle so
+  // ends_at stays null. Paid plans compute ends_at from plan length.
   const now = new Date();
   let subscriptionStartedAt: string | null = null;
   let subscriptionEndsAt: string | null = null;
@@ -305,7 +299,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     }
   }
 
-  // Try inserting with the full Founding-Center column set; fall back
+  // Try inserting with the full lifecycle column set; fall back
   // progressively for older DBs.
   const baseInsert: Record<string, string | null> = {
     name: parsed.data.center_name,
@@ -314,13 +308,6 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     subscription_status: decomposed.status,
     trial_ends_at: trialEndsAt,
   };
-  // Only attach a slot number when the plan is actually founding —
-  // standard / design-partner rows leave the column null. Saves us
-  // worrying about phantom slot reservations on non-founding tiers.
-  const foundingSlot =
-    decomposed.tier === "founding"
-      ? parsed.data.founding_center_number ?? null
-      : null;
 
   const fullInsert = {
     ...baseInsert,
@@ -331,7 +318,6 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     subscription_started_at: subscriptionStartedAt,
     subscription_ends_at: subscriptionEndsAt,
     next_billing_at: nextBillingAt,
-    founding_center_number: foundingSlot,
   };
   let { data: center, error: centerErr } = await supabase
     .from("centers")
@@ -345,7 +331,7 @@ export async function createCenter(_prev: unknown, formData: FormData) {
   // retry drops the column named in the *current* error and tries
   // again — so a center can be created against a partially-migrated
   // database that's missing several of the optional lifecycle /
-  // founding-center / branding columns at once.
+  // branding columns at once.
   //
   // Earlier this was a for-loop over `optional` that only saw the
   // first matching column once per iteration; once a retry surfaced
@@ -365,7 +351,6 @@ export async function createCenter(_prev: unknown, formData: FormData) {
       "last_payment_at",
       "next_billing_at",
       "subscription_plan",
-      "founding_center_number",
     ];
     let attempts = 0;
     while (centerErr && attempts < optional.length) {
@@ -385,23 +370,8 @@ export async function createCenter(_prev: unknown, formData: FormData) {
     }
   }
   if (centerErr || !center) {
-    // Special-case the slot-uniqueness collision: two operators could
-    // race on the same number; the partial unique index returns this
-    // signature. Surface a friendly error so the operator can pick a
-    // different slot rather than seeing a raw Postgres message.
-    const msg = centerErr?.message ?? "";
-    if (
-      /centers_founding_slot_uniq/i.test(msg) ||
-      /duplicate key value violates unique constraint.*founding/i.test(msg)
-    ) {
-      return {
-        error: t("foundingSlotTakenError", {
-          n: foundingSlot ?? 0,
-        }),
-      };
-    }
     return {
-      error: t("createCenterError", { message: msg }),
+      error: t("createCenterError", { message: centerErr?.message ?? "" }),
     };
   }
 
@@ -667,39 +637,33 @@ export async function convertCenterToPaid(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const planRaw = String(formData.get("plan") ?? "");
   if (!id) return { error: "missing id" };
-  if (!(CONVERT_VALUES as readonly string[]).includes(planRaw)) {
+  if (!(PLAN_VALUES as readonly string[]).includes(planRaw)) {
     return { error: "invalid plan" };
   }
-  const choice = planRaw as ConvertChoice;
+  const plan = planRaw as Plan;
 
   const supabase = createAdminClient();
 
-  // Read the columns we'll branch on plus the lifecycle anchors we
-  // either preserve (subscription_started_at) or stamp fresh. Founding
-  // columns are pulled too so we can validate the 'founding' choice
-  // matches the row and surface the locked price in the audit log.
-  // Falls back to a tier-less select if the founding-center migration
-  // hasn't been applied yet.
+  // Read the lifecycle anchors we either preserve
+  // (subscription_started_at) or stamp fresh.
   type ExistingRow = {
     subscription_status?: string;
     subscription_plan?: string | null;
     subscription_started_at?: string | null;
     subscription_ends_at?: string | null;
     plan_tier?: string | null;
-    founding_locked_price_vnd?: number | null;
-    founding_center_number?: number | null;
   };
   let existing: ExistingRow | null = null;
   const full = await supabase
     .from("centers")
     .select(
-      "subscription_status, subscription_plan, subscription_started_at, subscription_ends_at, plan_tier, founding_locked_price_vnd, founding_center_number",
+      "subscription_status, subscription_plan, subscription_started_at, subscription_ends_at, plan_tier",
     )
     .eq("id", id)
     .single();
   if (!full.error) {
     existing = full.data as ExistingRow;
-  } else if (/plan_tier|founding_locked_price_vnd|founding_center_number/i.test(full.error.message)) {
+  } else if (/plan_tier/i.test(full.error.message)) {
     const fb = await supabase
       .from("centers")
       .select(
@@ -714,161 +678,34 @@ export async function convertCenterToPaid(formData: FormData) {
   const now = new Date();
   const nowIso = now.toISOString();
 
-  // Need patch to allow numbers + null + string; use a wider type.
-  let patch: Record<string, string | number | null>;
-  let auditMetadata: Record<string, unknown>;
-
-  if (choice === "founding") {
-    // ---- FOUNDING CONVERSION ----
-    // If the row already has a slot assigned, keep it (operator may
-    // have reserved a specific number). Otherwise assign the lowest
-    // unused integer in [1..cap]. Cap defaults to FOUNDING_DEFAULT_CAP
-    // when app_settings is missing or unreadable.
-    let assignedSlot: number | null = existing.founding_center_number ?? null;
-    let allFoundingRows: {
-      plan_tier: string | null;
-      founding_center_number: number | null;
-    }[] = [];
-    let cap = FOUNDING_DEFAULT_CAP;
-    if (assignedSlot === null || assignedSlot <= 0) {
-      // Read current founding occupants + cap to compute next slot.
-      // Tolerant of missing app_settings (founding-center.sql not run)
-      // and missing founding_center_number column (slot migration not
-      // run) — both fall back to defaults that let the conversion
-      // proceed without slot assignment.
-      const [capRes, occRes] = await Promise.all([
-        supabase
-          .from("app_settings")
-          .select("value")
-          .eq("key", "founding_center_cap")
-          .maybeSingle(),
-        supabase
-          .from("centers")
-          .select("plan_tier, founding_center_number")
-          .eq("plan_tier", "founding"),
-      ]);
-      if (capRes.data) {
-        const v = (capRes.data as { value: unknown }).value;
-        if (typeof v === "number") cap = v;
-        else if (typeof v === "string") cap = Number(v) || cap;
-      }
-      if (!occRes.error && occRes.data) {
-        allFoundingRows = occRes.data as typeof allFoundingRows;
-        const { nextAvailable } = computeFoundingSlotAvailability(
-          allFoundingRows,
-          cap,
-        );
-        if (nextAvailable === null) {
-          // Inline literal: convertCenterToPaid doesn't load the
-          // superAdmin namespace and adding it just for this edge
-          // case is overkill. Operator sees the slot count and the
-          // cap so the meaning is clear without translation.
-          return {
-            error: `All ${cap} Founding Center slots are filled. Free a slot before converting another center to Founding.`,
-          };
-        }
-        assignedSlot = nextAvailable;
-      }
-    }
-
-    // Locked price defaults to 600,000₫ for new founding conversions;
-    // if the row already has a locked price set (e.g. operator pre-
-    // configured a different number), preserve it.
-    const lockedPrice = existing.founding_locked_price_vnd ?? 600_000;
-
-    const nextBilling = new Date(now);
-    nextBilling.setMonth(nextBilling.getMonth() + 1);
-    patch = {
-      subscription_status: "active",
-      subscription_plan: "monthly",
-      plan_tier: "founding",
-      founding_center_number: assignedSlot,
-      founding_locked_price_vnd: lockedPrice,
-      subscription_started_at:
-        existing.subscription_started_at ?? nowIso,
-      // Founding doesn't have a fixed "ends at" — they renew monthly
-      // at the locked price unless cancelled. We still set the field
-      // to the next billing anchor for dashboard parity.
-      subscription_ends_at: nextBilling.toISOString(),
-      last_payment_at: nowIso,
-      next_billing_at: nextBilling.toISOString(),
-    };
-    auditMetadata = {
-      plan: "founding",
-      from_status: existing.subscription_status,
-      from_plan_tier: existing.plan_tier ?? null,
-      to_status: "active",
-      tier: "founding",
-      locked_price_vnd: lockedPrice,
-      founding_center_number: assignedSlot,
-      next_billing_at: nextBilling.toISOString(),
-    };
-  } else {
-    // ---- STANDARD CONVERSION ----
-    // Picking a standard plan ALSO clears any Founding-tier markings.
-    // This is the "downgrade off founding" path: operator decided the
-    // center isn't actually a Founding partner after all.
-    const plan = choice as Plan;
-    const endsAt = new Date(now);
-    if (plan === "monthly") endsAt.setMonth(endsAt.getMonth() + 1);
-    if (plan === "six_months") endsAt.setMonth(endsAt.getMonth() + 6);
-    if (plan === "annual") endsAt.setFullYear(endsAt.getFullYear() + 1);
-    patch = {
-      subscription_status: "active",
-      subscription_plan: plan,
-      plan_tier: "standard",
-      founding_center_number: null,
-      founding_locked_price_vnd: null,
-      subscription_started_at:
-        existing.subscription_started_at ?? nowIso,
-      subscription_ends_at: endsAt.toISOString(),
-      last_payment_at: nowIso,
-      next_billing_at: endsAt.toISOString(),
-    };
-    auditMetadata = {
-      plan,
-      from_status: existing.subscription_status,
-      from_plan_tier: existing.plan_tier ?? null,
-      to_status: "active",
-      to_plan_tier: "standard",
-      ends_at: endsAt.toISOString(),
-      ...(existing.plan_tier === "founding"
-        ? {
-            cleared_founding: true,
-            prior_founding_center_number:
-              existing.founding_center_number ?? null,
-            prior_founding_locked_price_vnd:
-              existing.founding_locked_price_vnd ?? null,
-          }
-        : {}),
-    };
-  }
+  const endsAt = new Date(now);
+  if (plan === "monthly") endsAt.setMonth(endsAt.getMonth() + 1);
+  if (plan === "six_months") endsAt.setMonth(endsAt.getMonth() + 6);
+  if (plan === "annual") endsAt.setFullYear(endsAt.getFullYear() + 1);
+  const patch: Record<string, string | number | null> = {
+    subscription_status: "active",
+    subscription_plan: plan,
+    plan_tier: "standard",
+    subscription_started_at: existing.subscription_started_at ?? nowIso,
+    subscription_ends_at: endsAt.toISOString(),
+    last_payment_at: nowIso,
+    next_billing_at: endsAt.toISOString(),
+  };
+  const auditMetadata: Record<string, unknown> = {
+    plan,
+    from_status: existing.subscription_status,
+    from_plan_tier: existing.plan_tier ?? null,
+    to_status: "active",
+    to_plan_tier: "standard",
+    ends_at: endsAt.toISOString(),
+  };
 
   const { error: updErr, droppedCols } = await updateCenterPatchTolerant(
     supabase,
     id,
     patch,
   );
-  if (updErr) {
-    // Slot-race friendly error: two operators racing on the same
-    // Founding slot — partial unique index rejects the second writer.
-    // createCenter has the same catch; mirror it here so the convert
-    // path surfaces a useful message instead of raw Postgres.
-    if (
-      choice === "founding" &&
-      (/centers_founding_slot_uniq/i.test(updErr) ||
-        /duplicate key value violates unique constraint.*founding/i.test(updErr))
-    ) {
-      const slot =
-        typeof auditMetadata.founding_center_number === "number"
-          ? (auditMetadata.founding_center_number as number)
-          : 0;
-      return {
-        error: `Slot #${slot} was just claimed by another save. Reopen the dialog so the next available slot can be re-computed.`,
-      };
-    }
-    return { error: updErr };
-  }
+  if (updErr) return { error: updErr };
 
   await writeAuditLog(supabase, {
     actorEmail: owner.email,
@@ -885,20 +722,18 @@ export async function convertCenterToPaid(formData: FormData) {
 }
 
 /**
- * Revert a center to a fresh 30-day trial. The "I made a mistake on
- * the plan, let me start over" escape hatch, plus the "let me test
- * something internally" lever. Per spec:
+ * Revert a center to a fresh trial (TRIAL_DAYS long). The "I made a
+ * mistake on the plan, let me start over" escape hatch, plus the "let
+ * me test something internally" lever. Per spec:
  *
  *   - subscription_status   →  'trial'
- *   - trial_ends_at          →  now + 30 days
+ *   - trial_ends_at          →  now + TRIAL_DAYS
  *   - subscription_ends_at   →  null  (active cycle cancelled)
  *   - next_billing_at        →  null
  *   - last_payment_at        →  null
  *   - subscription_plan      →  kept as-is (so we remember what they
  *                                were on)
- *   - plan_tier              →  kept as-is (founding stays founding)
- *   - founding_center_number →  kept
- *   - founding_locked_price_vnd → kept
+ *   - plan_tier              →  kept as-is
  *
  * Audit log records the previous status + plan for traceability.
  */
@@ -923,7 +758,7 @@ export async function revertToTrial(formData: FormData) {
 
   const now = new Date();
   const trialEnd = new Date(now);
-  trialEnd.setDate(trialEnd.getDate() + 30);
+  trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS);
 
   const patch: Record<string, string | null> = {
     subscription_status: "trial",
@@ -1038,35 +873,6 @@ export async function deleteCenterCascade(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/super-admin");
-}
-
-/**
- * Update the Founding Center cap shown on the overview widget. Backed
- * by public.app_settings (db/founding-center.sql). Returns silently if
- * the table isn't migrated yet so the rest of the page still works.
- */
-export async function updateFoundingCenterCap(formData: FormData) {
-  await requireSuperAdmin();
-  const raw = Number(formData.get("cap") ?? 0);
-  if (!Number.isFinite(raw)) return { error: "invalid" };
-  const cap = Math.min(100, Math.max(1, Math.floor(raw)));
-
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("app_settings")
-    .upsert(
-      { key: "founding_center_cap", value: cap, updated_at: new Date().toISOString() },
-      { onConflict: "key" },
-    );
-  if (error) {
-    if (/app_settings/i.test(error.message)) {
-      return { error: "founding-center.sql migration not applied" };
-    }
-    return { error: error.message };
-  }
-
-  revalidatePath("/super-admin");
-  return { success: true };
 }
 
 /**
@@ -1216,13 +1022,8 @@ export async function cancelCenter(formData: FormData) {
 }
 
 /**
- * Tier-aware reactivate. Replaces the old "always extend +7 days"
- * behaviour. Mode is chosen by the dialog based on plan_tier +
- * prior status:
+ * Reactivate a paused/canceled center. Mode is chosen by the dialog:
  *
- *   mode='founding_active'  → flips to active at founding locked
- *                              price. Reuses convertCenterToPaid
- *                              under the hood (plan='founding').
  *   mode='standard_active'  → flips to active on a specific paid
  *                              plan (monthly | six_months | annual).
  *                              Reuses convertCenterToPaid.
@@ -1234,22 +1035,15 @@ export async function cancelCenter(formData: FormData) {
  *                              trial state.
  *
  * The reactivate action itself is a thin dispatch — the real work
- * happens in convertCenterToPaid for the two active modes, which
- * already handles audit logging + lifecycle stamping. The trial
- * mode writes its own audit entry.
+ * happens in convertCenterToPaid for the active mode, which already
+ * handles audit logging + lifecycle stamping. The trial mode writes
+ * its own audit entry.
  */
 export async function reactivateCenter(formData: FormData) {
   const owner = await requireSuperAdmin();
   const id = String(formData.get("id") ?? "");
   const mode = String(formData.get("mode") ?? "");
   if (!id) return { error: "missing id" };
-
-  if (mode === "founding_active") {
-    const fd = new FormData();
-    fd.append("id", id);
-    fd.append("plan", "founding");
-    return convertCenterToPaid(fd);
-  }
 
   if (mode === "standard_active") {
     const plan = String(formData.get("plan") ?? "");

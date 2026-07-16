@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Building2, Calendar, Mail, Phone, Trash2 } from "lucide-react";
+import { ArrowUpRight, Building2, Calendar, Mail, Phone } from "lucide-react";
 import { StatusSelect } from "./status-select";
 import { PlanSelect } from "./plan-select";
 import { NotesCell } from "./notes-cell";
 import { TierBadge } from "./tier-badge";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { TypeToConfirmDelete } from "@/components/type-to-confirm-delete";
 import { deleteCenterCascade } from "./actions";
 
 export type CenterCardData = {
@@ -35,10 +35,7 @@ export type CenterCardData = {
   };
   /** Translated plan label ("Yearly" / "1 năm"), or null when on trial. */
   planText: string | null;
-  /** Founding slot (1..N) for plan_tier='founding'. Rendered as "FC #1"
-   *  in the TierBadge. Null for standard tiers or pre-slot rows. */
-  foundingCenterNumber: number | null;
-  /** Pre-formatted monthly contribution chip ("₫600,000 / month").
+  /** Pre-formatted monthly contribution chip ("₫1,200,000 / month").
    *  Null when the center isn't active or contributes nothing. Shows
    *  next to the plan chip so the operator can scan price at a glance. */
   mrrText: string | null;
@@ -80,17 +77,12 @@ export function CenterCard({ center }: { center: CenterCardData }) {
               </h3>
               <ArrowUpRight className="text-muted-foreground group-hover/title:text-primary size-4 opacity-0 transition group-hover/title:opacity-100" />
             </Link>
-            <TierBadge
-              tier={center.plan_tier}
-              slotNumber={center.foundingCenterNumber}
-            />
+            <TierBadge tier={center.plan_tier} />
           </div>
           {/* Status + plan + price combined badge — the primary
               at-a-glance signal. "Active · Yearly · ₫1,200,000 / mo"
-              for a standard active center, or "Trial · 4 days left"
-              for a trialing one. Price chip only renders when active
-              (and uses monthlyMrrVnd, so Founding rows show their
-              locked price instead of the standard plan price). */}
+              for a paid active center, or "Trial · 4 days left" for a
+              trialing one. Price chip only renders when active. */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${center.statusBadge.tone}`}
@@ -138,15 +130,20 @@ export function CenterCard({ center }: { center: CenterCardData }) {
             </span>
           </div>
         </div>
-        <form action={deleteCenterCascade}>
-          <input type="hidden" name="id" value={center.id} />
-          <ConfirmSubmitButton
-            confirmMessage={t("deleteConfirm", { name: center.name })}
-            ariaLabel={tc("delete")}
-          >
-            <Trash2 className="size-3.5" />
-          </ConfirmSubmitButton>
-        </form>
+        <TypeToConfirmDelete
+          itemId={center.id}
+          itemName={center.name}
+          action={deleteCenterCascade}
+          compact
+          labels={{
+            trigger: tc("delete"),
+            title: t("deleteCenterTitle", { name: center.name }),
+            description: t("deleteCenterDescription"),
+            typePrompt: t("deleteCenterTypePrompt", { name: center.name }),
+            confirm: t("deleteCenterConfirmButton"),
+            cancel: t("cancel"),
+          }}
+        />
       </header>
 
       {/* Subscription controls */}

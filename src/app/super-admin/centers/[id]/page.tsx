@@ -21,9 +21,7 @@ import {
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireSuperAdmin } from "@/lib/super-admin";
 import {
-  computeFoundingSlotAvailability,
   deriveStatus,
-  FOUNDING_DEFAULT_CAP,
   monthlyMrrVnd,
   planLabelKey,
   statusLabelKey,
@@ -37,6 +35,8 @@ import {
 import { NotesCell } from "../../notes-cell";
 import { TierBadge } from "../../tier-badge";
 import { CenterActionsBar } from "./center-actions-bar";
+import { ResetPasswordButton } from "@/components/reset-password-button";
+import { resetCenterUserPassword } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -57,13 +57,14 @@ export default async function CenterDetailPage({
 }) {
   await requireSuperAdmin();
   const t = await getTranslations("superAdmin");
+  const tc = await getTranslations("common");
   const locale = await getLocale();
   const dateLocale = locale === "vi" ? "vi-VN" : "en-US";
 
   const supabase = createAdminClient();
-  // Try the full select including the founding-center columns; fall
-  // back to the legacy shape when the migration hasn't been applied
-  // yet so the detail page still renders.
+  // Try the full select including the tier/lifecycle columns; fall back
+  // to the legacy shape when a migration hasn't been applied yet so the
+  // detail page still renders.
   type CenterRow = {
     id: string;
     name: string;
@@ -80,41 +81,18 @@ export default async function CenterDetailPage({
     subscription_ends_at: string | null;
     last_payment_at: string | null;
     next_billing_at: string | null;
-    founding_center_number: number | null;
-    founding_locked_price_vnd: number | null;
     created_at: string;
   };
   let center: CenterRow | null = null;
   const full = await supabase
     .from("centers")
     .select(
-      "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, plan_tier, signup_source, referral_note, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, founding_center_number, founding_locked_price_vnd, created_at",
+      "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, plan_tier, signup_source, referral_note, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
     )
     .eq("id", params.id)
     .single();
   if (!full.error) {
     center = full.data as CenterRow;
-  } else if (/founding_center_number|founding_locked_price_vnd/i.test(full.error.message)) {
-    // Founding-slot migration not applied yet — re-fetch without those
-    // two columns and treat them as null. The page still renders and
-    // the Convert dialog falls back to the standard plan picker.
-    const r = await supabase
-      .from("centers")
-      .select(
-        "id, name, contact_email, contact_phone, notes, subscription_status, subscription_plan, plan_tier, signup_source, referral_note, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at",
-      )
-      .eq("id", params.id)
-      .single();
-    if (!r.error) {
-      center = {
-        ...(r.data as Omit<
-          CenterRow,
-          "founding_center_number" | "founding_locked_price_vnd"
-        >),
-        founding_center_number: null,
-        founding_locked_price_vnd: null,
-      };
-    }
   } else if (/plan_tier|signup_source|referral_note/i.test(full.error.message)) {
     const fb = await supabase
       .from("centers")
@@ -127,17 +105,11 @@ export default async function CenterDetailPage({
       center = {
         ...(fb.data as Omit<
           CenterRow,
-          | "plan_tier"
-          | "signup_source"
-          | "referral_note"
-          | "founding_center_number"
-          | "founding_locked_price_vnd"
+          "plan_tier" | "signup_source" | "referral_note"
         >),
         plan_tier: null,
         signup_source: null,
         referral_note: null,
-        founding_center_number: null,
-        founding_locked_price_vnd: null,
       };
     }
   }
@@ -150,7 +122,7 @@ export default async function CenterDetailPage({
   // Per-center usage counts — every "head: true, count: exact" runs a
   // separate query but they're all single-row COUNT scans against an
   // indexed center_id, so they stay cheap. Fired in parallel.
-  const [teachers, parents, classes, students, lessons, audits] =
+  const [teachers, parents, classes, students, lessons, audits, memberList] =
     await Promise.all([
       supabase
         .from("users")
@@ -183,6 +155,12 @@ export default async function CenterDetailPage({
         .eq("center_id", params.id)
         .order("created_at", { ascending: false })
         .limit(15),
+      supabase
+        .from("users")
+        .select("id, full_name, role, email, phone")
+        .eq("center_id", params.id)
+        .order("role", { ascending: true })
+        .order("full_name", { ascending: true }),
     ]);
 
   const teacherCount = teachers.count ?? 0;
@@ -197,43 +175,19 @@ export default async function CenterDetailPage({
     created_at: string;
     user_id: string | null;
   }>;
-
-  // Founding-slot availability — read all founding rows + cap so the
-  // Convert dialog can show "Next available slot: #N · M remaining".
-  // Tolerant of either column / table being absent (returns defaults).
-  let foundingCap = FOUNDING_DEFAULT_CAP;
-  let foundingNextSlot: number | null = 1;
-  let foundingSlotsRemaining = FOUNDING_DEFAULT_CAP;
-  try {
-    const [capRes, foundingRows] = await Promise.all([
-      supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "founding_center_cap")
-        .maybeSingle(),
-      supabase
-        .from("centers")
-        .select("plan_tier, founding_center_number")
-        .eq("plan_tier", "founding"),
-    ]);
-    if (capRes.data) {
-      const v = (capRes.data as { value: unknown }).value;
-      if (typeof v === "number") foundingCap = v;
-      else if (typeof v === "string") foundingCap = Number(v) || foundingCap;
-    }
-    const occ =
-      foundingRows.error || !foundingRows.data
-        ? []
-        : (foundingRows.data as {
-            plan_tier: string | null;
-            founding_center_number: number | null;
-          }[]);
-    const availability = computeFoundingSlotAvailability(occ, foundingCap);
-    foundingNextSlot = availability.nextAvailable;
-    foundingSlotsRemaining = availability.remaining;
-  } catch {
-    // Migrations not applied — defaults already set above.
-  }
+  const members = (memberList.data ?? []) as Array<{
+    id: string;
+    full_name: string;
+    role: string;
+    email: string | null;
+    phone: string | null;
+  }>;
+  const roleLabel = (role: string) =>
+    role === "admin"
+      ? t("roleAdmin")
+      : role === "teacher"
+        ? t("roleTeacher")
+        : t("roleParent");
 
   const planKey = planLabelKey(center.subscription_plan);
   const planText = planKey ? t(planKey) : null;
@@ -309,9 +263,8 @@ export default async function CenterDetailPage({
       timeZone: VN_TZ,
     });
 
-  // monthlyMrrVnd branches on plan_tier — Founding Centers contribute
-  // their founding_locked_price_vnd (₫600K default) instead of the
-  // standard plan ladder. Returns 0 for any non-paying row.
+  // monthlyMrrVnd amortises the paid plan to a monthly figure; returns
+  // 0 for any non-paying row.
   const planMrr =
     center.subscription_status === "active" ? monthlyMrrVnd(center) : 0;
   const mrrFormatted = planMrr > 0
@@ -352,11 +305,7 @@ export default async function CenterDetailPage({
             <h1 className="text-3xl font-semibold tracking-tight">
               {center.name}
             </h1>
-            <TierBadge
-              tier={center.plan_tier}
-              size="full"
-              slotNumber={center.founding_center_number}
-            />
+            <TierBadge tier={center.plan_tier} size="full" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <span
@@ -391,14 +340,8 @@ export default async function CenterDetailPage({
           centerName={center.name}
           status={center.subscription_status}
           plan={center.subscription_plan}
-          planTier={center.plan_tier}
           trialEndsAt={center.trial_ends_at}
           subscriptionEndsAt={center.subscription_ends_at}
-          foundingCenterNumber={center.founding_center_number}
-          foundingLockedPriceVnd={center.founding_locked_price_vnd}
-          foundingNextSlot={foundingNextSlot}
-          foundingSlotsRemaining={foundingSlotsRemaining}
-          foundingCap={foundingCap}
           locale={dateLocale}
         />
       </header>
@@ -643,6 +586,54 @@ export default async function CenterDetailPage({
             </dl>
           </section>
 
+          {/* Members — reset any user's password (owner-managed support). */}
+          <section className="bg-card rounded-2xl border p-5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Users className="text-muted-foreground size-4" />
+              <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+                {t("usersLabel")}
+              </p>
+            </div>
+            {members.length === 0 ? (
+              <p className="text-muted-foreground mt-3 text-sm italic">
+                {t("usersEmpty")}
+              </p>
+            ) : (
+              <ul className="mt-3 space-y-2.5">
+                {members.map((m) => (
+                  <li
+                    key={m.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">
+                        {m.full_name}
+                        <span className="text-muted-foreground ml-1.5 text-[11px] font-normal uppercase tracking-wide">
+                          {roleLabel(m.role)}
+                        </span>
+                      </p>
+                      <p className="text-muted-foreground truncate text-xs">
+                        {m.phone || m.email || "—"}
+                      </p>
+                    </div>
+                    <ResetPasswordButton
+                      userId={m.id}
+                      action={resetCenterUserPassword}
+                      labels={{
+                        reset: t("resetUserPassword"),
+                        confirm: t("resetUserConfirm", { name: m.full_name }),
+                        intro: t("resetUserIntro", { name: m.full_name }),
+                        copy: tc("copy"),
+                        copied: tc("copied"),
+                        close: tc("close"),
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           <section className="bg-card rounded-2xl border p-5 shadow-sm">
             <div className="flex items-center gap-2">
               <History className="text-muted-foreground size-4" />
@@ -723,12 +714,6 @@ function renderAuditAction(
     const to = String(metadata?.to ?? "");
     const auto = metadata?.auto === true;
     const reason = String(metadata?.reason ?? "");
-    // Special-case the founding-trial auto-conversion so the activity
-    // feed reads "Founding trial converted to active" instead of the
-    // generic "Auto-changed from trial to active".
-    if (auto && reason === "founding_trial_converted") {
-      return t("auditFoundingTrialConverted");
-    }
     if (auto && reason === "renewal_due") {
       return t("auditRenewalDue");
     }
@@ -741,19 +726,6 @@ function renderAuditAction(
   }
   if (action === "subscription_converted") {
     const plan = String(metadata?.plan ?? "");
-    if (plan === "founding") {
-      const price = Number(metadata?.locked_price_vnd ?? 0);
-      const slot = metadata?.founding_center_number;
-      // If we know the slot + price, use the rich label; otherwise
-      // fall back to a generic founding line. Slot=0 means unknown.
-      if (price > 0 && typeof slot === "number" && slot > 0) {
-        return t("auditConvertedFoundingFull", {
-          price: new Intl.NumberFormat("vi-VN").format(price),
-          n: slot,
-        });
-      }
-      return t("auditConvertedFounding");
-    }
     return t("auditSubscriptionConverted", { plan });
   }
   if (action === "subscription_paused") {

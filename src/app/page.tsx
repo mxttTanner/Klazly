@@ -70,7 +70,13 @@ export default async function HomePage() {
     { n: 3, title: t("role3Title"), body: t("role3Body"), shot: "/shots/parent.png" },
   ];
 
-  const pdfItems = [t("pdfItem1"), t("pdfItem2"), t("pdfItem3"), t("pdfItem4")];
+  const pdfItems = [
+    t("pdfItem1"),
+    t("pdfItem2"),
+    t("pdfItem3"),
+    t("pdfItem4"),
+    t("pdfItem5"),
+  ];
   const beforeItems = [
     t("before1"),
     t("before2"),

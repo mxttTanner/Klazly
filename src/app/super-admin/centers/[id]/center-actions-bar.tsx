@@ -8,7 +8,6 @@ import {
   CircleDollarSign,
   Pause,
   RotateCcw,
-  Sparkles,
   XCircle,
 } from "lucide-react";
 import {
@@ -64,28 +63,16 @@ export function CenterActionsBar({
   centerName,
   status,
   plan,
-  planTier,
   trialEndsAt,
   subscriptionEndsAt,
-  foundingCenterNumber,
-  foundingLockedPriceVnd,
-  foundingNextSlot,
-  foundingSlotsRemaining,
-  foundingCap,
   locale,
 }: {
   centerId: string;
   centerName: string;
   status: string;
   plan: string | null;
-  planTier: string | null;
   trialEndsAt: string | null;
   subscriptionEndsAt: string | null;
-  foundingCenterNumber: number | null;
-  foundingLockedPriceVnd: number | null;
-  foundingNextSlot: number | null;
-  foundingSlotsRemaining: number;
-  foundingCap: number;
   locale: string;
 }) {
   const t = useTranslations("superAdmin");
@@ -103,8 +90,6 @@ export function CenterActionsBar({
     subscriptionEndsAt !== null &&
     new Date(subscriptionEndsAt).getTime() - Date.now() <=
       RENEWAL_NUDGE_WINDOW_DAYS * DAY_MS;
-
-  const isFounding = planTier === "founding";
 
   // Manage button label + tone — state-aware so a glance at the button
   // tells the operator what they're about to do.
@@ -196,14 +181,7 @@ export function CenterActionsBar({
         centerName={centerName}
         status={status}
         currentPlan={plan}
-        isFounding={isFounding}
         renewalDueSoon={renewalDueSoon}
-        foundingCenterNumber={foundingCenterNumber}
-        foundingLockedPriceVnd={foundingLockedPriceVnd}
-        foundingNextSlot={foundingNextSlot}
-        foundingSlotsRemaining={foundingSlotsRemaining}
-        foundingCap={foundingCap}
-        locale={locale}
       />
       <ExtendDialog
         open={open === "extend"}
@@ -236,12 +214,10 @@ export function CenterActionsBar({
  *   - Pre-selection set to the current plan when applicable
  *   - Header copy adapts per mode (convert vs change vs renew vs
  *     reactivate)
- *   - Small "Revert to 30-day trial" section at the bottom (visible
- *     when status !== 'trial'), with an inline two-step confirm so
- *     the operator can't fat-finger it.
+ *   - Small "Revert to trial" section at the bottom (visible when
+ *     status !== 'trial'), with an inline two-step confirm so the
+ *     operator can't fat-finger it.
  */
-type ManageChoice = Plan | "founding";
-
 function ManageDialog({
   open,
   onClose,
@@ -249,14 +225,7 @@ function ManageDialog({
   centerName,
   status,
   currentPlan,
-  isFounding,
   renewalDueSoon,
-  foundingCenterNumber,
-  foundingLockedPriceVnd,
-  foundingNextSlot,
-  foundingSlotsRemaining,
-  foundingCap,
-  locale,
 }: {
   open: boolean;
   onClose: () => void;
@@ -264,37 +233,24 @@ function ManageDialog({
   centerName: string;
   status: string;
   currentPlan: string | null;
-  isFounding: boolean;
   renewalDueSoon: boolean;
-  foundingCenterNumber: number | null;
-  foundingLockedPriceVnd: number | null;
-  foundingNextSlot: number | null;
-  foundingSlotsRemaining: number;
-  foundingCap: number;
-  locale: string;
 }) {
   const t = useTranslations("superAdmin");
 
-  // What's the row's current plan choice, normalised to ManageChoice?
-  // Only meaningful when status='active' or 'pending_renewal'; we
-  // use it both for pre-selection and for the "Current plan" badge.
-  const currentChoice: ManageChoice | null =
+  // What's the row's current plan? Only meaningful when status='active'
+  // or 'pending_renewal'; used both for pre-selection and the "Current
+  // plan" badge.
+  const currentChoice: Plan | null =
     status === "active" || status === "pending_renewal"
-      ? isFounding
-        ? "founding"
-        : (currentPlan as Plan | null) ?? null
+      ? (currentPlan as Plan | null) ?? null
       : null;
 
-  // Pre-selection rule:
-  //   - active / pending_renewal → preselect current plan
-  //   - trial / expired / canceled / paused → no preselection (force
-  //     operator to make a deliberate pick)
-  //   - already founding (any status) still preselects 'founding'
-  //     so a re-convert keeps the locked rate.
-  const initialChoice: ManageChoice | null =
-    currentChoice ?? (isFounding ? "founding" : null);
+  // Pre-selection rule: active / pending_renewal → preselect current
+  // plan; trial / expired / canceled / paused → no preselection (force
+  // operator to make a deliberate pick).
+  const initialChoice: Plan | null = currentChoice;
 
-  const [choice, setChoice] = useState<ManageChoice | null>(initialChoice);
+  const [choice, setChoice] = useState<Plan | null>(initialChoice);
   const [revertConfirmOpen, setRevertConfirmOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -311,11 +267,6 @@ function ManageDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const lockedPrice = foundingLockedPriceVnd ?? 600_000;
-  const formattedLockedPrice = new Intl.NumberFormat(locale).format(lockedPrice);
-
-  const foundingDisabled = !isFounding && foundingNextSlot === null;
-
   // Header copy adapts per mode.
   let title: string;
   let description: string;
@@ -331,22 +282,6 @@ function ManageDialog({
   } else {
     title = t("manageDialogTitleReactivate", { name: centerName });
     description = t("manageDialogDescriptionReactivate");
-  }
-
-  // Founding meta line under the Founding option.
-  let foundingMeta: string;
-  if (isFounding && foundingCenterNumber !== null && foundingCenterNumber > 0) {
-    foundingMeta = t("convertFoundingMetaCurrentSlot", { n: foundingCenterNumber });
-  } else if (isFounding) {
-    foundingMeta = t("convertFoundingMetaWillAssign");
-  } else if (foundingNextSlot !== null) {
-    foundingMeta = t("convertFoundingMetaNextSlot", {
-      n: foundingNextSlot,
-      remaining: foundingSlotsRemaining,
-      cap: foundingCap,
-    });
-  } else {
-    foundingMeta = t("convertFoundingMetaAllTaken", { cap: foundingCap });
   }
 
   function submit() {
@@ -471,52 +406,6 @@ function ManageDialog({
               </label>
             );
           })}
-
-          <div className="text-muted-foreground my-3 flex items-center gap-2 text-[10px] font-medium uppercase tracking-wider">
-            <span className="bg-muted-foreground/20 h-px flex-1" />
-            <span>{t("convertFoundingSeparator")}</span>
-            <span className="bg-muted-foreground/20 h-px flex-1" />
-          </div>
-
-          <label
-            className={
-              "flex items-center justify-between gap-3 rounded-lg border px-3.5 py-2.5 transition " +
-              (foundingDisabled
-                ? "cursor-not-allowed border-muted bg-muted/30 opacity-60"
-                : choice === "founding"
-                  ? "border-primary bg-primary/5 cursor-pointer"
-                  : "hover:bg-muted/40 cursor-pointer")
-            }
-          >
-            <span className="flex min-w-0 items-start gap-2.5">
-              <input
-                type="radio"
-                name="plan"
-                value="founding"
-                checked={choice === "founding"}
-                onChange={() => setChoice("founding")}
-                disabled={foundingDisabled}
-                className="mt-0.5 size-4 accent-primary"
-              />
-              <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-foreground">
-                  <Sparkles className="size-3.5 text-amber-600" />
-                  {t("convertFoundingOptionTitle")}
-                  {currentChoice === "founding" ? (
-                    <span className="bg-primary/10 text-primary ring-primary/20 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1">
-                      {t("manageCurrentPlanBadge")}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="text-muted-foreground mt-0.5 block text-xs">
-                  {t("convertFoundingOptionPrice", { price: formattedLockedPrice })}
-                </span>
-                <span className="text-muted-foreground mt-1 block text-[11px]">
-                  {foundingMeta}
-                </span>
-              </span>
-            </span>
-          </label>
         </fieldset>
 
         {error ? (

@@ -25,9 +25,14 @@ exception when duplicate_object then null; end $$;
 alter type subscription_status add value if not exists 'expired';
 
 -- Internal-only tier tracking (see db/founding-center.sql for full
--- context). 'standard' is everyone; 'founding' is the hand-picked
--- pilot cohort at a discounted lifetime rate; 'design_partner' is
--- free-forever in exchange for ongoing product input.
+-- context). 'standard' is everyone; 'design_partner' is free-forever
+-- in exchange for ongoing product input.
+--
+-- 'founding' is DORMANT / DEPRECATED and unused: the Founding Center
+-- program was removed (see db/remove-founding.sql), which migrated all
+-- founding centers to 'standard'. The enum value is left in place
+-- because dropping an enum value in Postgres is hard, but no rows use
+-- it. Do not assign it to new centers.
 do $$ begin
   create type plan_tier as enum ('standard', 'founding', 'design_partner');
 exception when duplicate_object then null; end $$;

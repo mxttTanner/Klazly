@@ -30,7 +30,6 @@ import { CenterForm } from "./center-form";
 import { CenterCard, type CenterCardData } from "./center-card";
 import { SuperAdminTabs } from "./super-admin-tabs";
 import { TierBadge } from "./tier-badge";
-import { FoundingCenterWidget } from "./founding-widget";
 import { SourceAnalytics } from "./source-analytics";
 
 export const dynamic = "force-dynamic";
@@ -82,16 +81,10 @@ export default async function SuperAdminHomePage({
     subscription_ends_at: string | null;
     last_payment_at: string | null;
     next_billing_at: string | null;
-    // Founding-slot tracking — null when the migration hasn't run or
-    // when the center is on the standard tier. monthlyMrrVnd reads
-    // founding_locked_price_vnd for plan_tier='founding' rows;
-    // founding_center_number powers the "FC #N" badge in the card.
-    founding_locked_price_vnd: number | null;
-    founding_center_number: number | null;
     created_at: string;
   };
   const withTierSelect =
-    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, plan_tier, signup_source, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, founding_locked_price_vnd, founding_center_number, created_at";
+    "id, name, contact_email, contact_phone, subscription_status, subscription_plan, plan_tier, signup_source, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
   const fullSelect =
     "id, name, contact_email, contact_phone, subscription_status, subscription_plan, notes, trial_ends_at, subscription_started_at, subscription_ends_at, last_payment_at, next_billing_at, created_at";
   const preLifecycleSelect =
@@ -117,8 +110,8 @@ export default async function SuperAdminHomePage({
       .select(fullSelect)
       .order("created_at", { ascending: false });
     if (!res1.error) {
-      return ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source" | "founding_locked_price_vnd" | "founding_center_number">[]).map(
-        (c) => ({ ...c, plan_tier: null, signup_source: null, founding_locked_price_vnd: null, founding_center_number: null }),
+      return ((res1.data ?? []) as Omit<CenterRow, "plan_tier" | "signup_source">[]).map(
+        (c) => ({ ...c, plan_tier: null, signup_source: null }),
       );
     }
     if (/subscription_started_at|subscription_ends_at|last_payment_at|next_billing_at/i.test(res1.error.message)) {
@@ -136,8 +129,6 @@ export default async function SuperAdminHomePage({
             | "next_billing_at"
             | "plan_tier"
             | "signup_source"
-            | "founding_locked_price_vnd"
-            | "founding_center_number"
           >),
           subscription_started_at: null,
           subscription_ends_at: null,
@@ -145,8 +136,6 @@ export default async function SuperAdminHomePage({
           next_billing_at: null,
           plan_tier: null,
           signup_source: null,
-          founding_locked_price_vnd: null,
-          founding_center_number: null,
         }));
       }
     }
@@ -166,8 +155,6 @@ export default async function SuperAdminHomePage({
             | "next_billing_at"
             | "plan_tier"
             | "signup_source"
-            | "founding_locked_price_vnd"
-            | "founding_center_number"
           >),
           notes: null,
           subscription_started_at: null,
@@ -176,8 +163,6 @@ export default async function SuperAdminHomePage({
           next_billing_at: null,
           plan_tier: null,
           signup_source: null,
-          founding_locked_price_vnd: null,
-          founding_center_number: null,
         }));
       }
     }
@@ -204,38 +189,21 @@ export default async function SuperAdminHomePage({
         next_billing_at: null,
         plan_tier: null,
         signup_source: null,
-        founding_locked_price_vnd: null,
-        founding_center_number: null,
       }));
     }
     return null;
   })();
 
-  // KPI counts + founding-center cap setting all run in parallel with
-  // the centers fetch. The setting fetch is allowed to fail (migration
-  // may not have run yet); we recover the foundingWidgetEnabled flag
-  // from the absence of data.
+  // KPI counts run in parallel with the centers fetch.
   let centers: CenterRow[] | null;
   let studentCount: number | null;
   let lessonCount: number | null;
-  let foundingSettingRaw: unknown = null;
-  let foundingSettingOk = false;
   {
-    const [centersResolved, studentRes, lessonRes, settingRes] =
-      await Promise.all([
-        centersPromise,
-        supabase.from("students").select("id", { count: "exact", head: true }),
-        supabase.from("lessons").select("id", { count: "exact", head: true }),
-        supabase
-          .from("app_settings")
-          .select("value")
-          .eq("key", "founding_center_cap")
-          .maybeSingle()
-          .then(
-            (r) => ({ ok: !r.error, data: r.data }),
-            () => ({ ok: false, data: null }),
-          ),
-      ]);
+    const [centersResolved, studentRes, lessonRes] = await Promise.all([
+      centersPromise,
+      supabase.from("students").select("id", { count: "exact", head: true }),
+      supabase.from("lessons").select("id", { count: "exact", head: true }),
+    ]);
     centers = centersResolved;
     // Hide the built-in demo center (it powers /demo) from the
     // operational console — the super-admin should only see real
@@ -250,10 +218,6 @@ export default async function SuperAdminHomePage({
     }
     studentCount = studentRes.count ?? 0;
     lessonCount = lessonRes.count ?? 0;
-    foundingSettingOk = settingRes.ok;
-    foundingSettingRaw = settingRes.data
-      ? (settingRes.data as { value: unknown }).value
-      : null;
   }
 
   // Lazy auto-expire: any trial whose trial_ends_at is in the past
@@ -301,7 +265,6 @@ export default async function SuperAdminHomePage({
     name: string;
     contactPhone: string | null;
     planTier: string | null;
-    foundingCenterNumber: number | null;
     days: number; // positive = days left; for expired bucket = days since expiry
     zaloUrl: string | null;
   };
@@ -318,7 +281,6 @@ export default async function SuperAdminHomePage({
           name: c.name,
           contactPhone: c.contact_phone,
           planTier: c.plan_tier,
-          foundingCenterNumber: c.founding_center_number,
           days,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -328,7 +290,6 @@ export default async function SuperAdminHomePage({
           name: c.name,
           contactPhone: c.contact_phone,
           planTier: c.plan_tier,
-          foundingCenterNumber: c.founding_center_number,
           days,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -341,7 +302,6 @@ export default async function SuperAdminHomePage({
           name: c.name,
           contactPhone: c.contact_phone,
           planTier: c.plan_tier,
-          foundingCenterNumber: c.founding_center_number,
           days: since,
           zaloUrl: zaloDeeplinkFromPhone(c.contact_phone),
         });
@@ -353,48 +313,6 @@ export default async function SuperAdminHomePage({
   recentlyExpired.sort((a, b) => a.days - b.days);
   const hasActionRequired =
     urgentTrials.length + warningTrials.length + recentlyExpired.length > 0;
-
-  // Founding Center cohort tracking — pulls the cap from
-  // public.app_settings (managed by updateFoundingCenterCap) and
-  // counts active+trial centers on plan_tier='founding'. Falls back
-  // gracefully when the founding-center migration hasn't run yet so
-  // the widget just hides.
-  // foundingSettingOk + foundingSettingRaw came from the parallel
-  // batch above — derive cap and widget-enabled flag from them.
-  let foundingCap = 5;
-  const foundingWidgetEnabled = foundingSettingOk;
-  if (foundingSettingRaw !== null) {
-    if (typeof foundingSettingRaw === "number") foundingCap = foundingSettingRaw;
-    else if (typeof foundingSettingRaw === "string")
-      foundingCap = Number(foundingSettingRaw) || 5;
-  }
-  const foundingFilled = withDerived.filter(
-    (c) =>
-      c.plan_tier === "founding" &&
-      (c.derived === "trial" ||
-        c.derived === "trial_ending_soon" ||
-        c.derived === "active"),
-  ).length;
-
-  // Which slot numbers are already taken. Used by the new-center form
-  // to auto-fill the next available slot (and block submission when
-  // the cap is full unless the operator ticks an override).
-  const foundingSlotsTaken: number[] = withDerived
-    .filter(
-      (c) =>
-        c.plan_tier === "founding" &&
-        typeof c.founding_center_number === "number" &&
-        c.founding_center_number !== null,
-    )
-    .map((c) => c.founding_center_number as number)
-    .sort((a, b) => a - b);
-  let foundingNextSlot: number | null = null;
-  for (let n = 1; n <= foundingCap; n++) {
-    if (!foundingSlotsTaken.includes(n)) {
-      foundingNextSlot = n;
-      break;
-    }
-  }
 
   // Source breakdown counts — null-safe; old centers without
   // signup_source just don't contribute.
@@ -415,9 +333,6 @@ export default async function SuperAdminHomePage({
   for (const c of withDerived) {
     if (c.derived === "active") {
       activeCount += 1;
-      // monthlyMrrVnd honours plan_tier='founding' → founding_locked_price_vnd
-      // (₫600K default) instead of the standard plan ladder, so a
-      // Founding row contributes its locked price, not 1.2M.
       mrrVnd += monthlyMrrVnd(c);
     }
     if (c.derived === "trial" || c.derived === "trial_ending_soon") {
@@ -542,9 +457,8 @@ export default async function SuperAdminHomePage({
       }
     }
 
-    // Price chip — only render for active centers, and honour
-    // founding_locked_price_vnd via monthlyMrrVnd. Format as
-    // "₫600,000 / mo" so the operator can compare across centers
+    // Price chip — only render for active centers. Format as
+    // "₫1,200,000 / mo" so the operator can compare across centers
     // at a glance without doing currency math.
     let mrrText: string | null = null;
     if (status === "active") {
@@ -561,7 +475,6 @@ export default async function SuperAdminHomePage({
 
     return {
       ...c,
-      foundingCenterNumber: c.founding_center_number,
       mrrText,
       statusBadge: {
         labelKey: statusLabelKey(status),
@@ -650,11 +563,7 @@ export default async function SuperAdminHomePage({
   const newCenterPanel = (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">{t("createSubtitle")}</p>
-      <CenterForm
-        foundingCap={foundingCap}
-        foundingSlotsTaken={foundingSlotsTaken}
-        foundingNextSlot={foundingNextSlot}
-      />
+      <CenterForm />
     </div>
   );
 
@@ -740,16 +649,9 @@ export default async function SuperAdminHomePage({
         </section>
       ) : null}
 
-      {/* Founding Center cohort + source-attribution. Internal-only.
-          Render side-by-side at small screens too — both are compact. */}
-      {foundingWidgetEnabled || sourceTotal > 0 ? (
+      {/* Source-attribution breakdown. Internal-only. */}
+      {sourceTotal > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          {foundingWidgetEnabled ? (
-            <FoundingCenterWidget
-              filled={foundingFilled}
-              initialCap={foundingCap}
-            />
-          ) : null}
           <SourceAnalytics
             counts={sourceCounts}
             total={sourceTotal}
@@ -877,7 +779,6 @@ function ActionGroup({
     name: string;
     contactPhone: string | null;
     planTier: string | null;
-    foundingCenterNumber: number | null;
     days: number;
     zaloUrl: string | null;
   }[];
@@ -941,10 +842,7 @@ function ActionGroup({
                 >
                   {c.name}
                 </Link>
-                <TierBadge
-                  tier={c.planTier}
-                  slotNumber={c.foundingCenterNumber}
-                />
+                <TierBadge tier={c.planTier} />
               </div>
               <p className={"mt-0.5 text-xs tabular-nums " + toneClasses.days}>
                 {kind === "left"

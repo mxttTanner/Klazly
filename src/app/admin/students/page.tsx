@@ -13,7 +13,7 @@ import { InlineSelect } from "./inline-select";
 import { deleteStudent } from "./actions";
 import { SearchInput } from "@/components/search-input";
 import { LevelSelect } from "@/components/level-select";
-import { ConfirmSubmitButton } from "@/components/confirm-submit";
+import { TypeToConfirmDelete } from "@/components/type-to-confirm-delete";
 import { InlineImportSection } from "@/components/inline-import-section";
 
 export const dynamic = "force-dynamic";
@@ -124,16 +124,21 @@ Nguyễn Bảo Ngọc,10,Lớp Junior A,hoa@parent.test`}
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <form action={deleteStudent}>
-                      <input type="hidden" name="id" value={s.id} />
-                      <ConfirmSubmitButton
-                        confirmMessage={t("deleteConfirm", {
+                    <TypeToConfirmDelete
+                      itemId={s.id}
+                      itemName={s.full_name}
+                      action={deleteStudent}
+                      labels={{
+                        trigger: tc("delete"),
+                        title: t("deleteConfirm", { name: s.full_name }),
+                        description: tc("deleteCannotUndo"),
+                        typePrompt: tc("typeNameToConfirm", {
                           name: s.full_name,
-                        })}
-                      >
-                        {tc("delete")}
-                      </ConfirmSubmitButton>
-                    </form>
+                        }),
+                        confirm: tc("delete"),
+                        cancel: tc("cancel"),
+                      }}
+                    />
                   </TableCell>
                 </TableRow>
               ))

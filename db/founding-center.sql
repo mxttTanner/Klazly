@@ -46,6 +46,5 @@ alter table public.app_settings enable row level security;
 -- No public select / write policies — service role only. The super-
 -- admin reads + writes through server actions in /super-admin.
 
-insert into public.app_settings (key, value)
-values ('founding_center_cap', to_jsonb(5))
-on conflict (key) do nothing;
+-- The founding_center_cap seed insert was removed (Founding Center
+-- program retired). See db/remove-founding.sql.

@@ -36,22 +36,23 @@ export type CenterSubscriptionInput = {
   trial_ends_at: string | null;
   subscription_ends_at?: string | null;
   /**
-   * 'standard' | 'founding' | 'design_partner' — when a founding-tier
-   * trial reaches its end date, the lazy-expire logic converts it to
-   * 'active' instead of 'expired'. Optional so older callers that
-   * predate the founding-center migration still type-check.
+   * 'standard' | 'design_partner'. Design partners are free-forever
+   * internal partners (they don't contribute to MRR). Optional so older
+   * callers still type-check.
    */
   plan_tier?: string | null;
-  /**
-   * Per-center locked monthly price in VND, only meaningful when
-   * plan_tier='founding'. Used by MRR + display, not by the
-   * conversion logic itself (the conversion just flips the status).
-   */
-  founding_locked_price_vnd?: number | null;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TRIAL_ENDING_SOON_DAYS = 7;
+
+/**
+ * The one and only trial length: a 6-month free period. Every trial uses
+ * this — new centers, revert-to-trial, and reactivation — so there is a
+ * single number to reason about. When it lapses the center expires and
+ * loses access until they pay.
+ */
+export const TRIAL_DAYS = 180;
 
 /**
  * Compute the display status from raw DB columns.
@@ -68,14 +69,7 @@ export function deriveStatus(c: CenterSubscriptionInput): DerivedStatus {
   if (raw === "trial") {
     if (c.trial_ends_at) {
       const left = new Date(c.trial_ends_at).getTime() - Date.now();
-      if (left <= 0) {
-        // Founding-tier trials auto-convert to 'active' on expiry, not
-        // 'expired'. We surface the converted state immediately even if
-        // the bulk-UPDATE in expireOverdueTrials hasn't run yet, so a
-        // founding center that just crossed trial_ends_at never flashes
-        // as 'expired' in the UI.
-        return c.plan_tier === "founding" ? "active" : "expired";
-      }
+      if (left <= 0) return "expired";
       if (left <= TRIAL_ENDING_SOON_DAYS * DAY_MS) return "trial_ending_soon";
     }
     return "trial";
@@ -114,9 +108,8 @@ export function subscriptionDaysLeft(
 }
 
 /**
- * Standard-tier trials past their end date — these become 'expired'
- * and lose access. Founding-tier trials are intentionally excluded
- * (see `findFoundingTrialsToConvert`).
+ * Trials past their end date — these become 'expired' and lose access
+ * until the center pays.
  */
 export function findTrialsToExpire(
   centers: CenterSubscriptionInput[],
@@ -125,35 +118,10 @@ export function findTrialsToExpire(
     .filter(
       (c) =>
         c.subscription_status === "trial" &&
-        c.plan_tier !== "founding" &&
         c.trial_ends_at !== null &&
         new Date(c.trial_ends_at).getTime() < Date.now(),
     )
     .map((c) => c.id);
-}
-
-/**
- * Founding-tier trials past their end date — these convert to 'active'
- * at their locked monthly price (founding_locked_price_vnd), and the
- * trial→paid transition is permanent. Caller is expected to issue the
- * UPDATE and write an audit_log row for each.
- *
- * Returned as full row references (not just IDs) so the caller can
- * preserve each row's `trial_ends_at` as the new `subscription_started_at`
- * — i.e. the paid period begins exactly when the trial ended, no gap.
- */
-export function findFoundingTrialsToConvert(
-  centers: CenterSubscriptionInput[],
-): { id: string; trial_ends_at: string }[] {
-  return centers
-    .filter(
-      (c) =>
-        c.subscription_status === "trial" &&
-        c.plan_tier === "founding" &&
-        c.trial_ends_at !== null &&
-        new Date(c.trial_ends_at).getTime() < Date.now(),
-    )
-    .map((c) => ({ id: c.id, trial_ends_at: c.trial_ends_at as string }));
 }
 
 /**
@@ -185,40 +153,26 @@ export function findActiveSubsToMarkRenewal(
 }
 
 /**
- * Lazy auto-transition on every super-admin page render. Handles two
- * distinct overdue-trial transitions in one pass:
+ * Lazy auto-transition on every super-admin page render. Two passes:
  *
- *   1. Standard trials past trial_ends_at  →  status='expired'
+ *   1. Trials past trial_ends_at  →  status='expired'
  *      (single bulk UPDATE — no per-row data to preserve.)
  *
- *   2. Founding trials past trial_ends_at  →  status='active', with
- *      subscription_started_at = NOW and next_billing_at = NOW + 1mo.
- *      Using "now" instead of trial_ends_at means the paid clock
- *      starts the moment the operator's first /super-admin load fires
- *      the conversion — matches the operator's intuition ("we
- *      converted them today") and the spec for the manual Convert
- *      dialog. The locked monthly price is read from
- *      founding_locked_price_vnd at display time; subscription_plan
- *      is left untouched.
- *      (Per-row UPDATE because audit metadata captures each row's
- *      previous trial_ends_at separately. Founding cohort caps at 5
- *      so the loop is trivially cheap.)
- *
- *   3. Active centers past subscription_ends_at  →  'pending_renewal'.
+ *   2. Active centers past subscription_ends_at  →  'pending_renewal'.
  *      Klazly never auto-charges; this just flips the status so the
  *      operator's dashboard shows a "Renewal due" amber row. The
  *      actual renewal collection happens out of band over Zalo.
  *
- * Writes one audit_log row per transition so each conversion is
- * traceable. All Supabase calls are best-effort — a failure inside
- * this helper must NEVER block the super-admin dashboard render. The
- * caller re-fetches subscription_status after this returns, so the
- * UI is always consistent with whatever did succeed.
+ * Writes one audit_log row per transition so each is traceable. All
+ * Supabase calls are best-effort — a failure inside this helper must
+ * NEVER block the super-admin dashboard render. The caller re-fetches
+ * subscription_status after this returns, so the UI is always
+ * consistent with whatever did succeed.
  *
  * Uses the service-role client; only callable from /super-admin which
  * is gated by requireSuperAdmin.
  *
- * @returns total number of rows transitioned (expired + converted).
+ * @returns total number of rows transitioned.
  */
 export async function expireOverdueTrials(
   supabase: SupabaseClient,
@@ -226,7 +180,7 @@ export async function expireOverdueTrials(
 ): Promise<number> {
   let touched = 0;
 
-  // ----- 1. Standard trials → 'expired' (single bulk UPDATE) -----
+  // ----- 1. Trials → 'expired' (single bulk UPDATE) -----
   const expireIds = findTrialsToExpire(centers);
   if (expireIds.length > 0) {
     const { error } = await supabase
@@ -252,82 +206,7 @@ export async function expireOverdueTrials(
     }
   }
 
-  // ----- 2. Founding trials → 'active' (per-row UPDATE) -----
-  // We need each row's own trial_ends_at to set subscription_started_at,
-  // so this can't collapse into one bulk statement. The founding cohort
-  // caps at 5 rows globally, so N tiny UPDATEs is fine.
-  const founding = findFoundingTrialsToConvert(centers);
-  if (founding.length > 0) {
-    const now = new Date();
-    const nowIso = now.toISOString();
-    const nextBillingDate = new Date(now);
-    nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-    const nextBillingIso = nextBillingDate.toISOString();
-    for (const row of founding) {
-      const { error } = await supabase
-        .from("centers")
-        .update({
-          subscription_status: "active",
-          // Set the billing cadence so dashboards reading
-          // subscription_plan render "1 month" instead of an empty
-          // label. The actual ₫ contribution is read from
-          // founding_locked_price_vnd by monthlyMrrVnd() below.
-          subscription_plan: "monthly",
-          subscription_started_at: nowIso,
-          next_billing_at: nextBillingIso,
-        })
-        .eq("id", row.id);
-      if (!error) {
-        touched += 1;
-        await supabase.from("audit_log").insert({
-          user_id: null,
-          center_id: row.id,
-          action: "subscription_status_change",
-          entity_type: "center",
-          entity_id: row.id,
-          metadata: {
-            from: "trial",
-            to: "active",
-            reason: "founding_trial_converted",
-            auto: true,
-            previous_trial_ends_at: row.trial_ends_at,
-            subscription_started_at: nowIso,
-            next_billing_at: nextBillingIso,
-          },
-        });
-      } else if (
-        /subscription_started_at|next_billing_at|subscription_plan/i.test(error.message)
-      ) {
-        // Lifecycle / plan columns missing — fall back to a status-only
-        // flip so the founding center still moves out of 'trial' and
-        // never lands in the 'expired' bucket. Dates + plan can be
-        // backfilled once the migration runs.
-        const retry = await supabase
-          .from("centers")
-          .update({ subscription_status: "active" })
-          .eq("id", row.id);
-        if (!retry.error) {
-          touched += 1;
-          await supabase.from("audit_log").insert({
-            user_id: null,
-            center_id: row.id,
-            action: "subscription_status_change",
-            entity_type: "center",
-            entity_id: row.id,
-            metadata: {
-              from: "trial",
-              to: "active",
-              reason: "founding_trial_converted",
-              auto: true,
-              degraded: true,
-            },
-          });
-        }
-      }
-    }
-  }
-
-  // ----- 3. Active subs past subscription_ends_at → 'pending_renewal' -----
+  // ----- 2. Active subs past subscription_ends_at → 'pending_renewal' -----
   // Bulk UPDATE — every row gets the same status, no per-row data
   // to preserve.
   const renewalIds = findActiveSubsToMarkRenewal(centers);
@@ -367,10 +246,8 @@ export async function expireOverdueTrials(
 }
 
 /**
- * Per-month VND contribution for the standard paid plans. Six-month
- * and annual amortise to a monthly figure so MRR is comparable across
- * tiers. Founding/Design-Partner pricing does NOT live here — those
- * are read per-row from founding_locked_price_vnd in `monthlyMrrVnd`.
+ * Per-month VND contribution for the paid plans. Six-month and annual
+ * amortise to a monthly figure so MRR is comparable across plans.
  */
 export const STANDARD_PLAN_MONTHLY_VND: Record<string, number> = {
   monthly: 1_200_000,
@@ -378,92 +255,20 @@ export const STANDARD_PLAN_MONTHLY_VND: Record<string, number> = {
   annual: 825_000,
 };
 
-/** Canonical fallback for a Founding Center whose locked price column
- *  is null (e.g. row predates the slot migration). Keeps MRR
- *  computations sane while we wait for someone to set the real number. */
-const FOUNDING_FALLBACK_MONTHLY_VND = 600_000;
-
-/** Default cap for the Founding Center cohort when app_settings is
- *  unavailable. Mirrored from db/founding-center.sql. */
-export const FOUNDING_DEFAULT_CAP = 5;
-
-/**
- * Single source of truth for "is there an open Founding slot, and if
- * so, which number?".
- *
- * Takes the full set of centers (so the caller can pass whatever it
- * already fetched — no extra DB round trip) and the cap. Returns:
- *   taken          — sorted list of slot numbers currently assigned
- *   nextAvailable  — lowest unused integer in [1..cap], or null if
- *                    the cap is hit
- *   remaining      — max(0, cap - taken.length)
- *
- * Used by:
- *   - the new-center form (page.tsx → CenterForm)  : pre-fill on
- *     plan-type change
- *   - the Convert dialog (CenterActionsBar)         : show "next
- *     available slot: #N · M remaining" inside the Founding option
- *
- * Race condition guard lives at the DB layer (centers_founding_slot_uniq
- * partial unique index) — this helper is purely advisory.
- */
-export function computeFoundingSlotAvailability(
-  centers: {
-    plan_tier?: string | null;
-    founding_center_number?: number | null;
-  }[],
-  cap: number,
-): {
-  taken: number[];
-  nextAvailable: number | null;
-  remaining: number;
-} {
-  const taken = centers
-    .filter(
-      (c) =>
-        c.plan_tier === "founding" &&
-        typeof c.founding_center_number === "number" &&
-        c.founding_center_number !== null &&
-        c.founding_center_number > 0,
-    )
-    .map((c) => c.founding_center_number as number)
-    .sort((a, b) => a - b);
-  let nextAvailable: number | null = null;
-  for (let n = 1; n <= cap; n++) {
-    if (!taken.includes(n)) {
-      nextAvailable = n;
-      break;
-    }
-  }
-  return {
-    taken,
-    nextAvailable,
-    remaining: Math.max(0, cap - taken.length),
-  };
-}
-
 /**
  * Monthly VND contribution of a single center, used by both the org-
- * wide MRR widget on /super-admin and the per-center MRR card on
- * /super-admin/centers/[id]. Branching rule:
+ * wide MRR widget on /super-admin and the per-center MRR card. Paid
+ * plans amortise to a monthly figure; everything else (trial, expired,
+ * design-partner free-forever, no plan) contributes 0.
  *
- *   plan_tier='founding'        → founding_locked_price_vnd
- *                                  (or 600,000 if column null/missing)
- *   subscription_plan ∈ standard → amortised standard price
- *   otherwise                    → 0
- *
- * Returns 0 (not null) for centers that don't contribute — caller
- * sums these directly. Inactive centers should be filtered out before
+ * Returns 0 (not null) for centers that don't contribute — caller sums
+ * these directly. Inactive centers should be filtered out before
  * calling; this helper does not gate on subscription_status.
  */
 export function monthlyMrrVnd(c: {
   subscription_plan: string | null;
   plan_tier?: string | null;
-  founding_locked_price_vnd?: number | null;
 }): number {
-  if (c.plan_tier === "founding") {
-    return c.founding_locked_price_vnd ?? FOUNDING_FALLBACK_MONTHLY_VND;
-  }
   if (c.subscription_plan && STANDARD_PLAN_MONTHLY_VND[c.subscription_plan]) {
     return STANDARD_PLAN_MONTHLY_VND[c.subscription_plan];
   }
