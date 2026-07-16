@@ -1067,9 +1067,22 @@ export async function reactivateCenter(formData: FormData) {
       return { error: readErr?.message ?? "center not found" };
     }
     const fromStatus = String(existing.subscription_status ?? "");
+    // If the stored trial_ends_at is missing or already in the past, resuming
+    // to it would immediately re-derive 'expired' — the reactivate would look
+    // like a no-op. Give them a fresh TRIAL_DAYS window in that case; keep an
+    // unexpired existing date as-is.
+    const existingEnd = existing.trial_ends_at
+      ? new Date(existing.trial_ends_at).getTime()
+      : 0;
+    let trialEndsAt = existing.trial_ends_at;
+    if (existingEnd <= Date.now()) {
+      const fresh = new Date();
+      fresh.setDate(fresh.getDate() + TRIAL_DAYS);
+      trialEndsAt = fresh.toISOString();
+    }
     const { error } = await supabase
       .from("centers")
-      .update({ subscription_status: "trial" })
+      .update({ subscription_status: "trial", trial_ends_at: trialEndsAt })
       .eq("id", id);
     if (error) return { error: error.message };
     await writeAuditLog(supabase, {
@@ -1082,7 +1095,7 @@ export async function reactivateCenter(formData: FormData) {
         from: fromStatus,
         to: "trial",
         mode: "resume_trial",
-        trial_ends_at: existing.trial_ends_at ?? null,
+        trial_ends_at: trialEndsAt ?? null,
       },
     });
     revalidatePath("/super-admin");

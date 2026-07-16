@@ -22,14 +22,40 @@
 -- Idempotent and safe to run on a live prod DB.
 
 -- ---------------------------------------------------------------------------
--- a. Migrate any existing Founding centers off the founding tier FIRST, so
---    their pricing isn't lost when the founding columns are dropped below.
+-- a0. Snapshot each Founding center's discounted locked price + slot into
+--     audit_log BEFORE we drop the columns. Retiring the program ends the
+--     discounted rate, so this preserves a permanent record of what each
+--     center was promised (the app bills manually over Zalo, so there is no
+--     automatic overcharge, but the operator keeps the history).
+-- ---------------------------------------------------------------------------
+do $$ begin
+  insert into public.audit_log
+    (user_id, center_id, action, entity_type, entity_id, metadata)
+  select
+    null, id, 'founding_program_retired', 'center', id,
+    jsonb_build_object(
+      'prior_plan_tier', 'founding',
+      'prior_founding_center_number', founding_center_number,
+      'prior_founding_locked_price_vnd', founding_locked_price_vnd,
+      'migrated_to_plan', coalesce(subscription_plan, 'monthly')
+    )
+  from public.centers
+  where plan_tier = 'founding';
+exception
+  when undefined_column then null;   -- founding columns / plan_tier not present
+  when undefined_table then null;    -- audit_log not present
+  when invalid_text_representation then null;  -- 'founding' not a valid enum value
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- a. Migrate any existing Founding centers off the founding tier so they keep
+--    access after the program is retired. NOTE: the discounted founding rate
+--    ENDS — these centers resolve to the standard monthly price. Their prior
+--    locked price is recorded in audit_log (step a0) but no longer billed.
 --    Guarded so it doesn't error if the plan_tier column or the 'founding'
 --    enum value doesn't exist in this database.
 -- ---------------------------------------------------------------------------
 do $$ begin
-  -- Convert any live Founding centers to a standard monthly plan so
-  -- their pricing isn't lost when the founding columns are dropped.
   update public.centers
   set plan_tier = 'standard',
       subscription_plan = coalesce(subscription_plan, 'monthly')
